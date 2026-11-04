@@ -12,6 +12,7 @@ func _init() -> void:
 	_test_transactions()
 	_test_priority()
 	_test_scoring()
+	_test_bill_round()
 
 	print("\n%d verificações, %d falhas" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -64,8 +65,8 @@ func _test_transactions() -> void:
 	t = HandEvaluator.evaluate([n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.RELAMPAGO)])
 	check(t["kind"] == "escadinha", "1-2-5-10-20 em sequência é Escadinha")
 
-	t = HandEvaluator.evaluate([n(1), n(5), n(20), n(100), n(200)])
-	check(t["kind"] == "trocado", "5 valores sem sequência e mesma forma ausente vira Trocado")
+	t = HandEvaluator.evaluate([n(1, Note.Suit.DINHEIRO), n(5, Note.Suit.DEBITO), n(20, Note.Suit.CREDITO), n(100, Note.Suit.RELAMPAGO), n(200, Note.Suit.DINHEIRO)])
+	check(t["kind"] == "trocado", "5 valores sem sequência e formas variadas vira Trocado")
 
 	var same_suit: Array = [n(1, Note.Suit.CREDITO), n(5, Note.Suit.CREDITO), n(20, Note.Suit.CREDITO), n(100, Note.Suit.CREDITO), n(200, Note.Suit.CREDITO)]
 	t = HandEvaluator.evaluate(same_suit)
@@ -83,6 +84,48 @@ func _test_priority() -> void:
 
 	# Mão vazia.
 	check(HandEvaluator.evaluate([])["kind"] == "none", "mão vazia não pontua")
+
+
+func _test_bill_round() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 42
+
+	# Pagar sem escolher nada é recusado e não gasta dia.
+	var bill := BillRound.new(1, rng)
+	check(bill.hand.size() == 8, "conta começa com 8 notas na mão")
+	check(bill.pay()["reason"] == "no_selection", "pagar sem seleção é recusado")
+	check(bill.days_left == 4, "recusa não gasta dia")
+
+	# Seleção limitada a 5 notas.
+	for i in range(5):
+		check(bill.toggle_select(bill.hand[i]), "seleciona nota %d" % i)
+	check(not bill.toggle_select(bill.hand[5]), "não seleciona a 6ª nota")
+	bill.toggle_select(bill.hand[0])
+	check(bill.selected.size() == 4, "desmarcar libera vaga")
+
+	# Pagar com meta de R$ 1: vence de primeira.
+	var r := bill.pay()
+	check(r["ok"] and r["state"] == BillRound.WON, "meta de R$1 é batida na primeira jogada")
+	check(bill.reward(3) == 3 + 3, "recompensa = base + 3 dias não usados (R$ %d)" % bill.reward(3))
+	check(bill.pay()["reason"] == "round_over", "conta encerrada não aceita mais jogadas")
+
+	# Conta impossível: perde ao acabar os 4 dias.
+	var lost := BillRound.new(999999, rng)
+	for day in range(4):
+		lost.toggle_select(lost.hand[0])
+		lost.pay()
+	check(lost.state == BillRound.LOST, "perde ao acabar os 4 dias")
+	check(lost.reward(3) == 0, "conta perdida não paga recompensa")
+
+	# Trocas: 3 permitidas, a 4ª é recusada e nenhuma gasta dia.
+	var swapper := BillRound.new(999999, rng)
+	for i in range(3):
+		swapper.toggle_select(swapper.hand[0])
+		check(swapper.swap()["ok"], "troca %d aceita" % (i + 1))
+	swapper.toggle_select(swapper.hand[0])
+	check(swapper.swap()["reason"] == "no_swaps", "4ª troca é recusada")
+	check(swapper.days_left == 4, "trocar não gasta dia")
+	check(swapper.hand.size() == 8, "mão continua com 8 notas depois de trocar")
 
 
 func _test_scoring() -> void:
