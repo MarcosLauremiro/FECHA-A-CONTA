@@ -44,3 +44,26 @@ const START_WALLET := 4
 const MAX_SCHEMES := 5
 const OVERDRAFT_LIMIT := -10
 const DEBT_GROWTH_PERCENT := 25
+
+# Ordem das contas dentro de um mês e a recompensa de cada uma.
+const BILL_KEYS: Array = ["boleto", "aluguel", "fatura"]
+const BILL_LABELS := {"boleto": "Boleto", "aluguel": "Aluguel", "fatura": "Fatura"}
+const BILL_REWARDS := {
+	"boleto": REWARD_BOLETO,
+	"aluguel": REWARD_ALUGUEL,
+	"fatura": REWARD_FATURA,
+}
+
+# Troco vira grana: R$ 1 a cada TROCO_STEP_PERCENT% acima da meta, até TROCO_MAX.
+const TROCO_STEP_PERCENT := 25
+const TROCO_MAX := 5
+
+# Chefe de cada mês (é a Fatura daquele mês).
+const BOSS_BY_MONTH: Array = ["banco_fora_do_ar", "taxa_manutencao", "janeiro_impostos"]
+const BOSSES := {
+	"banco_fora_do_ar": {"name": "Banco fora do ar", "text": "Notas de Relâmpago não pontuam"},
+	"taxa_manutencao": {"name": "Taxa de manutenção", "text": "Cada troca custa R$ 1"},
+	"janeiro_impostos": {"name": "IPVA + IPTU + Material escolar", "text": "Leão da Receita leva 27,5% de cada jogada. Taxa de manutenção: cada troca custa R$ 1. Golpe do WhatsApp: pendente (precisa de esquemas)"},
+}
+# Leão da Receita, em milésimos (275 = 27,5%).
+const LEAO_PER_MILLE := 275

@@ -15,12 +15,14 @@ var days_left: int = Balance.DAYS_PER_BILL
 var swaps_left: int = Balance.SWAPS_PER_BILL
 var saldo: int = 0
 var state: String = PLAYING
+var boss: String = Boss.NONE  # id do chefe desta conta ("" = conta comum)
 
 var _rng: RandomNumberGenerator
 
 
-func _init(p_goal: int, rng: RandomNumberGenerator = null) -> void:
+func _init(p_goal: int, p_boss: String = Boss.NONE, rng: RandomNumberGenerator = null) -> void:
 	goal = p_goal
+	boss = p_boss
 	_rng = rng
 	deck = Deck.new(rng)
 	_refill()
@@ -40,6 +42,7 @@ func toggle_select(note: Note) -> bool:
 
 
 ## PAGAR: pontua as notas escolhidas e gasta 1 dia.
+## Notas que o chefe não deixa pontuar saem da conta; o imposto do chefe é descontado do total.
 ## Devolve {"ok": bool, "reason": String, "score": Dictionary, "state": String}.
 func pay() -> Dictionary:
 	var refusal := _check_can_act()
@@ -47,8 +50,14 @@ func pay() -> Dictionary:
 		return refusal
 
 	var played := selected.duplicate()
-	var score := Scorer.score(HandEvaluator.evaluate(played))
-	saldo += score["total"]
+	var scoring: Array = []
+	for n in played:
+		if Boss.note_scores(boss, n):
+			scoring.append(n)
+	var score := Scorer.score(HandEvaluator.evaluate(scoring))
+	var tax := Boss.play_tax(boss, score["total"])
+	score["tax"] = tax
+	saldo += score["total"] - tax
 
 	_leave_hand(played)
 	deck.discard(played)
@@ -78,6 +87,11 @@ func swap() -> Dictionary:
 	_refill()
 
 	return {"ok": true, "reason": "", "state": state}
+
+
+## Custo em R$ de cada troca nesta conta (imposto do chefe, se houver).
+func swap_cost() -> int:
+	return Boss.swap_cost(boss)
 
 
 ## Recompensa ao bater a meta: base da conta + R$ por dia não usado.

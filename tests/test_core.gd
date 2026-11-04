@@ -13,6 +13,8 @@ func _init() -> void:
 	_test_priority()
 	_test_scoring()
 	_test_bill_round()
+	_test_bosses()
+	_test_run_state()
 
 	print("\n%d verificações, %d falhas" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -91,7 +93,7 @@ func _test_bill_round() -> void:
 	rng.seed = 42
 
 	# Pagar sem escolher nada é recusado e não gasta dia.
-	var bill := BillRound.new(1, rng)
+	var bill := BillRound.new(1, Boss.NONE, rng)
 	check(bill.hand.size() == 8, "conta começa com 8 notas na mão")
 	check(bill.pay()["reason"] == "no_selection", "pagar sem seleção é recusado")
 	check(bill.days_left == 4, "recusa não gasta dia")
@@ -110,7 +112,7 @@ func _test_bill_round() -> void:
 	check(bill.pay()["reason"] == "round_over", "conta encerrada não aceita mais jogadas")
 
 	# Conta impossível: perde ao acabar os 4 dias.
-	var lost := BillRound.new(999999, rng)
+	var lost := BillRound.new(999999, Boss.NONE, rng)
 	for day in range(4):
 		lost.toggle_select(lost.hand[0])
 		lost.pay()
@@ -118,7 +120,7 @@ func _test_bill_round() -> void:
 	check(lost.reward(3) == 0, "conta perdida não paga recompensa")
 
 	# Trocas: 3 permitidas, a 4ª é recusada e nenhuma gasta dia.
-	var swapper := BillRound.new(999999, rng)
+	var swapper := BillRound.new(999999, Boss.NONE, rng)
 	for i in range(3):
 		swapper.toggle_select(swapper.hand[0])
 		check(swapper.swap()["ok"], "troca %d aceita" % (i + 1))
@@ -153,3 +155,101 @@ func _test_scoring() -> void:
 	s = Scorer.score(HandEvaluator.evaluate([]))
 	check(s["total"] == 0, "mão vazia = 0")
 	check(s["events"][-1]["type"] == "total", "último evento é o total")
+
+
+func _test_bosses() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 7
+
+	# Banco fora do ar: Relâmpago não pontua. Dobradinha de 10 (Dinheiro + Relâmpago) vira Trocado de 10 (Dinheiro): 11.
+	var bill := BillRound.new(999999, "banco_fora_do_ar", rng)
+	bill.hand = [n(10, Note.Suit.RELAMPAGO), n(10, Note.Suit.DINHEIRO)]
+	bill.selected = [bill.hand[0], bill.hand[1]]
+	var r := bill.pay()
+	check(r["score"]["total"] == 11, "Relâmpago não pontua no Banco fora do ar (got %s)" % r["score"]["total"])
+	check(bill.saldo == 11, "saldo só recebe o que pontua")
+
+	# Sem chefe: a mesma jogada vale Dobradinha = 44.
+	bill = BillRound.new(999999, Boss.NONE, rng)
+	bill.hand = [n(10, Note.Suit.RELAMPAGO), n(10, Note.Suit.DINHEIRO)]
+	bill.selected = [bill.hand[0], bill.hand[1]]
+	check(bill.pay()["score"]["total"] == 44, "sem chefe a Dobradinha vale 44")
+
+	# Leão da Receita: Dobradinha de 10 (44) perde 27,5% → 12 (floor de 12,1). Saldo = 32.
+	bill = BillRound.new(999999, "janeiro_impostos", rng)
+	bill.hand = [n(10), n(10, Note.Suit.DEBITO)]
+	bill.selected = [bill.hand[0], bill.hand[1]]
+	r = bill.pay()
+	check(r["score"]["tax"] == 12, "imposto de 27,5%% sobre 44 = 12 (got %s)" % r["score"]["tax"])
+	check(bill.saldo == 32, "saldo com imposto = 32 (got %s)" % bill.saldo)
+
+	check(BillRound.new(1, "taxa_manutencao", rng).swap_cost() == 1, "troca custa R$1 na taxa de manutenção")
+	check(BillRound.new(1, "banco_fora_do_ar", rng).swap_cost() == 0, "troca é grátis no banco fora do ar")
+
+
+func _test_run_state() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 99
+
+	# Troco: R$1 a cada 25% acima da meta, máximo R$5.
+	check(RunState.troco(100, 100) == 0, "sem troco na meta exata")
+	check(RunState.troco(124, 100) == 0, "sem troco abaixo de 25%")
+	check(RunState.troco(125, 100) == 1, "R$1 de troco com 25% acima")
+	check(RunState.troco(150, 100) == 2, "R$2 de troco com 50% acima")
+	check(RunState.troco(1000, 100) == 5, "troco limitado a R$5")
+
+	# Dívida cresce 25% arredondando para cima.
+	check(RunState.debt_growth(10) == 3, "dívida de 10 cresce para 3 (2,5 arredondado)")
+	check(RunState.debt_growth(4) == 1, "dívida de 4 cresce 1")
+
+	var run := RunState.new(rng)
+	check(run.wallet == Balance.START_WALLET, "carteira começa em R$4")
+	check(run.bill_title() == "Março · Boleto", "primeira conta é Março · Boleto (got %s)" % run.bill_title())
+	check(run.boss_id() == Boss.NONE, "boleto não tem chefe")
+
+	# Pagar a primeira conta: carteira recebe recompensa + troco do comprovante.
+	run.bill.goal = 1
+	run.bill.toggle_select(run.bill.hand[0])
+	run.pay()
+	check(run.state == RunState.BILL_PAID, "conta paga mostra comprovante")
+	check(run.wallet == Balance.START_WALLET + run.receipt["reward"] + run.receipt["troco"], "carteira = inicial + recompensa + troco")
+	check(run.receipt["reward"] == Balance.REWARD_BOLETO + 3 * Balance.REWARD_PER_UNUSED_DAY, "recompensa do boleto + 3 dias não usados")
+	check(run.next_bill(), "avança para a próxima conta")
+	check(run.bill_title() == "Março · Aluguel", "segunda conta é Aluguel")
+
+	# Cheque especial: troca recusada se passar de -R$10.
+	var gate := RunState.new(rng)
+	gate.bill = BillRound.new(999999, "taxa_manutencao", rng)
+	gate.wallet = -9
+	gate.bill.toggle_select(gate.bill.hand[0])
+	check(gate.swap()["ok"] and gate.wallet == -10, "troca desce a carteira até -R$10")
+	gate.bill.toggle_select(gate.bill.hand[0])
+	check(gate.swap()["reason"] == "no_money", "troca recusada abaixo de -R$10")
+
+	# Conta perdida encerra a partida.
+	var lost := RunState.new(rng)
+	lost.bill = BillRound.new(999999, Boss.NONE, rng)
+	for i in range(4):
+		lost.bill.toggle_select(lost.bill.hand[0])
+		lost.pay()
+	check(lost.state == RunState.LOST, "perder uma conta encerra a partida")
+
+	# Partida inteira: 9 contas pagas (3 meses × 3). Chefes certos nas faturas.
+	var full := RunState.new(rng)
+	var bosses_seen: Array = []
+	for i in range(9):
+		if full.bill_key() == "fatura":
+			bosses_seen.append(full.boss_id())
+		full.bill.goal = 1
+		# Escolhe uma nota que pontua (no Banco fora do ar, Relâmpago não conta).
+		for c in full.bill.hand:
+			if Boss.note_scores(full.boss_id(), c):
+				full.bill.toggle_select(c)
+				break
+		full.pay()
+		if i < 8:
+			full.next_bill()
+	check(full.state == RunState.WON, "pagar a última fatura vence a partida")
+	check(bosses_seen == ["banco_fora_do_ar", "taxa_manutencao", "janeiro_impostos"], "chefes das faturas na ordem (got %s)" % str(bosses_seen))
+	check(full.max_saldo > 0, "saldo máximo do ano registrado")
+	check(not full.next_bill(), "não há próxima conta depois da última")
