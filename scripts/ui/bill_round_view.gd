@@ -650,6 +650,7 @@ func _update_status() -> void:
 	var playing := run.state == RunState.PLAYING
 	var over := run.state == RunState.WON or run.state == RunState.LOST
 	var paid := run.state == RunState.BILL_PAID
+	var won := run.state == RunState.WON
 
 	_header.text = run.bill_title()
 	_set_stat("carteira", "R$ %d" % run.wallet, WARN if run.wallet < 0 else TERMINAL_TEXT)
@@ -670,16 +671,20 @@ func _update_status() -> void:
 
 	var levels_text := _levels_text()
 	_levels.text = "Níveis: " + levels_text
-	_levels.visible = not paid and levels_text != "nenhum investimento ainda"
+	_levels.visible = not paid and not won and levels_text != "nenhum investimento ainda"
 	_set_key_enabled(_pay_key, playing)
 	_set_key_enabled(_swap_key, playing)
 	_hand_area.visible = playing
 	_restart_button.visible = over
+	# Vitória: o comprovante final ocupa o meio da tela, e o botão de jogar de novo vai para baixo dele.
+	_restart_button.position = Vector2(392, 664) if won else Vector2(540, 436)
+	_restart_button.size = Vector2(240, 52) if won else Vector2(200, 56)
 	_next_button.visible = paid
-	_receipt.visible = paid
-	_header.visible = not paid
-	_stats.visible = not paid
-	_end_stamp.visible = over
+	_receipt.visible = paid or won
+	_header.visible = not (paid or won)
+	_stats.visible = not (paid or won)
+	_message.visible = not won
+	_end_stamp.visible = over and not won
 	# Carimbos: a fatura com chefe e o fim da partida batem uma vez cada.
 	var stamp_key := "%d-%d" % [run.month_index, run.bill_index]
 	if show_boss and _boss_stamp_key != stamp_key:
@@ -695,6 +700,7 @@ func _update_status() -> void:
 
 	if run.state == RunState.WON:
 		_message.text = "CONTAS EM DIA   ·   Saldo máximo R$ %d" % run.max_saldo
+		_receipt_label.text = _final_receipt_text()
 	elif run.state == RunState.LOST:
 		_message.text = "NOME NEGATIVADO"
 	elif paid:
@@ -770,6 +776,16 @@ func _lift(btn: BaseButton, selected: bool) -> void:
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
+## Comprovante final (pagou a última fatura de Janeiro): CONTAS EM DIA e o saldo máximo do ano.
+func _final_receipt_text() -> String:
+	return "COMPROVANTE FINAL\n\nCONTAS EM DIA\n\nContas pagas\n%d de %d\n\nSaldo máximo\nR$ %d\n\nCarteira R$ %d" % [
+		Balance.MONTHS.size() * Balance.BILL_KEYS.size(),
+		Balance.MONTHS.size() * Balance.BILL_KEYS.size(),
+		run.max_saldo,
+		run.wallet,
+	]
+
+
 func _receipt_text() -> String:
 	var r := run.receipt
 	return "COMPROVANTE\n%s\n\nSaldo R$ %d\nMeta R$ %d\n\nRecompensa +R$ %d\nTroco +R$ %d\n\nCarteira R$ %d" % [
@@ -815,6 +831,8 @@ func _on_pay_pressed() -> void:
 	_refresh()
 	if run.state == RunState.BILL_PAID:
 		_print_receipt(run.bill.saldo > run.bill.goal * BIG_RECEIPT_RATIO)
+	elif run.state == RunState.WON:
+		_print_receipt(false)  # comprovante final: CONTAS EM DIA
 
 
 ## Percorre a lista de eventos do Scorer: notas pulam, cartaz balança, Juros aparece, total cai no saldo.
