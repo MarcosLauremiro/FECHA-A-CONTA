@@ -92,3 +92,15 @@ const PIRAMIDE_ODDS := 6
 # Camelô (loja entre as contas).
 const SHOP_OFFERS := 2
 const HAGGLE_COST := 2
+
+# Investimentos (GDD: "Investimentos"). Cada um sobe o nível de uma transação.
+# Cada id bate com art/camelo/investimento_<id>.png.
+const INVESTMENT_ORDER: Array = ["poupanca", "tesouro", "cripto"]
+const INVESTMENTS := {
+	"poupanca": {"name": "Poupança", "price": 3, "transaction": "dobradinha", "per_value": 10, "per_juros": 1, "desc": "Dobradinha: +10 de Valor e +1 de Juros por nível."},
+	"tesouro": {"name": "Tesouro Direto", "price": 3, "transaction": "escadinha", "per_value": 20, "per_juros": 1, "desc": "Escadinha: +20 de Valor e +1 de Juros por nível."},
+	"cripto": {"name": "Cripto", "price": 3, "transaction": "tudo_no_relampago", "per_value": 25, "per_juros": 2, "desc": "Tudo no Relâmpago: +25 de Valor e +2 de Juros por nível. Às vezes cai um nível em vez de subir."},
+}
+const CRIPTO_DROP_ODDS := 4
+const SHOP_INVESTMENT_OFFERS := 1
+

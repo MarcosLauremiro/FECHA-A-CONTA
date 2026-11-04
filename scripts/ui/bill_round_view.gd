@@ -7,6 +7,17 @@ const LIFT := 24
 const CARD_SIZE := Vector2(120, 180)
 const LIFT_TIME := 0.12
 
+# Sensação da pontuação (só apresentação; a regra já foi resolvida em RunState.pay()).
+const PROCESSING_TIME := 0.4     # "AGUARDE… PROCESSANDO" antes da contagem
+const STEP_TIME := 0.14          # pausa entre cada evento da lista
+const SHAKE_TIME := 0.3
+const SHAKE_STEPS := 6
+const SHAKE_MAX := 16.0          # tremor máximo (px)
+const BIG_RECEIPT_RATIO := 5     # saldo acima de 5× a meta: comprovante gigante
+const BIG_RECEIPT_SCALE := 2.2
+const RECEIPT_POS := Vector2(520, 60)
+const HIGHLIGHT := Color("FFE066")
+
 # Janela vazada da moldura (A1) e área da mão embaixo, sobre a bancada.
 const SCREEN := Rect2(240, 60, 800, 360)
 const HAND_POS := Vector2(118, 516)
@@ -52,6 +63,7 @@ var _header: Label
 var _boss_text: Label
 var _boss_art: TextureRect
 var _info: Label
+var _levels: Label
 var _message: Label
 var _strip_slots: Array = []   # [{"slot", "empty", "card"}] por espaço de esquema
 var _hand_area: Control
@@ -68,12 +80,16 @@ var _receipt_label: Label
 var _shop_root: Control
 var _shop_header: Label
 var _shop_message: Label
+var _shop_levels: Label
 var _shop_offers: Array = []   # [{"card", "plate", "price", "text", "buy"}] por oferta
 var _shop_owned: Array = []    # [{"thumb", "sell"}] por esquema que você tem
 var _haggle_button: Button
 var _leave_button: Button
 
 var _title: TextureButton
+
+# Verdadeiro durante a animação de pontuação: entrada do jogador fica travada.
+var _busy := false
 
 # Note -> botão da carta (dentro do wrapper que cuida do espaço da mão).
 var _cards: Dictionary = {}
@@ -175,6 +191,8 @@ func _build_screen_content(root: Control) -> void:
 	column.add_child(_boss_text)
 	_info = _terminal_label(26)
 	column.add_child(_info)
+	_levels = _terminal_label(20)
+	column.add_child(_levels)
 	_message = _terminal_label(28)
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_message)
@@ -230,55 +248,38 @@ func _build_shop(root: Control) -> void:
 	var ribbon := ColorRect.new()
 	ribbon.color = Color(0, 0, 0, 0.55)
 	ribbon.position = Vector2(0, 20)
-	ribbon.size = Vector2(1280, 90)
+	ribbon.size = Vector2(1280, 124)
 	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(ribbon)
 
-	_shop_header = Label.new()
-	_shop_header.position = Vector2(32, 28)
-	_shop_header.size = Vector2(1216, 40)
-	_shop_header.add_theme_font_override("font", _font(FONT_TITLE))
-	_shop_header.add_theme_font_size_override("font_size", 32)
-	_shop_header.add_theme_color_override("font_color", Color.WHITE)
-	_shop_header.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shop_header = _shop_label(Rect2(32, 28, 1216, 40), 32, true)
 	root.add_child(_shop_header)
-
-	_shop_message = Label.new()
-	_shop_message.position = Vector2(32, 72)
-	_shop_message.size = Vector2(1216, 30)
-	_shop_message.add_theme_font_size_override("font_size", 24)
-	_shop_message.add_theme_color_override("font_color", Color.WHITE)
-	_shop_message.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shop_message = _shop_label(Rect2(32, 72, 1216, 30), 24, false)
 	root.add_child(_shop_message)
+	_shop_levels = _shop_label(Rect2(32, 104, 1216, 26), 20, false)
+	root.add_child(_shop_levels)
 
-	# Duas ofertas, cada uma com cartaz, plaquinha de preço e botão de compra.
-	for i in range(Balance.SHOP_OFFERS):
-		var x := 260.0 + i * 460.0
-		var card := _texture_rect("", Rect2(x, 130, 200, 280), root)
+	# Ofertas: esquemas (cartaz) e investimentos (ícone), cada uma com preço e compra.
+	for i in range(Balance.SHOP_OFFERS + Balance.SHOP_INVESTMENT_OFFERS):
+		var x := 180.0 + i * 360.0
+		var card := _texture_rect("", Rect2(x, 150, 200, 280), root)
 		card.mouse_filter = Control.MOUSE_FILTER_STOP
-		_texture_rect(TEX_PRICE, Rect2(x + 150, 142, 80, 50), root)
-		var price := Label.new()
-		price.position = Vector2(x + 150, 142)
-		price.size = Vector2(80, 50)
+		var icon := _texture_rect("", Rect2(x + 40, 170, 120, 120), root)
+		icon.mouse_filter = Control.MOUSE_FILTER_STOP
+		icon.visible = false
+		_texture_rect(TEX_PRICE, Rect2(x + 150, 162, 80, 50), root)
+		var price := _shop_label(Rect2(x + 150, 162, 80, 50), 22, true)
 		price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		price.add_theme_font_override("font", _font(FONT_TITLE))
-		price.add_theme_font_size_override("font_size", 22)
 		price.add_theme_color_override("font_color", INK)
-		price.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		root.add_child(price)
-		var text := Label.new()
-		text.position = Vector2(x + 10, 230)
-		text.size = Vector2(180, 90)
+		var text := _shop_label(Rect2(x + 10, 250, 180, 110), 18, true)
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		text.add_theme_font_override("font", _font(FONT_TITLE))
-		text.add_theme_font_size_override("font_size", 20)
 		text.add_theme_color_override("font_color", INK)
-		text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		root.add_child(text)
-		var buy := _button(root, "COMPRAR", Rect2(x, 420, 200, 44), _on_buy_pressed.bind(i))
-		_shop_offers.append({"card": card, "price": price, "text": text, "buy": buy})
+		var buy := _button(root, "COMPRAR", Rect2(x, 440, 200, 44), _on_buy_pressed.bind(i))
+		_shop_offers.append({"card": card, "icon": icon, "price": price, "text": text, "buy": buy})
 
 	# Esquemas que você já tem: vender pela metade do preço.
 	for i in range(Balance.MAX_SCHEMES):
@@ -296,25 +297,49 @@ func _build_shop(root: Control) -> void:
 	_haggle_button.visible = true
 
 
+func _shop_label(rect: Rect2, font_size: int, title_font: bool) -> Label:
+	var label := Label.new()
+	label.position = rect.position
+	label.size = rect.size
+	if title_font:
+		label.add_theme_font_override("font", _font(FONT_TITLE))
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", Color.WHITE)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
+
 func _refresh_shop() -> void:
 	_shop_header.text = "CAMELÔ   ·   Carteira R$ %d   ·   Cheque especial até R$ %d" % [run.wallet, -Balance.OVERDRAFT_LIMIT]
+	_shop_levels.text = "Níveis: " + _levels_text()
 
 	for i in range(_shop_offers.size()):
 		var o: Dictionary = _shop_offers[i]
 		var has := i < run.shop_offer.size()
-		for key in ["card", "price", "text", "buy"]:
+		for key in ["card", "icon", "price", "text", "buy"]:
 			o[key].visible = has
 		if not has:
 			continue
 		var id: String = run.shop_offer[i]
-		var info: Dictionary = Balance.SCHEMES[id]
-		o["card"].texture = _tex("res://art/esquemas/cartaz_%s.png" % id)
-		o["card"].tooltip_text = "%s\n%s" % [info["name"], info["desc"]]
-		o["price"].text = "R$ %d" % info["price"]
-		o["text"].text = info["text"]
-		o["buy"].text = "COMPRAR R$ %d" % info["price"]
-		var price: int = info["price"]
-		o["buy"].disabled = run.schemes.size() >= Balance.MAX_SCHEMES or run.wallet - price < Balance.OVERDRAFT_LIMIT
+		var info: Dictionary = Balance.INVESTMENTS[id] if Investments.is_investment(id) else Balance.SCHEMES[id]
+		var is_inv := Investments.is_investment(id)
+		o["card"].visible = not is_inv
+		o["icon"].visible = is_inv
+		if is_inv:
+			o["icon"].texture = _tex("res://art/camelo/investimento_%s.png" % id)
+			o["icon"].tooltip_text = "%s
+%s" % [info["name"], info["desc"]]
+			o["text"].text = info["name"]
+		else:
+			o["card"].texture = _tex("res://art/esquemas/cartaz_%s.png" % id)
+			o["card"].tooltip_text = "%s
+%s" % [info["name"], info["desc"]]
+			o["text"].text = info["text"]
+		var price := run.price_of(id)
+		o["price"].text = "R$ %d" % price
+		o["buy"].text = "COMPRAR R$ %d" % price
+		var full := not is_inv and run.schemes.size() >= Balance.MAX_SCHEMES
+		o["buy"].disabled = full or run.wallet - price < Balance.OVERDRAFT_LIMIT
 
 	for i in range(_shop_owned.size()):
 		var s: Dictionary = _shop_owned[i]
@@ -325,11 +350,22 @@ func _refresh_shop() -> void:
 			var id: String = run.schemes[i]
 			var info: Dictionary = Balance.SCHEMES[id]
 			s["thumb"].texture = _tex("res://art/esquemas/cartaz_%s.png" % id)
-			s["thumb"].tooltip_text = "%s\n%s" % [info["name"], info["desc"]]
+			s["thumb"].tooltip_text = "%s
+%s" % [info["name"], info["desc"]]
 			s["sell"].text = "VENDER R$ %d" % (int(info["price"]) / 2)
 
 	_haggle_button.text = "PECHINCHAR R$ %d" % Balance.HAGGLE_COST
 	_haggle_button.disabled = run.wallet - Balance.HAGGLE_COST < Balance.OVERDRAFT_LIMIT
+
+
+## Níveis atuais dos investimentos, em nomes de transação (ex.: "Dobradinha 1 · Escadinha 0").
+func _levels_text() -> String:
+	var parts: Array = []
+	for kind in Balance.TRANSACTIONS:
+		var lvl: int = run.levels.get(kind, 0)
+		if lvl > 0:
+			parts.append("%s %d" % [Balance.TRANSACTIONS[kind]["name"], lvl])
+	return "nenhum investimento ainda" if parts.is_empty() else " · ".join(parts)
 
 
 func _on_buy_pressed(index: int) -> void:
@@ -412,10 +448,9 @@ func _update_status() -> void:
 		_boss_text.text = "CHEFE: %s. %s" % [Balance.BOSSES[boss_id]["name"], Balance.BOSSES[boss_id]["text"]]
 		_boss_art.texture = _tex(BOSS_ART[boss_id])
 
-	_info.text = "Meta R$ %d   ·   Saldo R$ %d   ·   Dias %d   ·   Trocas %d" % [
-		bill.goal, bill.saldo, bill.days_left, bill.swaps_left,
-	]
+	_info.text = _info_text(bill.saldo)
 
+	_levels.text = "Níveis: " + _levels_text()
 	_set_key_enabled(_pay_key, playing)
 	_set_key_enabled(_swap_key, playing)
 	_hand_area.visible = playing
@@ -515,6 +550,8 @@ func _receipt_text() -> String:
 
 
 func _on_card_pressed(note: Note) -> void:
+	if _busy:
+		return
 	run.bill.toggle_select(note)
 	var selected: bool = run.bill.selected.has(note)
 	if _cards.has(note):
@@ -523,19 +560,161 @@ func _on_card_pressed(note: Note) -> void:
 
 
 func _on_pay_pressed() -> void:
+	if _busy:
+		return
+	# A regra roda já; a tela só mostra o resultado depois da animação.
+	var played: Array = run.bill.selected.duplicate()
 	var result := run.pay()
 	if not result["ok"]:
 		_message.text = _refusal_text(result["reason"])
-	elif result.has("score") and result["score"]["kind"] != "none":
-		var score: Dictionary = result["score"]
-		var tx_name: String = Balance.TRANSACTIONS[score["kind"]]["name"]
-		_message.text = "%s: +%d" % [tx_name, score["total"] - score["tax"]]
-		if score["tax"] > 0:
-			_message.text += "   (Leão da Receita: -%d)" % score["tax"]
+		return
+	var score: Dictionary = result["score"]
+	if score["kind"] == "none":
+		_refresh()
+		return
+
+	_busy = true
+	_message.text = "AGUARDE… PROCESSANDO"
+	await get_tree().create_timer(PROCESSING_TIME).timeout
+	await _play_score(score, played)
+	_busy = false
 	_refresh()
+	if run.state == RunState.BILL_PAID:
+		_print_receipt(run.bill.saldo > run.bill.goal * BIG_RECEIPT_RATIO)
+
+
+## Percorre a lista de eventos do Scorer: notas pulam, cartaz balança, Juros aparece, total cai no saldo.
+func _play_score(score: Dictionary, played: Array) -> void:
+	var tx_name: String = Balance.TRANSACTIONS[score["kind"]]["name"]
+	var played_buttons: Array = []
+	for note in played:
+		if _cards.has(note):
+			played_buttons.append(_cards[note])
+
+	var value := 0
+	var juros := 0
+	var mult := 1
+	var note_index := 0
+	var total: int = score["total"]
+	var tax: int = score["tax"]
+	for ev in score["events"]:
+		match ev["type"]:
+			"base":
+				value = ev["amount"]
+				juros = ev["juros"]
+			"note":
+				value += ev["amount"]
+				if note_index < played_buttons.size():
+					_pop_card(played_buttons[note_index], ev["amount"])
+				note_index += 1
+			"invest":
+				value += ev["value"]
+				juros += ev["add"]
+			"scheme":
+				value += ev["value"]
+				juros += ev["add"]
+				mult *= ev["mult"]
+				_sway_scheme(ev["id"])
+			"juros":
+				juros = ev["value"]
+			"total":
+				pass  # o total é mostrado depois do laço
+		if ev["type"] != "total":
+			_message.text = _playback_line(tx_name, value, juros, mult)
+			await get_tree().create_timer(STEP_TIME).timeout
+
+	_message.text = "%s   ·   TOTAL +%d" % [tx_name, total]
+	if tax > 0:
+		_message.text += "   (Leão da Receita: -%d)" % tax
+	_shake(clampf(float(total) / maxf(1.0, run.bill.goal) * 4.0, 0.0, SHAKE_MAX))
+	await _count_saldo(run.bill.saldo - (total - tax), run.bill.saldo)
+
+
+func _playback_line(tx_name: String, value: int, juros: int, mult: int) -> String:
+	var line := "%s   ·   VALOR %d   ·   JUROS x%d" % [tx_name, value, juros]
+	if mult > 1:
+		line += "   ·   CARTAZ x%d" % mult
+	return line
+
+
+## Nota que pontua: pula e solta o ponto em amarelo.
+func _pop_card(btn: BaseButton, points: int) -> void:
+	btn.pivot_offset = btn.size / 2.0
+	var tween := create_tween()
+	tween.tween_property(btn, "scale", Vector2(1.12, 1.12), 0.08)
+	tween.tween_property(btn, "scale", Vector2.ONE, 0.12)
+
+	var label := _terminal_label(30)
+	label.text = "+%d" % points
+	label.add_theme_color_override("font_color", HIGHLIGHT)
+	label.position = Vector2(0, -30)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	btn.get_parent().add_child(label)
+	var fade := create_tween()
+	fade.tween_property(label, "position:y", -80.0, 0.5)
+	fade.parallel().tween_property(label, "modulate:a", 0.0, 0.5)
+	fade.tween_callback(label.queue_free)
+
+
+## Cartaz do esquema balança (índice na faixa = índice em run.schemes).
+func _sway_scheme(id: String) -> void:
+	var i := run.schemes.find(id)
+	if i < 0 or i >= _strip_slots.size():
+		return
+	var card: TextureRect = _strip_slots[i]["card"]
+	card.pivot_offset = card.size / 2.0
+	var tween := create_tween()
+	tween.tween_property(card, "rotation", 0.12, 0.08)
+	tween.tween_property(card, "rotation", -0.1, 0.12)
+	tween.tween_property(card, "rotation", 0.0, 0.1)
+
+
+## Saldo sobe de `from` até `to` (contagem da caixa registradora).
+func _count_saldo(from: int, to: int) -> void:
+	var tween := create_tween()
+	tween.tween_method(func(v: float) -> void: _info.text = _info_text(v), float(from), float(to), 0.5)
+	await tween.finished
+
+
+## Tremor da tela: `strength` é o deslocamento máximo em px.
+func _shake(strength: float) -> void:
+	if strength <= 0.0:
+		return
+	var tween := create_tween()
+	var step_time := SHAKE_TIME / SHAKE_STEPS
+	for i in range(SHAKE_STEPS):
+		var offset := Vector2(randf_range(-strength, strength), randf_range(-strength, strength))
+		tween.tween_property(_game_root, "position", offset, step_time)
+	tween.tween_property(_game_root, "position", Vector2.ZERO, step_time)
+
+
+## Comprovante sai da impressora (desce); acima de 5× a meta ele chega gigante e treme.
+func _print_receipt(big: bool) -> void:
+	_receipt.pivot_offset = _receipt.size / 2.0
+	var tween := create_tween()
+	if big:
+		_receipt.position = RECEIPT_POS
+		_receipt.scale = Vector2(BIG_RECEIPT_SCALE, BIG_RECEIPT_SCALE)
+		tween.tween_property(_receipt, "scale", Vector2.ONE, 0.5) \
+			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+		_shake(SHAKE_MAX)
+	else:
+		_receipt.scale = Vector2.ONE
+		_receipt.position = Vector2(RECEIPT_POS.x, -_receipt.size.y)
+		tween.tween_property(_receipt, "position", RECEIPT_POS, 0.5) \
+			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
+func _info_text(saldo: float) -> String:
+	var bill := run.bill
+	return "Meta R$ %d   ·   Saldo R$ %d   ·   Dias %d   ·   Trocas %d" % [
+		bill.goal, int(saldo), bill.days_left, bill.swaps_left,
+	]
 
 
 func _on_swap_pressed() -> void:
+	if _busy:
+		return
 	var result := run.swap()
 	_message.text = "" if result["ok"] else _refusal_text(result["reason"])
 	_refresh()

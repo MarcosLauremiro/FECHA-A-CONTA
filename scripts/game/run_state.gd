@@ -25,7 +25,8 @@ var state: String = PLAYING
 var max_saldo: int = 0  # maior saldo de uma conta no ano (vai no comprovante final)
 var schemes: Array = []       # esquemas ativos (ids), da esquerda para a direita
 var cunhado_bonus: int = 0    # Juros acumulado do Cunhado Investidor
-var shop_offer: Array = []    # esquemas à venda no Camelô agora
+var shop_offer: Array = []    # ofertas do Camelô agora: ids de esquemas e de investimentos
+var levels: Dictionary = {}   # níveis dos investimentos, {transação: nível}
 
 # Último comprovante (preenchido ao pagar uma conta).
 var receipt: Dictionary = {}
@@ -98,7 +99,7 @@ func next_bill() -> bool:
 	if state != BILL_PAID:
 		return false
 	state = SHOP
-	shop_offer = _random_schemes(Balance.SHOP_OFFERS, schemes)
+	shop_offer = _random_ids(Balance.SCHEME_ORDER, Balance.SHOP_OFFERS, schemes) + _random_ids(Balance.INVESTMENT_ORDER, Balance.SHOP_INVESTMENT_OFFERS, [])
 	return true
 
 
@@ -116,21 +117,36 @@ func leave_shop() -> bool:
 	return true
 
 
-## Compra o esquema da oferta de índice `index`. Pode usar o cheque especial.
+## Compra a oferta de índice `index` (esquema ou investimento). Pode usar o cheque especial.
 func buy(index: int) -> Dictionary:
 	var refusal := _check_shop(index, shop_offer)
 	if not refusal.is_empty():
 		return refusal
 	var id: String = shop_offer[index]
-	var price: int = Balance.SCHEMES[id]["price"]
-	if schemes.size() >= Balance.MAX_SCHEMES:
-		return {"ok": false, "reason": "slots_full"}
+	var price := price_of(id)
 	if wallet - price < Balance.OVERDRAFT_LIMIT:
 		return {"ok": false, "reason": "no_money"}
+
+	if Investments.is_investment(id):
+		wallet -= price
+		var kind := Investments.transaction_of(id)
+		var drop := id == "cripto" and _rand_int(Balance.CRIPTO_DROP_ODDS) == 0
+		levels[kind] = Investments.level_after_purchase(id, int(levels.get(kind, 0)), drop)
+		shop_offer.remove_at(index)
+		return {"ok": true, "reason": "", "id": id, "dropped": drop}
+
+	if schemes.size() >= Balance.MAX_SCHEMES:
+		return {"ok": false, "reason": "slots_full"}
 	wallet -= price
 	schemes.append(id)
 	shop_offer.remove_at(index)
 	return {"ok": true, "reason": "", "id": id}
+
+
+func price_of(id: String) -> int:
+	if Investments.is_investment(id):
+		return Balance.INVESTMENTS[id]["price"]
+	return Balance.SCHEMES[id]["price"]
 
 
 ## Vende um esquema ativo pela metade do preço (arredondado para baixo).
@@ -153,7 +169,7 @@ func haggle() -> Dictionary:
 	if wallet - Balance.HAGGLE_COST < Balance.OVERDRAFT_LIMIT:
 		return {"ok": false, "reason": "no_money"}
 	wallet -= Balance.HAGGLE_COST
-	shop_offer = _random_schemes(Balance.SHOP_OFFERS, schemes + shop_offer)
+	shop_offer = _random_ids(Balance.SCHEME_ORDER, Balance.SHOP_OFFERS, schemes + shop_offer) + _random_ids(Balance.INVESTMENT_ORDER, Balance.SHOP_INVESTMENT_OFFERS, [])
 	return {"ok": true, "reason": ""}
 
 
@@ -203,7 +219,7 @@ func _start_bill() -> void:
 	# Golpe do WhatsApp (fatura de Janeiro): um esquema aleatório fica desativado nesta conta.
 	if boss_id() == "janeiro_impostos" and not active.is_empty():
 		active.remove_at(_rand_int(active.size()))
-	bill = BillRound.new(Balance.MONTHS[month_index][bill_key()], boss_id(), _rng, active, cunhado_bonus)
+	bill = BillRound.new(Balance.MONTHS[month_index][bill_key()], boss_id(), _rng, active, cunhado_bonus, levels)
 
 
 ## Pirâmide: a cada mês, 1 em PIRAMIDE_ODDS chance de colapsar (sai da lista).
@@ -221,10 +237,10 @@ func _check_shop(index: int, offer: Array) -> Dictionary:
 	return {}
 
 
-## Sorteia `count` esquemas distintos que não estejam em `exclude`.
-func _random_schemes(count: int, exclude: Array) -> Array:
+## Sorteia até `count` ids distintos de `pool` que não estejam em `exclude`.
+func _random_ids(pool_all: Array, count: int, exclude: Array) -> Array:
 	var pool: Array = []
-	for id in Balance.SCHEME_ORDER:
+	for id in pool_all:
 		if not exclude.has(id):
 			pool.append(id)
 	# Embaralha (Fisher–Yates com o mesmo RNG da partida).

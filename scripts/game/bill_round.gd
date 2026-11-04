@@ -18,16 +18,18 @@ var state: String = PLAYING
 var boss: String = Boss.NONE  # id do chefe desta conta ("" = conta comum)
 var schemes: Array = []       # esquemas ativos nesta conta (ids)
 var cunhado_bonus: int = 0    # Juros acumulado do Cunhado (vem da partida)
+var levels: Dictionary = {}   # níveis dos investimentos, {transação: nível} (vem da partida)
 
 var _rng: RandomNumberGenerator
 var _relampago_used := false  # Relâmpago Errado só duplica uma vez por conta
 
 
-func _init(p_goal: int, p_boss: String = Boss.NONE, rng: RandomNumberGenerator = null, p_schemes: Array = [], p_cunhado: int = 0) -> void:
+func _init(p_goal: int, p_boss: String = Boss.NONE, rng: RandomNumberGenerator = null, p_schemes: Array = [], p_cunhado: int = 0, p_levels: Dictionary = {}) -> void:
 	goal = p_goal
 	boss = p_boss
 	schemes = p_schemes.duplicate()
 	cunhado_bonus = p_cunhado
+	levels = p_levels.duplicate()
 	_rng = rng
 	deck = Deck.new(rng)
 	_refill()
@@ -66,6 +68,7 @@ func pay() -> Dictionary:
 		"played": played.size(),
 		"hand_points": _hand_points_left(played),
 		"cunhado_bonus": cunhado_bonus,
+		"levels": levels,
 		"rifa": _roll_rifa(),
 	}
 	var score := Scorer.score(HandEvaluator.evaluate(scoring), fx)

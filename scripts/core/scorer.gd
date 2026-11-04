@@ -11,7 +11,11 @@ extends RefCounted
 ##   hand_points: pontos das notas que ficaram na mão (Vaquinha)
 ##   cunhado_bonus: Juros acumulado do Cunhado Investidor
 ##   rifa: se a Rifa do Bairro sorteou (decidido por quem chama)
+##   levels: {transação: nível} dos investimentos (Poupança, Tesouro, Cripto)
 
+## Eventos (para a animação, em ordem): base (com Juros base), note (uma por nota que pontua),
+## invest (soma do investimento), scheme (uma por esquema), juros (Juros final), total.
+## Somando Valor e Juros desses eventos na ordem, chega-se ao total.
 static func score(evaluation: Dictionary, fx: Dictionary = {}) -> Dictionary:
 	var kind: String = evaluation["kind"]
 	var events: Array = []
@@ -24,7 +28,7 @@ static func score(evaluation: Dictionary, fx: Dictionary = {}) -> Dictionary:
 	var base: int = tx["base"]
 	var juros: int = tx["juros"]
 
-	events.append({"type": "base", "amount": base})
+	events.append({"type": "base", "amount": base, "juros": juros})
 
 	var points := 0
 	var cards: Array = evaluation["cards"]
@@ -33,11 +37,16 @@ static func score(evaluation: Dictionary, fx: Dictionary = {}) -> Dictionary:
 		points += pts
 		events.append({"type": "note", "index": i, "amount": pts})
 
-	# Esquemas: somas (Valor e Juros) primeiro, multiplicações depois.
-	var schemes: Array = fx.get("schemes", [])
-	var value_add := 0
-	var juros_add := 0
+	# Somas (Valor e Juros) primeiro: nível de investimento desta transação.
+	var levels: Dictionary = fx.get("levels", {})
+	var inv := Investments.level_effect(kind, int(levels.get(kind, 0)))
+	var value_add: int = inv["value"]
+	var juros_add: int = inv["juros"]
 	var mult := 1
+	events.append({"type": "invest", "value": inv["value"], "add": inv["juros"]})
+
+	# Esquemas: somas, depois multiplicações.
+	var schemes: Array = fx.get("schemes", [])
 	for id in schemes:
 		var eff := SchemeRules.score_effect(id, fx)
 		value_add += eff["value"]

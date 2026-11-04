@@ -17,6 +17,8 @@ func _init() -> void:
 	_test_run_state()
 	_test_assets()
 	_test_schemes()
+	_test_investments()
+	_test_score_events()
 
 	print("\n%d verificações, %d falhas" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -329,7 +331,7 @@ func _test_schemes() -> void:
 	shop.bill.goal = 1
 	shop.bill.toggle_select(shop.bill.hand[0])
 	shop.pay()
-	check(shop.next_bill() and shop.shop_offer.size() == Balance.SHOP_OFFERS, "Camelô abre com 2 esquemas à venda")
+	check(shop.next_bill() and shop.shop_offer.size() == Balance.SHOP_OFFERS + Balance.SHOP_INVESTMENT_OFFERS, "Camelô abre com 2 esquemas e 1 investimento")
 	var offer_id: String = shop.shop_offer[0]
 	var price: int = Balance.SCHEMES[offer_id]["price"]
 	var w0 := shop.wallet
@@ -338,13 +340,18 @@ func _test_schemes() -> void:
 	var w1 := shop.wallet
 	check(shop.haggle()["ok"] and shop.wallet == w1 - Balance.HAGGLE_COST, "pechinchar custa R$ 2")
 
-	shop.wallet = Balance.OVERDRAFT_LIMIT + price
+	# Preço da oferta atual (a pechincha pode ter trocado a oferta).
+	var cur_price: int = shop.price_of(shop.shop_offer[0])
+	shop.wallet = Balance.OVERDRAFT_LIMIT + cur_price
 	check(shop.buy(0)["ok"] and shop.wallet == Balance.OVERDRAFT_LIMIT, "compra pode usar o cheque especial até -R$ 10")
-	shop.wallet = Balance.OVERDRAFT_LIMIT + price - 1
+	shop.shop_offer = ["agiota", "cunhado", "poupanca"]
+	cur_price = shop.price_of(shop.shop_offer[0])
+	shop.wallet = Balance.OVERDRAFT_LIMIT + cur_price - 1
 	check(shop.buy(0)["reason"] == "no_money", "compra recusada abaixo de -R$ 10")
 
 	shop.wallet = 100
 	shop.schemes = ["agiota", "cunhado", "coach", "piramide", "rifa"]
+	shop.shop_offer = ["vaquinha"]
 	check(shop.buy(0)["reason"] == "slots_full", "no máximo 5 esquemas ativos")
 
 
@@ -366,4 +373,65 @@ func _count_rel10(bill: BillRound) -> int:
 			if c.value == 10 and c.suit == Note.Suit.RELAMPAGO:
 				total += 1
 	return total
+
+
+## A animação soma Valor e Juros pelos eventos: o resultado tem que bater com o total.
+func _test_score_events() -> void:
+	print("\n-- eventos da pontuação --")
+	var cards := [n(10, Note.Suit.DINHEIRO), n(10, Note.Suit.CREDITO)]
+	var fx := {"schemes": ["agiota", "cunhado"], "levels": {"dobradinha": 2}, "cunhado_bonus": 1}
+	var s := Scorer.score({"kind": "dobradinha", "cards": cards}, fx)
+	var value := 0
+	var juros := 0
+	var mult := 1
+	for ev in s["events"]:
+		match ev["type"]:
+			"base":
+				value = ev["amount"]
+				juros = ev["juros"]
+			"note", "invest":
+				value += ev["amount"] if ev["type"] == "note" else ev["value"]
+				juros += 0 if ev["type"] == "note" else ev["add"]
+			"scheme":
+				value += ev["value"]
+				juros += ev["add"]
+				mult *= ev["mult"]
+	check(juros == s["juros"], "eventos somam o Juros final")
+	check(value * juros * mult == s["total"], "eventos somam o total")
+
+
+func _test_investments() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+
+	# Níveis somam Valor e Juros só na transação do investimento.
+	var pair := [n(10), n(10, Note.Suit.DEBITO)]  # Dobradinha de 10: (10 + 12) × 2 = 44
+	check(Scorer.score(HandEvaluator.evaluate(pair), {"levels": {"dobradinha": 1}})["total"] == 96, "Poupança nível 1: (10+12+10) × 3 = 96")
+	check(Scorer.score(HandEvaluator.evaluate(pair), {"levels": {"escadinha": 1}})["total"] == 44, "nível de outra transação não muda a Dobradinha")
+
+	var esc := [n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.RELAMPAGO)]  # Escadinha: (30+23) × 4 = 212
+	check(Scorer.score(HandEvaluator.evaluate(esc), {"levels": {"escadinha": 1}})["total"] == 365, "Tesouro nível 1: (30+23+20) × 5 = 365")
+
+	var flush := [n(1, Note.Suit.DEBITO), n(2, Note.Suit.DEBITO), n(5, Note.Suit.DEBITO), n(10, Note.Suit.DEBITO), n(20, Note.Suit.DEBITO)]
+	check(Scorer.score(HandEvaluator.evaluate(flush), {"levels": {"tudo_no_relampago": 1}})["total"] == 498, "Cripto nível 1: (35+23+25) × 6 = 498")
+
+	check(Investments.level_effect("nenhuma", 3) == {"value": 0, "juros": 0}, "transação sem investimento não ganha nada")
+
+	# Compra e queda do Cripto.
+	check(Investments.level_after_purchase("poupanca", 2, true) == 3, "Poupança sempre sobe")
+	check(Investments.level_after_purchase("cripto", 2, false) == 3, "Cripto sem sorteio sobe")
+	check(Investments.level_after_purchase("cripto", 2, true) == 1, "Cripto sorteado cai um nível")
+	check(Investments.level_after_purchase("cripto", 0, true) == 0, "nível não fica abaixo de zero")
+
+	# Comprar no Camelô aumenta o nível da transação.
+	var shop := RunState.new(rng)
+	shop.bill.goal = 1
+	shop.bill.toggle_select(shop.bill.hand[0])
+	shop.pay()
+	shop.next_bill()
+	shop.shop_offer = ["poupanca"]
+	shop.wallet = 20
+	var r := shop.buy(0)
+	check(r["ok"] and shop.levels.get("dobradinha", 0) == 1 and shop.wallet == 17, "comprar Poupança sobe Dobradinha e cobra R$ 3")
+	check(shop.shop_offer.is_empty(), "investimento comprado sai da oferta")
 
