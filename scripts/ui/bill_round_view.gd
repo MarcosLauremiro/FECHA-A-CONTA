@@ -17,6 +17,11 @@ const BIG_RECEIPT_RATIO := 5     # saldo acima de 5× a meta: comprovante gigant
 const BIG_RECEIPT_SCALE := 2.2
 const RECEIPT_POS := Vector2(520, 60)
 const HIGHLIGHT := Color("FFE066")
+const FLY_TIME := 0.35  # cartas indo para a máquina ao pagar
+
+# Números do caixa, na ordem da linha de cima (cada um vira um bloco com nome e valor).
+const STAT_ORDER := ["carteira", "meta", "saldo", "dias", "trocas"]
+const STAT_CAPTIONS := {"carteira": "CARTEIRA", "meta": "META", "saldo": "SALDO", "dias": "DIAS", "trocas": "TROCAS"}
 
 # Janela vazada da moldura (A1) e área da mão embaixo, sobre a bancada.
 const SCREEN := Rect2(240, 60, 800, 360)
@@ -91,10 +96,11 @@ var run: RunState
 var _game_root: Control
 var _screen: Control
 var _header: Label
+var _stats: HBoxContainer
+var _stat_values: Dictionary = {}  # {carteira/meta/saldo/dias/trocas: Label com o valor}
 var _boss_text: Label
 var _boss_art: TextureRect
 var _boss_stamp_text: Label
-var _info: Label
 var _levels: Label
 var _message: Label
 var _strip_slots: Array = []   # [{"slot", "empty", "card"}] por espaço de esquema
@@ -110,9 +116,10 @@ var _receipt_label: Label
 
 # Interface do Camelô (escondida na partida).
 var _shop_root: Control
-var _shop_header: Label
+var _shop_wallet: Label
+var _shop_cheque: Label
 var _shop_message: Label
-var _shop_levels: Label
+var _shop_levels_row: HBoxContainer
 var _shop_offers: Array = []   # [{"card", "plate", "price", "text", "buy"}] por oferta
 var _shop_owned: Array = []    # [{"thumb", "sell"}] por esquema que você tem
 var _haggle_button: Button
@@ -248,24 +255,48 @@ func _build_screen_content(root: Control) -> void:
 	_screen.size = SCREEN.size - Vector2(32, 32)
 	root.add_child(_screen)
 
-	var column := VBoxContainer.new()
-	column.size = Vector2(600, 184)
-	column.add_theme_constant_override("separation", 6)
-	_screen.add_child(column)
-
-	_header = _terminal_label(34)
+	# Cabeçalho: nome da conta. Abaixo, uma linha de blocos com carteira, meta, saldo, dias e trocas.
+	_header = _terminal_label(32)
 	_header.add_theme_font_override("font", _font(FONT_TITLE))
-	column.add_child(_header)
-	_boss_text = _terminal_label(20)
-	_boss_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(_boss_text)
-	_info = _terminal_label(26)
-	column.add_child(_info)
-	_levels = _terminal_label(22)
-	column.add_child(_levels)
-	_message = _terminal_label(28)
+	_header.position = Vector2(0, 0)
+	_header.size = Vector2(620, 40)
+	_screen.add_child(_header)
+
+	_stats = HBoxContainer.new()
+	_stats.position = Vector2(0, 44)
+	_stats.size = Vector2(620, 58)
+	_stats.add_theme_constant_override("separation", 10)
+	_screen.add_child(_stats)
+	for key in STAT_ORDER:
+		var block := VBoxContainer.new()
+		block.custom_minimum_size = Vector2(116, 58)
+		var caption := _terminal_label(16)
+		caption.text = STAT_CAPTIONS[key]
+		caption.add_theme_color_override("font_color", Color(TERMINAL_TEXT, 0.6))
+		block.add_child(caption)
+		var value := _terminal_label(34)
+		block.add_child(value)
+		_stats.add_child(block)
+		_stat_values[key] = value
+
+	# Mensagem da jogada (uma linha), depois os níveis dos investimentos.
+	_message = _terminal_label(26)
+	_message.position = Vector2(0, 108)
+	_message.size = Vector2(620, 30)
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	column.add_child(_message)
+	_screen.add_child(_message)
+
+	_levels = _terminal_label(22)
+	_levels.position = Vector2(0, 140)
+	_levels.size = Vector2(620, 26)
+	_screen.add_child(_levels)
+
+	# Descrição do chefe no canto direito, ao lado da faixa de esquemas.
+	_boss_text = _terminal_label(18)
+	_boss_text.position = Vector2(530, 186)
+	_boss_text.size = Vector2(238, 140)
+	_boss_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_screen.add_child(_boss_text)
 
 	# Imagem do chefe no canto direito da tela, só quando a fatura está ativa.
 	_boss_art = _texture_rect("", Rect2(_screen.size.x - 120, 0, 120, 120), _screen)
@@ -339,12 +370,33 @@ func _build_shop(root: Control) -> void:
 	ribbon.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(ribbon)
 
-	_shop_header = _shop_label(Rect2(32, 28, 1216, 40), 32, true)
-	root.add_child(_shop_header)
-	_shop_message = _shop_label(Rect2(32, 72, 1216, 30), 24, false)
+	# Topo: título e as plaquinhas de carteira e cheque especial.
+	var top := HBoxContainer.new()
+	top.position = Vector2(32, 26)
+	top.size = Vector2(1216, 48)
+	top.add_theme_constant_override("separation", 14)
+	top.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(top)
+	var title := _shop_label(Rect2(0, 0, 200, 48), 40, true)
+	title.text = "CAMELÔ"
+	top.add_child(title)
+	var wallet_chip := _chip(30, BUTTON_PAPER)
+	_shop_wallet = _chip_label(wallet_chip)
+	top.add_child(wallet_chip)
+	var cheque_chip := _chip(20, BUTTON_PAPER_DOWN)
+	_shop_cheque = _chip_label(cheque_chip)
+	top.add_child(cheque_chip)
+
+	_shop_message = _shop_label(Rect2(32, 80, 1216, 28), 24, false)
 	root.add_child(_shop_message)
-	_shop_levels = _shop_label(Rect2(32, 104, 1216, 30), 22, false)
-	root.add_child(_shop_levels)
+
+	# Níveis dos investimentos: uma plaquinha por transação com nível.
+	_shop_levels_row = HBoxContainer.new()
+	_shop_levels_row.position = Vector2(32, 112)
+	_shop_levels_row.size = Vector2(1216, 30)
+	_shop_levels_row.add_theme_constant_override("separation", 8)
+	_shop_levels_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(_shop_levels_row)
 
 	# Ofertas: esquemas (cartaz) e investimentos (ícone), cada uma com preço e compra.
 	for i in range(Balance.SHOP_OFFERS + Balance.SHOP_INVESTMENT_OFFERS):
@@ -360,15 +412,16 @@ func _build_shop(root: Control) -> void:
 		price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price.add_theme_color_override("font_color", INK)
 		root.add_child(price)
-		# Etiqueta de papel colada sobre o cartaz; o texto fica em cima dela.
+		# Nome do esquema numa linha só, em etiqueta de papel colada sobre o cartaz.
 		var tag := Panel.new()
 		tag.add_theme_stylebox_override("panel", _tag_box())
-		tag.position = Vector2(x + 8, 212)
-		tag.size = Vector2(184, 62)
+		tag.position = Vector2(x + 8, 216)
+		tag.size = Vector2(184, 26)
 		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		root.add_child(tag)
-		var text := _shop_label(Rect2(x + 12, 214, 176, 58), 15, true)
-		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		var text := _shop_label(Rect2(x + 10, 218, 180, 22), 14, true)
+		text.autowrap_mode = TextServer.AUTOWRAP_OFF
+		text.clip_text = true
 		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		text.add_theme_color_override("font_color", INK)
 		root.add_child(text)
@@ -404,8 +457,10 @@ func _shop_label(rect: Rect2, font_size: int, title_font: bool) -> Label:
 
 
 func _refresh_shop() -> void:
-	_shop_header.text = "CAMELÔ   ·   Carteira R$ %d   ·   Cheque especial até R$ %d" % [run.wallet, -Balance.OVERDRAFT_LIMIT]
-	_shop_levels.text = "Níveis: " + _levels_text()
+	_shop_wallet.text = "CARTEIRA R$ %d" % run.wallet
+	_shop_wallet.add_theme_color_override("font_color", WARN if run.wallet < 0 else INK)
+	_shop_cheque.text = "CHEQUE ESPECIAL ATÉ R$ %d" % -Balance.OVERDRAFT_LIMIT
+	_refresh_shop_levels()
 
 	for i in range(_shop_offers.size()):
 		var o: Dictionary = _shop_offers[i]
@@ -418,8 +473,8 @@ func _refresh_shop() -> void:
 		var info: Dictionary = Balance.INVESTMENTS[id] if Investments.is_investment(id) else Balance.SCHEMES[id]
 		var is_inv := Investments.is_investment(id)
 		# Nome do investimento fica abaixo do ícone; o texto do cartaz fica na etiqueta de papel.
-		o["text"].position = Vector2(o["text"].position.x, 296.0 if is_inv else 214.0)
-		o["tag"].position = Vector2(o["tag"].position.x, 212.0)
+		o["text"].position = Vector2(o["text"].position.x, 296.0 if is_inv else 218.0)
+		o["tag"].position = Vector2(o["tag"].position.x, 216.0)
 		o["tag"].visible = not is_inv
 		o["card"].visible = not is_inv
 		o["icon"].visible = is_inv
@@ -432,7 +487,7 @@ func _refresh_shop() -> void:
 			o["card"].texture = _tex("res://art/esquemas/cartaz_%s.png" % id)
 			o["card"].tooltip_text = "%s
 %s" % [info["name"], info["desc"]]
-			o["text"].text = info["text"]
+			o["text"].text = info["name"]
 		var price := run.price_of(id)
 		o["price"].text = "R$ %d" % price
 		o["buy"].text = "COMPRAR R$ %d" % price
@@ -454,6 +509,48 @@ func _refresh_shop() -> void:
 
 	_haggle_button.text = "PECHINCHAR R$ %d" % Balance.HAGGLE_COST
 	_haggle_button.disabled = run.wallet - Balance.HAGGLE_COST < Balance.OVERDRAFT_LIMIT
+
+
+## Plaquinha de papel com texto (carteira, cheque, níveis). Devolve o painel; o texto é o filho.
+func _chip(font_size: int, bg: Color) -> PanelContainer:
+	var panel := PanelContainer.new()
+	var box := _tag_box()
+	box.bg_color = bg
+	box.set_content_margin_all(4)
+	box.content_margin_left = 14
+	box.content_margin_right = 14
+	panel.add_theme_stylebox_override("panel", box)
+	panel.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	var label := Label.new()
+	label.add_theme_font_override("font", _font(FONT_TITLE))
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", INK)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	panel.add_child(label)
+	return panel
+
+
+func _chip_label(panel: PanelContainer) -> Label:
+	return panel.get_child(0) as Label
+
+
+## Uma plaquinha por investimento com nível (ex.: "DOBRADINHA x2"). Sem nível, uma frase.
+func _refresh_shop_levels() -> void:
+	for child in _shop_levels_row.get_children():
+		child.queue_free()
+	var any := false
+	for kind in Balance.TRANSACTIONS:
+		var lvl: int = run.levels.get(kind, 0)
+		if lvl <= 0:
+			continue
+		any = true
+		var chip := _chip(18, BUTTON_PAPER_DOWN)
+		_chip_label(chip).text = "%s x%d" % [Balance.TRANSACTIONS[kind]["name"].to_upper(), lvl]
+		_shop_levels_row.add_child(chip)
+	if not any:
+		var none := _shop_label(Rect2(0, 0, 400, 30), 22, false)
+		none.text = "Nenhum investimento ainda"
+		_shop_levels_row.add_child(none)
 
 
 ## Níveis atuais dos investimentos, em nomes de transação (ex.: "Dobradinha 1 · Escadinha 0").
@@ -540,8 +637,12 @@ func _update_status() -> void:
 	var over := run.state == RunState.WON or run.state == RunState.LOST
 	var paid := run.state == RunState.BILL_PAID
 
-	_header.text = "%s   ·   Carteira R$ %d" % [run.bill_title(), run.wallet]
-	_header.add_theme_color_override("font_color", WARN if run.wallet < 0 else TERMINAL_TEXT)
+	_header.text = run.bill_title()
+	_set_stat("carteira", "R$ %d" % run.wallet, WARN if run.wallet < 0 else TERMINAL_TEXT)
+	_set_stat("meta", "R$ %d" % bill.goal, TERMINAL_TEXT)
+	_set_stat("saldo", "R$ %d" % bill.saldo, TERMINAL_TEXT)
+	_set_stat("dias", str(bill.days_left), TERMINAL_TEXT)
+	_set_stat("trocas", str(bill.swaps_left), TERMINAL_TEXT)
 
 	var boss_id := run.boss_id()
 	# Com o comprovante por cima, a tela mostra só a mensagem (o comprovante já traz os números).
@@ -553,10 +654,9 @@ func _update_status() -> void:
 		_boss_art.texture = _tex(BOSS_ART[boss_id])
 		_boss_stamp_text.text = BOSS_STAMP.get(boss_id, "")
 
-	_info.text = _info_text(bill.saldo)
-
-	_levels.text = "Níveis: " + _levels_text()
-	_levels.visible = not paid  # o comprovante cobre esse canto da tela
+	var levels_text := _levels_text()
+	_levels.text = "Níveis: " + levels_text
+	_levels.visible = not paid and levels_text != "nenhum investimento ainda"
 	_set_key_enabled(_pay_key, playing)
 	_set_key_enabled(_swap_key, playing)
 	_hand_area.visible = playing
@@ -564,7 +664,7 @@ func _update_status() -> void:
 	_next_button.visible = paid
 	_receipt.visible = paid
 	_header.visible = not paid
-	_info.visible = not paid
+	_stats.visible = not paid
 	_end_stamp.visible = over
 	if over:
 		_end_stamp.texture = _tex(TEX_END_OK if run.state == RunState.WON else TEX_END_BAD)
@@ -680,9 +780,10 @@ func _on_pay_pressed() -> void:
 		return
 
 	_busy = true
+	_fly_played(played)
 	_message.text = "AGUARDE… PROCESSANDO"
 	await get_tree().create_timer(PROCESSING_TIME).timeout
-	await _play_score(score, played)
+	await _play_score(score)
 	_busy = false
 	_refresh()
 	if run.state == RunState.BILL_PAID:
@@ -690,17 +791,11 @@ func _on_pay_pressed() -> void:
 
 
 ## Percorre a lista de eventos do Scorer: notas pulam, cartaz balança, Juros aparece, total cai no saldo.
-func _play_score(score: Dictionary, played: Array) -> void:
+func _play_score(score: Dictionary) -> void:
 	var tx_name: String = Balance.TRANSACTIONS[score["kind"]]["name"]
-	var played_buttons: Array = []
-	for note in played:
-		if _cards.has(note):
-			played_buttons.append(_cards[note])
-
 	var value := 0
 	var juros := 0
 	var mult := 1
-	var note_index := 0
 	var total: int = score["total"]
 	var tax: int = score["tax"]
 	for ev in score["events"]:
@@ -710,9 +805,7 @@ func _play_score(score: Dictionary, played: Array) -> void:
 				juros = ev["juros"]
 			"note":
 				value += ev["amount"]
-				if note_index < played_buttons.size():
-					_pop_card(played_buttons[note_index], ev["amount"])
-				note_index += 1
+				_pop_points(ev["amount"])
 			"invest":
 				value += ev["value"]
 				juros += ev["add"]
@@ -743,25 +836,36 @@ func _playback_line(tx_name: String, value: int, juros: int, mult: int) -> Strin
 	return line
 
 
-## Nota que pontua: pula e solta o ponto em amarelo.
-func _pop_card(btn: BaseButton, points: int) -> void:
-	btn.pivot_offset = btn.size / 2.0
-	var tween := create_tween()
-	tween.tween_property(btn, "scale", Vector2(1.12, 1.12), 0.08)
-	tween.tween_property(btn, "scale", Vector2.ONE, 0.12)
+## As cartas jogadas voam para a tela da máquina e somem (a conta é mostrada depois, na própria tela).
+func _fly_played(played: Array) -> void:
+	var target := _screen.get_global_rect().get_center()
+	for i in range(played.size()):
+		if not _cards.has(played[i]):
+			continue
+		var btn: BaseButton = _cards[played[i]]
+		btn.pivot_offset = btn.size / 2.0
+		var delay := i * 0.06
+		var tween := create_tween().set_parallel(true)
+		tween.tween_property(btn, "global_position", target - btn.size / 2.0, FLY_TIME) \
+			.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+		tween.tween_property(btn, "scale", Vector2(0.4, 0.4), FLY_TIME).set_delay(delay)
+		tween.tween_property(btn, "modulate:a", 0.0, FLY_TIME * 0.5).set_delay(delay + FLY_TIME * 0.5)
 
-	var label := _terminal_label(30)
+
+## Pontos de uma nota: sobem da tela da máquina em amarelo e somem.
+func _pop_points(points: int) -> void:
+	var label := _terminal_label(40)
 	label.text = "+%d" % points
 	label.add_theme_color_override("font_color", HIGHLIGHT)
 	label.add_theme_color_override("font_outline_color", INK)
 	label.add_theme_constant_override("outline_size", 6)
-	label.position = Vector2(0, -30)
+	label.position = Vector2(randf_range(120.0, 320.0), 196.0)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	btn.get_parent().add_child(label)
-	var fade := create_tween()
-	fade.tween_property(label, "position:y", -80.0, 0.5)
-	fade.parallel().tween_property(label, "modulate:a", 0.0, 0.5)
-	fade.tween_callback(label.queue_free)
+	_screen.add_child(label)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(label, "position:y", 110.0, 0.6)
+	tween.tween_property(label, "modulate:a", 0.0, 0.6).set_delay(0.2)
+	tween.finished.connect(label.queue_free)
 
 
 ## Cartaz do esquema balança (índice na faixa = índice em run.schemes).
@@ -780,7 +884,7 @@ func _sway_scheme(id: String) -> void:
 ## Saldo sobe de `from` até `to` (contagem da caixa registradora).
 func _count_saldo(from: int, to: int) -> void:
 	var tween := create_tween()
-	tween.tween_method(func(v: float) -> void: _info.text = _info_text(v), float(from), float(to), 0.5)
+	tween.tween_method(func(v: float) -> void: _stat_values["saldo"].text = "R$ %d" % int(v), float(from), float(to), 0.5)
 	await tween.finished
 
 
@@ -813,11 +917,9 @@ func _print_receipt(big: bool) -> void:
 			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
-func _info_text(saldo: float) -> String:
-	var bill := run.bill
-	return "Meta R$ %d   ·   Saldo R$ %d   ·   Dias %d   ·   Trocas %d" % [
-		bill.goal, int(saldo), bill.days_left, bill.swaps_left,
-	]
+func _set_stat(key: String, text: String, color: Color) -> void:
+	_stat_values[key].text = text
+	_stat_values[key].add_theme_color_override("font_color", color)
 
 
 func _on_swap_pressed() -> void:
@@ -863,6 +965,13 @@ func _make_theme() -> Theme:
 	t.set_stylebox("pressed", "Button", _button_box(BUTTON_PAPER_DOWN, INK, 0, 3))
 	t.set_stylebox("disabled", "Button", _button_box(BUTTON_DISABLED, BUTTON_DISABLED_INK, 0, 0))
 	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
+	# Dica ao passar o mouse: papel e texto escuro, legível sobre qualquer fundo.
+	var tip := _tag_box()
+	tip.set_content_margin_all(8)
+	t.set_stylebox("panel", "TooltipPanel", tip)
+	t.set_color("font_color", "TooltipLabel", INK)
+	t.set_font("font", "TooltipLabel", _font(FONT_TERMINAL))
+	t.set_font_size("font_size", "TooltipLabel", 22)
 	return t
 
 
@@ -895,7 +1004,7 @@ func _button_box(bg: Color, border: Color, shadow: int, press_offset: int) -> St
 
 ## Tela "Como jogar": a arte traz só a tabela desenhada; título e células são escritos por cima, à mão.
 func _build_howto_text() -> void:
-	_howto.add_child(_hand_label(Rect2(0, 96, 1280, 70), "COMO JOGAR", 56, HAND_INK, HORIZONTAL_ALIGNMENT_CENTER))
+	_howto.add_child(_hand_label(Rect2(0, 34, 1280, 70), "COMO JOGAR", 56, HAND_INK, HORIZONTAL_ALIGNMENT_CENTER))
 
 	var cell_x := [140, 470, 760, 950]
 	var cell_w := [330, 290, 190, 190]
