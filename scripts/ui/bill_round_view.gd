@@ -126,6 +126,9 @@ var _haggle_button: Button
 var _leave_button: Button
 
 var _title: TextureButton
+var _sfx: Sfx                  # sons e música (ver scripts/ui/sfx.gd)
+var _boss_stamp_key := ""      # última fatura com carimbo tocado
+var _end_stamp_played := false
 var _title_extras: Array = []  # textos e botões do título (somem ao começar)
 var _howto: TextureButton      # tela "Como jogar" (clique fecha)
 
@@ -148,6 +151,8 @@ func _unhandled_input(event: InputEvent) -> void:
 
 
 func _build_ui() -> void:
+	_sfx = Sfx.new()
+	add_child(_sfx)
 	# Tema do jogo inteiro: VT323 como fonte padrão (terminal, comprovante).
 	theme = _make_theme()
 
@@ -565,24 +570,30 @@ func _levels_text() -> String:
 
 func _on_buy_pressed(index: int) -> void:
 	var result := run.buy(index)
+	_sfx.play("fita" if result["ok"] else "erro")
 	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
 	_refresh()
 
 
 func _on_sell_pressed(index: int) -> void:
 	var result := run.sell(index)
+	_sfx.play("rasgar" if result["ok"] else "erro")
 	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
 	_refresh()
 
 
 func _on_haggle_pressed() -> void:
 	var result := run.haggle()
+	_sfx.play("papel" if result["ok"] else "erro")
 	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
 	_refresh()
 
 
 func _on_leave_shop_pressed() -> void:
+	var piramides_before := run.schemes.count("piramide")
 	run.leave_shop()
+	if run.schemes.count("piramide") < piramides_before:
+		_sfx.play("rasgar")  # pirâmide colapsou ao começar o mês
 	_shop_message.text = ""
 	_refresh()
 
@@ -600,6 +611,7 @@ func _shop_refusal(reason: String) -> String:
 
 func _on_title_pressed() -> void:
 	_title.visible = false
+	_sfx.play_music()
 	for node in _title_extras:
 		node.visible = false
 	_start_run()
@@ -612,6 +624,8 @@ func _on_howto_pressed() -> void:
 func _start_run() -> void:
 	run = RunState.new()
 	_message.text = "INSIRA SUAS NOTAS"
+	_boss_stamp_key = ""
+	_end_stamp_played = false
 	_shop_message.text = ""
 	_restart_button.visible = false
 	_refresh()
@@ -666,6 +680,14 @@ func _update_status() -> void:
 	_header.visible = not paid
 	_stats.visible = not paid
 	_end_stamp.visible = over
+	# Carimbos: a fatura com chefe e o fim da partida batem uma vez cada.
+	var stamp_key := "%d-%d" % [run.month_index, run.bill_index]
+	if show_boss and _boss_stamp_key != stamp_key:
+		_boss_stamp_key = stamp_key
+		_sfx.play("carimbo")
+	if over and not _end_stamp_played:
+		_end_stamp_played = true
+		_sfx.play("carimbo")
 	if over:
 		_end_stamp.texture = _tex(TEX_END_OK if run.state == RunState.WON else TEX_END_BAD)
 
@@ -759,6 +781,7 @@ func _on_card_pressed(note: Note) -> void:
 	if _busy:
 		return
 	run.bill.toggle_select(note)
+	_sfx.play("bipe_tecla")
 	var selected: bool = run.bill.selected.has(note)
 	if _cards.has(note):
 		_lift(_cards[note], selected)
@@ -770,8 +793,10 @@ func _on_pay_pressed() -> void:
 		return
 	# A regra roda já; a tela só mostra o resultado depois da animação.
 	var played: Array = run.bill.selected.duplicate()
+	_sfx.play("bipe_tecla")
 	var result := run.pay()
 	if not result["ok"]:
+		_sfx.play("erro")
 		_message.text = _refusal_text(result["reason"])
 		return
 	var score: Dictionary = result["score"]
@@ -780,6 +805,8 @@ func _on_pay_pressed() -> void:
 		return
 
 	_busy = true
+	if int(result.get("cash", 0)) > 0:
+		_sfx.play("relampago")  # cashback: dinheiro voltando na carteira
 	_fly_played(played)
 	_message.text = "AGUARDE… PROCESSANDO"
 	await get_tree().create_timer(PROCESSING_TIME).timeout
@@ -796,6 +823,7 @@ func _play_score(score: Dictionary) -> void:
 	var value := 0
 	var juros := 0
 	var mult := 1
+	var note_index := 0
 	var total: int = score["total"]
 	var tax: int = score["tax"]
 	for ev in score["events"]:
@@ -806,6 +834,9 @@ func _play_score(score: Dictionary) -> void:
 			"note":
 				value += ev["amount"]
 				_pop_points(ev["amount"])
+				# Bipe que sobe em 5 alturas, uma por nota.
+				_sfx.play("bipe_subindo", 1.0 + 0.125 * (note_index % 5))
+				note_index += 1
 			"invest":
 				value += ev["value"]
 				juros += ev["add"]
@@ -816,6 +847,7 @@ func _play_score(score: Dictionary) -> void:
 				_sway_scheme(ev["id"])
 			"juros":
 				juros = ev["value"]
+				_sfx.play("maquininha")
 			"total":
 				pass  # o total é mostrado depois do laço
 		if ev["type"] != "total":
@@ -826,6 +858,8 @@ func _play_score(score: Dictionary) -> void:
 	if tax > 0:
 		_message.text += "   (Leão da Receita: -%d)" % tax
 	_shake(clampf(float(total) / maxf(1.0, run.bill.goal) * 4.0, 0.0, SHAKE_MAX))
+	if total > run.bill.goal * BIG_RECEIPT_RATIO:
+		_sfx.play("plateia")
 	await _count_saldo(run.bill.saldo - (total - tax), run.bill.saldo)
 
 
@@ -884,6 +918,7 @@ func _sway_scheme(id: String) -> void:
 ## Saldo sobe de `from` até `to` (contagem da caixa registradora).
 func _count_saldo(from: int, to: int) -> void:
 	var tween := create_tween()
+	_sfx.play("registradora")
 	tween.tween_method(func(v: float) -> void: _stat_values["saldo"].text = "R$ %d" % int(v), float(from), float(to), 0.5)
 	await tween.finished
 
@@ -902,6 +937,11 @@ func _shake(strength: float) -> void:
 
 ## Comprovante sai da impressora (desce); acima de 5× a meta ele chega gigante e treme.
 func _print_receipt(big: bool) -> void:
+	_sfx.play("impressora")
+	if int(run.receipt.get("reward", 0)) > 0:
+		get_tree().create_timer(0.5).timeout.connect(_sfx.play.bind("moedas"))
+	if int(run.receipt.get("troco", 0)) > 0:
+		get_tree().create_timer(0.9).timeout.connect(_sfx.play.bind("relampago"))
 	_receipt.pivot_offset = _receipt.size / 2.0
 	var tween := create_tween()
 	if big:
@@ -926,12 +966,14 @@ func _on_swap_pressed() -> void:
 	if _busy:
 		return
 	var result := run.swap()
+	_sfx.play("papel" if result["ok"] else "erro")
 	_message.text = "" if result["ok"] else _refusal_text(result["reason"])
 	_refresh()
 
 
 func _on_next_pressed() -> void:
 	run.next_bill()
+	_sfx.play("feirante")
 	_message.text = ""
 	_refresh()
 
