@@ -11,6 +11,8 @@ const VALUE_POINTS := {1: 2, 2: 3, 5: 5, 10: 6, 20: 7, 50: 8, 100: 10, 200: 11}
 
 # Formas de pagamento ("naipes"). Índice = valor de Note.suit.
 const SUIT_NAMES: Array = ["Dinheiro", "Relâmpago", "Débito", "Crédito"]
+# Chave usada nos nomes de arquivo das frentes (frente_<valor>_<chave>.png).
+const SUIT_KEYS: Array = ["dinheiro", "relampago", "debito", "credito"]
 
 # Transações: valor base e Juros base (multiplicador inicial).
 const TRANSACTIONS := {

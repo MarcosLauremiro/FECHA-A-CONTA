@@ -15,6 +15,7 @@ func _init() -> void:
 	_test_bill_round()
 	_test_bosses()
 	_test_run_state()
+	_test_assets()
 
 	print("\n%d verificações, %d falhas" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -253,3 +254,15 @@ func _test_run_state() -> void:
 	check(bosses_seen == ["banco_fora_do_ar", "taxa_manutencao", "janeiro_impostos"], "chefes das faturas na ordem (got %s)" % str(bosses_seen))
 	check(full.max_saldo > 0, "saldo máximo do ano registrado")
 	check(not full.next_bill(), "não há próxima conta depois da última")
+
+
+func _test_assets() -> void:
+	# Cada uma das 32 cartas (8 valores × 4 formas) precisa de frente 120×180.
+	for suit in Note.Suit.values():
+		for value in Balance.VALUES:
+			var note := n(value, suit)
+			var path := note.face_path()
+			check(ResourceLoader.exists(path), "frente existe: %s" % path)
+			if ResourceLoader.exists(path):
+				var tex: Texture2D = load(path)
+				check(tex.get_width() == 120 and tex.get_height() == 180, "frente %s tem 120x180" % path)

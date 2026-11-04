@@ -1,6 +1,11 @@
 extends Control
 ## Interface provisória da partida (hora 7–9: "jogável feio"). Toda regra vem de RunState/BillRound.
 
+## Quanto a cédula sobe quando selecionada (px).
+const LIFT := 24
+const CARD_SIZE := Vector2(120, 180)
+const LIFT_TIME := 0.12
+
 var run: RunState
 
 var _header: Label
@@ -12,6 +17,9 @@ var _pay_button: Button
 var _swap_button: Button
 var _next_button: Button
 var _restart_button: Button
+
+# Note -> botão da carta (dentro do wrapper que cuida do espaço da mão).
+var _cards: Dictionary = {}
 
 
 func _ready() -> void:
@@ -83,6 +91,12 @@ func _start_run() -> void:
 
 
 func _refresh() -> void:
+	_update_status()
+	_rebuild_hand()
+
+
+## Textos, saldo e botões. Não mexe na mão (para a animação de seleção não ser interrompida).
+func _update_status() -> void:
 	var bill := run.bill
 	var playing := run.state == RunState.PLAYING
 
@@ -98,18 +112,6 @@ func _refresh() -> void:
 		bill.goal, bill.saldo, bill.days_left, bill.swaps_left,
 	]
 
-	for child in _hand_box.get_children():
-		child.queue_free()
-	for note in bill.hand:
-		var btn := Button.new()
-		btn.toggle_mode = true
-		btn.custom_minimum_size = Vector2(110, 160)
-		btn.text = "R$ %d\n%s" % [note.value, note.suit_name()]
-		btn.button_pressed = bill.selected.has(note)
-		btn.disabled = not playing
-		btn.pressed.connect(_on_card_pressed.bind(note))
-		_hand_box.add_child(btn)
-
 	_pay_button.visible = playing
 	_swap_button.visible = playing
 	_next_button.visible = run.state == RunState.BILL_PAID
@@ -123,6 +125,58 @@ func _refresh() -> void:
 		_message.text = _receipt_text()
 
 
+## Recria a mão (ao comprar, trocar ou pagar). Cada carta fica num wrapper com espaço para subir.
+func _rebuild_hand() -> void:
+	for child in _hand_box.get_children():
+		child.queue_free()
+	_cards.clear()
+
+	var playing := run.state == RunState.PLAYING
+	for note in run.bill.hand:
+		var wrap := Control.new()
+		wrap.custom_minimum_size = CARD_SIZE + Vector2(0, LIFT)
+		var btn := _card_button(note)
+		btn.size = CARD_SIZE
+		btn.disabled = not playing
+		btn.pressed.connect(_on_card_pressed.bind(note))
+		wrap.add_child(btn)
+		_hand_box.add_child(wrap)
+		_cards[note] = btn
+		btn.position = _lifted_position(run.bill.selected.has(note))
+
+
+## Uma nota da mão: a frente em PNG. Se a arte ainda não existir, cai num botão de texto.
+func _card_button(note: Note) -> BaseButton:
+	var path := note.face_path()
+	if ResourceLoader.exists(path):
+		var card := TextureButton.new()
+		var tex: Texture2D = load(path)
+		card.toggle_mode = true
+		card.ignore_texture_size = true
+		card.stretch_mode = TextureButton.STRETCH_SCALE
+		card.texture_normal = tex
+		card.texture_pressed = tex
+		return card
+
+	var btn := Button.new()
+	btn.toggle_mode = true
+	btn.text = "R$ %d\n%s" % [note.value, note.suit_name()]
+	return btn
+
+
+## Posição da carta dentro do wrapper: selecionada fica no topo, as outras descem LIFT px.
+func _lifted_position(selected: bool) -> Vector2:
+	return Vector2(0, 0 if selected else LIFT)
+
+
+## Sobe ou desce uma carta com animação curta.
+func _lift(btn: BaseButton, selected: bool) -> void:
+	btn.button_pressed = selected
+	var tween := create_tween()
+	tween.tween_property(btn, "position", _lifted_position(selected), LIFT_TIME) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+
+
 func _receipt_text() -> String:
 	var r := run.receipt
 	return "COMPROVANTE · %s\nSaldo R$ %d (meta R$ %d)   ·   Recompensa +R$ %d   ·   Troco +R$ %d   ·   Carteira R$ %d" % [
@@ -132,7 +186,10 @@ func _receipt_text() -> String:
 
 func _on_card_pressed(note: Note) -> void:
 	run.bill.toggle_select(note)
-	_refresh()
+	var selected: bool = run.bill.selected.has(note)
+	if _cards.has(note):
+		_lift(_cards[note], selected)
+	_update_status()
 
 
 func _on_pay_pressed() -> void:

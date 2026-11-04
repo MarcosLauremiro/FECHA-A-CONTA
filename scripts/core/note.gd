@@ -27,5 +27,10 @@ func suit_name() -> String:
 	return Balance.SUIT_NAMES[suit]
 
 
+## Caminho da frente desta nota (nota já com a forma de pagamento impressa).
+func face_path() -> String:
+	return "res://art/notas/frentes/frente_%d_%s.png" % [value, Balance.SUIT_KEYS[suit]]
+
+
 func _to_string() -> String:
 	return "R$%d·%s" % [value, suit_name()]
