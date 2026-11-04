@@ -3,10 +3,16 @@ extends RefCounted
 ## Função pura: calcula o saldo de uma jogada e devolve uma lista de eventos.
 ## A animação (fase de "sensação") só toca essa lista; regra e visual ficam separados.
 ##
-## Saldo = (Valor base + soma dos pontos das notas que pontuam) × Juros
-## Esquemas ainda não entram aqui (virão com o sistema de ganchos, hora 9–12).
+## Saldo = (Valor base + pontos das notas + Valor dos esquemas) × Juros × multiplicadores
+##
+## fx (opcional, todos os campos opcionais):
+##   schemes: Array de ids de esquemas ativos, da esquerda para a direita
+##   played: quantas notas foram jogadas (inclui as que não pontuam)
+##   hand_points: pontos das notas que ficaram na mão (Vaquinha)
+##   cunhado_bonus: Juros acumulado do Cunhado Investidor
+##   rifa: se a Rifa do Bairro sorteou (decidido por quem chama)
 
-static func score(evaluation: Dictionary) -> Dictionary:
+static func score(evaluation: Dictionary, fx: Dictionary = {}) -> Dictionary:
 	var kind: String = evaluation["kind"]
 	var events: Array = []
 
@@ -27,10 +33,22 @@ static func score(evaluation: Dictionary) -> Dictionary:
 		points += pts
 		events.append({"type": "note", "index": i, "amount": pts})
 
-	# Esquemas somariam Juros aqui (antes) e multiplicariam depois.
-	events.append({"type": "juros", "value": juros})
+	# Esquemas: somas (Valor e Juros) primeiro, multiplicações depois.
+	var schemes: Array = fx.get("schemes", [])
+	var value_add := 0
+	var juros_add := 0
+	var mult := 1
+	for id in schemes:
+		var eff := SchemeRules.score_effect(id, fx)
+		value_add += eff["value"]
+		juros_add += eff["add"]
+		mult *= eff["mult"]
+		events.append({"type": "scheme", "id": id, "value": eff["value"], "add": eff["add"], "mult": eff["mult"]})
 
-	var total := (base + points) * juros
+	var juros_final := maxi(0, juros + juros_add)
+	events.append({"type": "juros", "value": juros_final})
+
+	var total := (base + points + value_add) * juros_final * mult
 	events.append({"type": "total", "value": total})
 
-	return {"kind": kind, "base": base, "points": points, "juros": juros, "total": total, "events": events}
+	return {"kind": kind, "base": base, "points": points, "juros": juros_final, "total": total, "events": events}

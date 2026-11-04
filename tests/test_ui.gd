@@ -1,5 +1,5 @@
 extends SceneTree
-## Teste de fumaça da interface: monta a cena principal e confere a mão.
+## Teste de fumaça da interface: monta a cena principal, começa a partida pelo título e confere a mão.
 ##   godot --headless -s res://tests/test_ui.gd
 
 var _frames := 0
@@ -13,7 +13,10 @@ func _initialize() -> void:
 
 func _process(_delta: float) -> bool:
 	_frames += 1
-	if _frames < 2:
+	if _frames == 1:
+		_scene._on_title_pressed()
+		return false
+	if _frames < 3:
 		return false
 
 	var box: HBoxContainer = _scene._hand_box

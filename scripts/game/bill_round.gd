@@ -16,13 +16,18 @@ var swaps_left: int = Balance.SWAPS_PER_BILL
 var saldo: int = 0
 var state: String = PLAYING
 var boss: String = Boss.NONE  # id do chefe desta conta ("" = conta comum)
+var schemes: Array = []       # esquemas ativos nesta conta (ids)
+var cunhado_bonus: int = 0    # Juros acumulado do Cunhado (vem da partida)
 
 var _rng: RandomNumberGenerator
+var _relampago_used := false  # Relâmpago Errado só duplica uma vez por conta
 
 
-func _init(p_goal: int, p_boss: String = Boss.NONE, rng: RandomNumberGenerator = null) -> void:
+func _init(p_goal: int, p_boss: String = Boss.NONE, rng: RandomNumberGenerator = null, p_schemes: Array = [], p_cunhado: int = 0) -> void:
 	goal = p_goal
 	boss = p_boss
+	schemes = p_schemes.duplicate()
+	cunhado_bonus = p_cunhado
 	_rng = rng
 	deck = Deck.new(rng)
 	_refill()
@@ -43,7 +48,8 @@ func toggle_select(note: Note) -> bool:
 
 ## PAGAR: pontua as notas escolhidas e gasta 1 dia.
 ## Notas que o chefe não deixa pontuar saem da conta; o imposto do chefe é descontado do total.
-## Devolve {"ok": bool, "reason": String, "score": Dictionary, "state": String}.
+## Devolve {"ok": bool, "reason": String, "score": Dictionary, "state": String, "cash": int}.
+## "cash" é o dinheiro que a jogada devolve na carteira (Cashback); quem chama soma na carteira.
 func pay() -> Dictionary:
 	var refusal := _check_can_act()
 	if not refusal.is_empty():
@@ -54,10 +60,21 @@ func pay() -> Dictionary:
 	for n in played:
 		if Boss.note_scores(boss, n):
 			scoring.append(n)
-	var score := Scorer.score(HandEvaluator.evaluate(scoring))
+
+	var fx := {
+		"schemes": schemes,
+		"played": played.size(),
+		"hand_points": _hand_points_left(played),
+		"cunhado_bonus": cunhado_bonus,
+		"rifa": _roll_rifa(),
+	}
+	var score := Scorer.score(HandEvaluator.evaluate(scoring), fx)
 	var tax := Boss.play_tax(boss, score["total"])
 	score["tax"] = tax
 	saldo += score["total"] - tax
+
+	var cash := SchemeRules.cash_from_scoring(schemes, scoring)
+	_relampago_copy(played)
 
 	_leave_hand(played)
 	deck.discard(played)
@@ -69,7 +86,7 @@ func pay() -> Dictionary:
 	elif days_left == 0:
 		state = LOST
 
-	return {"ok": true, "reason": "", "score": score, "state": state}
+	return {"ok": true, "reason": "", "score": score, "state": state, "cash": cash}
 
 
 ## TROCAR: descarta as notas escolhidas e compra o mesmo número de novas. Gasta 1 troca.
@@ -111,6 +128,42 @@ func _check_can_act() -> Dictionary:
 	if selected.is_empty():
 		return {"ok": false, "reason": "no_selection", "state": state}
 	return {}
+
+
+## Soma dos pontos das notas que ficaram na mão (Vaquinha). Zero sem o esquema.
+func _hand_points_left(played: Array) -> int:
+	if not schemes.has("vaquinha"):
+		return 0
+	var total := 0
+	for n in hand:
+		if not played.has(n):
+			total += n.points()
+	return total
+
+
+## Rifa do Bairro: 1 em RIFA_ODDS chance de multiplicar o Juros.
+func _roll_rifa() -> bool:
+	if not schemes.has("rifa"):
+		return false
+	return _rand_int(Balance.RIFA_ODDS) == 0
+
+
+## Relâmpago Errado: a primeira nota de Relâmpago jogada nesta conta é copiada para o baralho.
+func _relampago_copy(played: Array) -> void:
+	if not schemes.has("relampago_errado") or _relampago_used:
+		return
+	for n in played:
+		if n.suit == Note.Suit.RELAMPAGO:
+			deck.draw_pile.append(Note.new(n.value, n.suit))
+			deck.shuffle(_rng)
+			_relampago_used = true
+			return
+
+
+func _rand_int(n: int) -> int:
+	if _rng != null:
+		return _rng.randi_range(0, n - 1)
+	return randi_range(0, n - 1)
 
 
 func _leave_hand(cards: Array) -> void:

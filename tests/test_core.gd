@@ -16,6 +16,7 @@ func _init() -> void:
 	_test_bosses()
 	_test_run_state()
 	_test_assets()
+	_test_schemes()
 
 	print("\n%d verificações, %d falhas" % [checks, failures])
 	quit(1 if failures > 0 else 0)
@@ -215,7 +216,8 @@ func _test_run_state() -> void:
 	check(run.state == RunState.BILL_PAID, "conta paga mostra comprovante")
 	check(run.wallet == Balance.START_WALLET + run.receipt["reward"] + run.receipt["troco"], "carteira = inicial + recompensa + troco")
 	check(run.receipt["reward"] == Balance.REWARD_BOLETO + 3 * Balance.REWARD_PER_UNUSED_DAY, "recompensa do boleto + 3 dias não usados")
-	check(run.next_bill(), "avança para a próxima conta")
+	check(run.next_bill() and run.state == RunState.SHOP, "depois do comprovante vem o Camelô")
+	check(run.leave_shop(), "sai do Camelô para a próxima conta")
 	check(run.bill_title() == "Março · Aluguel", "segunda conta é Aluguel")
 
 	# Cheque especial: troca recusada se passar de -R$10.
@@ -250,6 +252,7 @@ func _test_run_state() -> void:
 		full.pay()
 		if i < 8:
 			full.next_bill()
+			full.leave_shop()
 	check(full.state == RunState.WON, "pagar a última fatura vence a partida")
 	check(bosses_seen == ["banco_fora_do_ar", "taxa_manutencao", "janeiro_impostos"], "chefes das faturas na ordem (got %s)" % str(bosses_seen))
 	check(full.max_saldo > 0, "saldo máximo do ano registrado")
@@ -266,3 +269,101 @@ func _test_assets() -> void:
 			if ResourceLoader.exists(path):
 				var tex: Texture2D = load(path)
 				check(tex.get_width() == 120 and tex.get_height() == 180, "frente %s tem 120x180" % path)
+
+
+func _test_schemes() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+	var t200 := [n(200)]  # Trocado de 200: (5 + 11) × 1 = 16
+
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["agiota"]})["total"] == 96, "Agiota +5 Juros: 16 × 6 = 96")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["cunhado"], "cunhado_bonus": 3})["total"] == 64, "Cunhado acumulado +3: 16 × 4 = 64")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["piramide", "cunhado"]})["total"] == 32, "Pirâmide +1 por outro esquema: 16 × 2 = 32")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["agiota", "piramide"]})["total"] == 112, "Agiota + Pirâmide: 16 × 7 = 112")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["vaquinha"], "hand_points": 10})["total"] == 26, "Vaquinha soma 10 ao Valor: (16 + 10) = 26")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["rifa"], "rifa": true})["total"] == 80, "Rifa sorteada ×5: 16 × 5 = 80")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["rifa"], "rifa": false})["total"] == 16, "Rifa não sorteada não muda")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["coach"], "played": 5})["total"] == 32, "Coach com 5 notas ×2: 32")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["coach"], "played": 1})["total"] == 0, "Coach com menos de 5 perde 1 de Juros: 0")
+
+	check(SchemeRules.agiota_charge(100) == 10, "Agiota cobra 10% de R$ 100")
+	check(SchemeRules.agiota_charge(5) == 0, "Agiota não cobra de carteira baixa")
+	check(SchemeRules.agiota_charge(-4) == 0, "Agiota não cobra com dívida")
+
+	# Cashback: notas de Crédito que pontuam devolvem R$ 1 cada.
+	var cash_bill := BillRound.new(999999, Boss.NONE, rng, ["cashback"])
+	cash_bill.hand = [n(10, Note.Suit.CREDITO), n(20, Note.Suit.CREDITO), n(5, Note.Suit.DINHEIRO)]
+	cash_bill.selected = [cash_bill.hand[0], cash_bill.hand[1]]
+	check(cash_bill.pay()["cash"] == 2, "Cashback devolve R$1 por nota de Crédito que pontua")
+
+	# Relâmpago Errado: a primeira nota de Relâmpago jogada é copiada para o baralho (uma vez por conta).
+	# Baralho controlado: conta as notas em baralho, descarte e mão (não muda com as compras).
+	var copy_on := _rel_bill(["relampago_errado"], rng)
+	var before := _count_rel10(copy_on)
+	copy_on.pay()
+	check(_count_rel10(copy_on) - before == 1, "Relâmpago Errado adiciona 1 cópia ao baralho")
+
+	var copy_off := _rel_bill([], rng)
+	before = _count_rel10(copy_off)
+	copy_off.pay()
+	check(_count_rel10(copy_off) - before == 0, "sem o esquema não há cópia")
+
+	# Cunhado: cada Escadinha jogada soma 1 ao acumulado da partida.
+	var cun := RunState.new(rng)
+	cun.schemes = ["cunhado"]
+	cun.bill.hand = [n(1, Note.Suit.DINHEIRO), n(2, Note.Suit.DEBITO), n(5, Note.Suit.CREDITO), n(10, Note.Suit.RELAMPAGO), n(20, Note.Suit.DINHEIRO)]
+	cun.bill.selected = cun.bill.hand.duplicate()
+	cun.pay()
+	check(cun.cunhado_bonus == 1, "Cunhado acumula +1 após uma Escadinha")
+
+	# Golpe do WhatsApp (fatura de Janeiro): 1 esquema some da conta, não da partida.
+	var golpe := RunState.new(rng)
+	golpe.schemes = ["agiota", "cunhado"]
+	golpe.month_index = 2
+	golpe.bill_index = 2
+	golpe._start_bill()
+	check(golpe.bill.schemes.size() == 1 and golpe.schemes.size() == 2, "Golpe do WhatsApp desativa 1 esquema só nesta conta")
+
+	# Camelô: comprar, vender, pechinchar e cheque especial.
+	var shop := RunState.new(rng)
+	shop.bill.goal = 1
+	shop.bill.toggle_select(shop.bill.hand[0])
+	shop.pay()
+	check(shop.next_bill() and shop.shop_offer.size() == Balance.SHOP_OFFERS, "Camelô abre com 2 esquemas à venda")
+	var offer_id: String = shop.shop_offer[0]
+	var price: int = Balance.SCHEMES[offer_id]["price"]
+	var w0 := shop.wallet
+	check(shop.buy(0)["ok"] and shop.schemes == [offer_id] and shop.wallet == w0 - price, "compra desconta o preço")
+	check(shop.sell(0)["ok"] and shop.schemes.is_empty() and shop.wallet == w0 - price + price / 2, "venda devolve metade do preço")
+	var w1 := shop.wallet
+	check(shop.haggle()["ok"] and shop.wallet == w1 - Balance.HAGGLE_COST, "pechinchar custa R$ 2")
+
+	shop.wallet = Balance.OVERDRAFT_LIMIT + price
+	check(shop.buy(0)["ok"] and shop.wallet == Balance.OVERDRAFT_LIMIT, "compra pode usar o cheque especial até -R$ 10")
+	shop.wallet = Balance.OVERDRAFT_LIMIT + price - 1
+	check(shop.buy(0)["reason"] == "no_money", "compra recusada abaixo de -R$ 10")
+
+	shop.wallet = 100
+	shop.schemes = ["agiota", "cunhado", "coach", "piramide", "rifa"]
+	check(shop.buy(0)["reason"] == "slots_full", "no máximo 5 esquemas ativos")
+
+
+## Conta com baralho e mão conhecidos, para testar duplicação de notas.
+func _rel_bill(p_schemes: Array, rng: RandomNumberGenerator) -> BillRound:
+	var bill := BillRound.new(999999, Boss.NONE, rng, p_schemes)
+	bill.deck.draw_pile = [n(1, Note.Suit.DEBITO), n(2, Note.Suit.CREDITO), n(5, Note.Suit.DINHEIRO)]
+	bill.deck.discard_pile = []
+	bill.hand = [n(10, Note.Suit.RELAMPAGO), n(20, Note.Suit.DEBITO)]
+	bill.selected = [bill.hand[0]]
+	return bill
+
+
+## Quantas notas R$10 Relâmpago existem na conta (baralho + descarte + mão).
+func _count_rel10(bill: BillRound) -> int:
+	var total := 0
+	for pile in [bill.deck.draw_pile, bill.deck.discard_pile, bill.hand]:
+		for c in pile:
+			if c.value == 10 and c.suit == Note.Suit.RELAMPAGO:
+				total += 1
+	return total
+

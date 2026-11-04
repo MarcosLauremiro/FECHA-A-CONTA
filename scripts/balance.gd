@@ -65,7 +65,30 @@ const BOSS_BY_MONTH: Array = ["banco_fora_do_ar", "taxa_manutencao", "janeiro_im
 const BOSSES := {
 	"banco_fora_do_ar": {"name": "Banco fora do ar", "text": "Notas de Relâmpago não pontuam"},
 	"taxa_manutencao": {"name": "Taxa de manutenção", "text": "Cada troca custa R$ 1"},
-	"janeiro_impostos": {"name": "IPVA + IPTU + Material escolar", "text": "Leão da Receita leva 27,5% de cada jogada. Taxa de manutenção: cada troca custa R$ 1. Golpe do WhatsApp: pendente (precisa de esquemas)"},
+	"janeiro_impostos": {"name": "IPVA + IPTU + Material escolar", "text": "Leão da Receita leva 27,5% de cada jogada. Taxa de manutenção: cada troca custa R$ 1. Golpe do WhatsApp: 1 esquema seu fica desativado nesta conta"},
 }
 # Leão da Receita, em milésimos (275 = 27,5%).
 const LEAO_PER_MILLE := 275
+
+# Esquemas (GDD: "Esquemas"). Cada id bate com art/esquemas/cartaz_<id>.png.
+const SCHEME_ORDER: Array = ["agiota", "cunhado", "coach", "piramide", "cashback", "rifa", "vaquinha", "relampago_errado"]
+const SCHEMES := {
+	"agiota": {"name": "Agiota", "price": 4, "text": "EMPRESTO DINHEIRO NA HORA", "desc": "+5 de Juros. Cobra 10% da carteira a cada conta paga."},
+	"cunhado": {"name": "Cunhado Investidor", "price": 5, "text": "GANHE 30% AO MÊS SEM RISCO", "desc": "Cada Escadinha jogada dá +1 de Juros a ele, para sempre."},
+	"coach": {"name": "Coach Financeiro", "price": 6, "text": "MENTALIDADE MILIONÁRIA EM 7 DIAS", "desc": "×2 de Juros se jogar exatamente 5 notas. Se jogar menos, perde 1 de Juros."},
+	"piramide": {"name": "Pirâmide", "price": 5, "text": "INDIQUE 3 AMIGOS E FIQUE RICO", "desc": "+1 de Juros por outro esquema ativo. 1 em 6 de colapsar a cada mês."},
+	"cashback": {"name": "Cashback", "price": 4, "text": "SEU DINHEIRO DE VOLTA*", "desc": "Cada nota de Crédito que pontua devolve R$ 1 na carteira."},
+	"rifa": {"name": "Rifa do Bairro", "price": 5, "text": "RIFA DE 1 PORCO — R$ 2 O NÚMERO", "desc": "1 em 4 de multiplicar o Juros por 5."},
+	"vaquinha": {"name": "Vaquinha", "price": 6, "text": "AJUDE O JUNINHO A PAGAR O ALUGUEL", "desc": "Soma os pontos das notas que ficaram na mão ao Valor."},
+	"relampago_errado": {"name": "Relâmpago Errado", "price": 5, "text": "FIZ UM RELÂMPAGO ERRADO, DEVOLVE PFV", "desc": "A primeira nota de Relâmpago jogada em cada conta é duplicada no baralho."},
+}
+const AGIOTA_JUROS := 5
+const AGIOTA_PERCENT := 10
+const COACH_MULT := 2
+const RIFA_ODDS := 4
+const RIFA_MULT := 5
+const PIRAMIDE_ODDS := 6
+
+# Camelô (loja entre as contas).
+const SHOP_OFFERS := 2
+const HAGGLE_COST := 2
