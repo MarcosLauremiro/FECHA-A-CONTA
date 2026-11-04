@@ -20,7 +20,7 @@ const HIGHLIGHT := Color("FFE066")
 
 # Janela vazada da moldura (A1) e área da mão embaixo, sobre a bancada.
 const SCREEN := Rect2(240, 60, 800, 360)
-const HAND_POS := Vector2(118, 516)
+const HAND_POS := Vector2(118, 506)
 const HAND_AREA := Vector2(1044, 204)
 
 # Faixa de esquemas dentro da tela (embaixo).
@@ -33,6 +33,36 @@ const TERMINAL_TEXT := Color("9BFFB0")
 const WARN := Color("FF6B5B")
 const INK := Color("2B2B2B")
 const DIM := Color(0.6, 0.6, 0.6)
+
+# Botões de papel com borda de tinta (todas as telas usam este visual).
+const BUTTON_PAPER := Color("F4EDD9")
+const BUTTON_PAPER_HOVER := Color("FFF8E7")
+const BUTTON_PAPER_DOWN := Color("D9CCAE")
+const BUTTON_DISABLED := Color("BDB6A4")
+const BUTTON_DISABLED_INK := Color("6B6457")
+
+const RECEIPT_PAPER := Color("F7F3E8")
+const STAMP_INK := Color("B5382C")
+const HAND_INK := Color("24304F")  # caneta da tabela desenhada à mão
+const FONT_HAND := "res://fonts/Permanent_Marker/PermanentMarker-Regular.ttf"
+
+# Texto escrito dentro do selo de chefe (a arte traz só o carimbo vazio).
+const BOSS_STAMP := {
+	"banco_fora_do_ar": "BANCO FORA\nDO AR",
+	"taxa_manutencao": "TAXA DE\nMANUTENÇÃO",
+	"janeiro_impostos": "JANEIRO",
+}
+
+# Tabela da tela "Como jogar" (valores vêm de Balance.TRANSACTIONS).
+const HOWTO_ORDER := ["trocado", "dobradinha", "bolada", "escadinha", "tudo_no_relampago", "cofrinho"]
+const HOWTO_COMBO := {
+	"trocado": "a nota de maior valor",
+	"dobradinha": "2 notas de mesmo valor",
+	"bolada": "3 notas de mesmo valor",
+	"escadinha": "5 notas em sequência",
+	"tudo_no_relampago": "5 notas do mesmo naipe",
+	"cofrinho": "4 notas de mesmo valor",
+}
 
 const TEX_FRAME := "res://art/caixa/caixa_moldura.png"
 const TEX_KEY := "res://art/caixa/caixa_tecla.png"
@@ -63,6 +93,7 @@ var _screen: Control
 var _header: Label
 var _boss_text: Label
 var _boss_art: TextureRect
+var _boss_stamp_text: Label
 var _info: Label
 var _levels: Label
 var _message: Label
@@ -111,9 +142,7 @@ func _unhandled_input(event: InputEvent) -> void:
 
 func _build_ui() -> void:
 	# Tema do jogo inteiro: VT323 como fonte padrão (terminal, comprovante).
-	var theme_jogo := Theme.new()
-	theme_jogo.default_font = _font(FONT_TERMINAL)
-	theme = theme_jogo
+	theme = _make_theme()
 
 	_game_root = Control.new()
 	_game_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
@@ -170,6 +199,7 @@ func _build_ui() -> void:
 	_howto.visible = false
 	_howto.pressed.connect(func() -> void: _howto.visible = false)
 	add_child(_howto)
+	_build_howto_text()
 
 	_title_extras = [prompt, howto_button]
 
@@ -203,9 +233,10 @@ func _build_game(root: Control) -> void:
 	_hand_area.add_child(_hand_box)
 
 	_restart_button = _button(root, "JOGAR DE NOVO", Rect2(540, 436, 200, 56), _start_run)
-	_next_button = _button(root, "IR AO CAMELÔ", Rect2(412, 664, 200, 52), _on_next_pressed)
+	_next_button = _button(root, "IR AO CAMELÔ", Rect2(392, 664, 240, 52), _on_next_pressed)
 
-	_end_stamp = _texture_rect(TEX_END_OK, Rect2(440, 120, 400, 200), root)
+	# Carimbo de fim fica na área vazia ao lado da faixa de esquemas (não cobre o texto).
+	_end_stamp = _texture_rect(TEX_END_OK, Rect2(800, 296, 240, 120), root)
 	_end_stamp.visible = false
 
 	_build_receipt(root)
@@ -225,12 +256,12 @@ func _build_screen_content(root: Control) -> void:
 	_header = _terminal_label(34)
 	_header.add_theme_font_override("font", _font(FONT_TITLE))
 	column.add_child(_header)
-	_boss_text = _terminal_label(18)
+	_boss_text = _terminal_label(20)
 	_boss_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	column.add_child(_boss_text)
 	_info = _terminal_label(26)
 	column.add_child(_info)
-	_levels = _terminal_label(20)
+	_levels = _terminal_label(22)
 	column.add_child(_levels)
 	_message = _terminal_label(28)
 	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -239,6 +270,15 @@ func _build_screen_content(root: Control) -> void:
 	# Imagem do chefe no canto direito da tela, só quando a fatura está ativa.
 	_boss_art = _texture_rect("", Rect2(_screen.size.x - 120, 0, 120, 120), _screen)
 	_boss_art.visible = false
+	_boss_stamp_text = Label.new()
+	_boss_stamp_text.size = Vector2(120, 120)
+	_boss_stamp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_boss_stamp_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_boss_stamp_text.add_theme_font_override("font", _font(FONT_TITLE))
+	_boss_stamp_text.add_theme_font_size_override("font_size", 15)
+	_boss_stamp_text.add_theme_color_override("font_color", STAMP_INK)
+	_boss_stamp_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_art.add_child(_boss_stamp_text)
 
 	# Faixa de esquemas: 5 espaços, cada um com tooltip (nome e efeito).
 	for i in range(Balance.MAX_SCHEMES):
@@ -269,9 +309,17 @@ func _build_receipt(root: Control) -> void:
 	_receipt.visible = false
 	root.add_child(_receipt)
 
+	# Papel liso por baixo do texto: as linhas pintadas na arte atrapalhavam a leitura.
+	var paper := ColorRect.new()
+	paper.color = RECEIPT_PAPER
+	paper.position = Vector2(28, 56)
+	paper.size = Vector2(184, 492)
+	paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_receipt.add_child(paper)
+
 	_receipt_label = Label.new()
-	_receipt_label.position = Vector2(36, 60)
-	_receipt_label.size = Vector2(168, 480)
+	_receipt_label.position = Vector2(36, 64)
+	_receipt_label.size = Vector2(168, 470)
 	_receipt_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	_receipt_label.add_theme_font_size_override("font_size", 20)
 	_receipt_label.add_theme_color_override("font_color", INK)
@@ -295,7 +343,7 @@ func _build_shop(root: Control) -> void:
 	root.add_child(_shop_header)
 	_shop_message = _shop_label(Rect2(32, 72, 1216, 30), 24, false)
 	root.add_child(_shop_message)
-	_shop_levels = _shop_label(Rect2(32, 104, 1216, 26), 20, false)
+	_shop_levels = _shop_label(Rect2(32, 104, 1216, 30), 22, false)
 	root.add_child(_shop_levels)
 
 	# Ofertas: esquemas (cartaz) e investimentos (ícone), cada uma com preço e compra.
@@ -312,26 +360,33 @@ func _build_shop(root: Control) -> void:
 		price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 		price.add_theme_color_override("font_color", INK)
 		root.add_child(price)
-		var text := _shop_label(Rect2(x + 10, 250, 180, 110), 18, true)
+		# Etiqueta de papel colada sobre o cartaz; o texto fica em cima dela.
+		var tag := Panel.new()
+		tag.add_theme_stylebox_override("panel", _tag_box())
+		tag.position = Vector2(x + 8, 212)
+		tag.size = Vector2(184, 62)
+		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		root.add_child(tag)
+		var text := _shop_label(Rect2(x + 12, 214, 176, 58), 15, true)
 		text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		text.add_theme_color_override("font_color", INK)
 		root.add_child(text)
 		var buy := _button(root, "COMPRAR", Rect2(x, 440, 200, 44), _on_buy_pressed.bind(i))
-		_shop_offers.append({"card": card, "icon": icon, "price": price, "text": text, "buy": buy})
+		_shop_offers.append({"card": card, "icon": icon, "price": price, "tag": tag, "text": text, "buy": buy})
 
 	# Esquemas que você já tem: vender pela metade do preço.
 	for i in range(Balance.MAX_SCHEMES):
 		var x := 368.0 + i * 112.0
-		var thumb := _texture_rect("", Rect2(x, 480, STRIP_SLOT.x, STRIP_SLOT.y), root)
+		var thumb := _texture_rect("", Rect2(x, 490, STRIP_SLOT.x, STRIP_SLOT.y), root)
 		thumb.mouse_filter = Control.MOUSE_FILTER_STOP
 		thumb.visible = false
-		var sell := _button(root, "VENDER", Rect2(x, 618, STRIP_SLOT.x, 34), _on_sell_pressed.bind(i))
+		var sell := _button(root, "VENDER", Rect2(x, 630, STRIP_SLOT.x, 30), _on_sell_pressed.bind(i))
 		sell.add_theme_font_size_override("font_size", 16)
 		_shop_owned.append({"thumb": thumb, "sell": sell})
 
-	_haggle_button = _button(root, "PECHINCHAR", Rect2(430, 662, 200, 44), _on_haggle_pressed)
-	_leave_button = _button(root, "SEGUIR", Rect2(650, 662, 200, 44), _on_leave_shop_pressed)
+	_haggle_button = _button(root, "PECHINCHAR", Rect2(390, 670, 240, 42), _on_haggle_pressed)
+	_leave_button = _button(root, "SEGUIR", Rect2(650, 670, 240, 42), _on_leave_shop_pressed)
 	_leave_button.visible = true
 	_haggle_button.visible = true
 
@@ -355,13 +410,17 @@ func _refresh_shop() -> void:
 	for i in range(_shop_offers.size()):
 		var o: Dictionary = _shop_offers[i]
 		var has := i < run.shop_offer.size()
-		for key in ["card", "icon", "price", "text", "buy"]:
+		for key in ["card", "icon", "price", "tag", "text", "buy"]:
 			o[key].visible = has
 		if not has:
 			continue
 		var id: String = run.shop_offer[i]
 		var info: Dictionary = Balance.INVESTMENTS[id] if Investments.is_investment(id) else Balance.SCHEMES[id]
 		var is_inv := Investments.is_investment(id)
+		# Nome do investimento fica abaixo do ícone; o texto do cartaz fica na etiqueta de papel.
+		o["text"].position = Vector2(o["text"].position.x, 296.0 if is_inv else 214.0)
+		o["tag"].position = Vector2(o["tag"].position.x, 212.0)
+		o["tag"].visible = not is_inv
 		o["card"].visible = not is_inv
 		o["icon"].visible = is_inv
 		if is_inv:
@@ -486,16 +545,18 @@ func _update_status() -> void:
 
 	var boss_id := run.boss_id()
 	# Com o comprovante por cima, a tela mostra só a mensagem (o comprovante já traz os números).
-	var show_boss := not paid and boss_id != Boss.NONE
+	var show_boss := not paid and not over and boss_id != Boss.NONE
 	_boss_text.visible = show_boss
 	_boss_art.visible = show_boss
 	if boss_id != Boss.NONE:
 		_boss_text.text = "CHEFE: %s. %s" % [Balance.BOSSES[boss_id]["name"], Balance.BOSSES[boss_id]["text"]]
 		_boss_art.texture = _tex(BOSS_ART[boss_id])
+		_boss_stamp_text.text = BOSS_STAMP.get(boss_id, "")
 
 	_info.text = _info_text(bill.saldo)
 
 	_levels.text = "Níveis: " + _levels_text()
+	_levels.visible = not paid  # o comprovante cobre esse canto da tela
 	_set_key_enabled(_pay_key, playing)
 	_set_key_enabled(_swap_key, playing)
 	_hand_area.visible = playing
@@ -692,6 +753,8 @@ func _pop_card(btn: BaseButton, points: int) -> void:
 	var label := _terminal_label(30)
 	label.text = "+%d" % points
 	label.add_theme_color_override("font_color", HIGHLIGHT)
+	label.add_theme_color_override("font_outline_color", INK)
+	label.add_theme_constant_override("outline_size", 6)
 	label.position = Vector2(0, -30)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.get_parent().add_child(label)
@@ -786,6 +849,88 @@ func _refusal_text(reason: String) -> String:
 
 # --- helpers de construção -------------------------------------------------
 
+## Tema do jogo: VT323 como fonte padrão e botões de papel com borda de tinta (mesmo visual em todas as telas).
+func _make_theme() -> Theme:
+	var t := Theme.new()
+	t.default_font = _font(FONT_TERMINAL)
+	t.set_font("font", "Button", _font(FONT_TITLE))
+	t.set_font_size("font_size", "Button", 24)
+	for prop in ["font_color", "font_hover_color", "font_pressed_color", "font_focus_color"]:
+		t.set_color(prop, "Button", INK)
+	t.set_color("font_disabled_color", "Button", BUTTON_DISABLED_INK)
+	t.set_stylebox("normal", "Button", _button_box(BUTTON_PAPER, INK, 4, 0))
+	t.set_stylebox("hover", "Button", _button_box(BUTTON_PAPER_HOVER, INK, 4, 0))
+	t.set_stylebox("pressed", "Button", _button_box(BUTTON_PAPER_DOWN, INK, 0, 3))
+	t.set_stylebox("disabled", "Button", _button_box(BUTTON_DISABLED, BUTTON_DISABLED_INK, 0, 0))
+	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
+	return t
+
+
+## Etiqueta de papel colada sobre o cartaz do Camelô.
+func _tag_box() -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = RECEIPT_PAPER
+	box.border_color = INK
+	box.set_border_width_all(2)
+	box.set_corner_radius_all(3)
+	return box
+
+
+## Caixa de um botão: papel, borda de tinta, sombra leve. `press_offset` desce o texto (botão apertado).
+func _button_box(bg: Color, border: Color, shadow: int, press_offset: int) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = bg
+	box.border_color = border
+	box.set_border_width_all(3)
+	box.set_corner_radius_all(8)
+	box.shadow_color = Color(0, 0, 0, 0.35)
+	box.shadow_size = shadow
+	box.shadow_offset = Vector2(0, 3)
+	box.content_margin_left = 14
+	box.content_margin_right = 14
+	box.content_margin_top = 6 + press_offset
+	box.content_margin_bottom = 6 - press_offset
+	return box
+
+
+## Tela "Como jogar": a arte traz só a tabela desenhada; título e células são escritos por cima, à mão.
+func _build_howto_text() -> void:
+	_howto.add_child(_hand_label(Rect2(0, 96, 1280, 70), "COMO JOGAR", 56, HAND_INK, HORIZONTAL_ALIGNMENT_CENTER))
+
+	var cell_x := [140, 470, 760, 950]
+	var cell_w := [330, 290, 190, 190]
+	var heads := ["Transação", "Combinação", "Valor base", "Juros"]
+	for c in range(4):
+		var align := HORIZONTAL_ALIGNMENT_LEFT if c < 2 else HORIZONTAL_ALIGNMENT_CENTER
+		_howto.add_child(_hand_label(Rect2(cell_x[c] + 12, 170, cell_w[c] - 24, 70), heads[c], 26, HAND_INK, align))
+
+	for r in range(HOWTO_ORDER.size()):
+		var kind: String = HOWTO_ORDER[r]
+		var tx: Dictionary = Balance.TRANSACTIONS[kind]
+		var y := 240.0 + r * 68.0
+		var cells := [tx["name"], HOWTO_COMBO[kind], "R$ %d" % tx["base"], "x%d" % tx["juros"]]
+		for c in range(4):
+			var align := HORIZONTAL_ALIGNMENT_LEFT if c < 2 else HORIZONTAL_ALIGNMENT_CENTER
+			_howto.add_child(_hand_label(Rect2(cell_x[c] + 12, y, cell_w[c] - 24, 68), cells[c], 22, HAND_INK, align))
+
+	_howto.add_child(_hand_label(Rect2(0, 668, 1280, 36), "Clique em qualquer lugar para fechar", 22, HAND_INK, HORIZONTAL_ALIGNMENT_CENTER))
+
+
+## Texto escrito à mão (Permanent Marker), usado sobre a arte da tela "Como jogar".
+func _hand_label(rect: Rect2, text: String, font_size: int, color: Color, align: HorizontalAlignment) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.position = rect.position
+	label.size = rect.size
+	label.horizontal_alignment = align
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	label.add_theme_font_override("font", _font(FONT_HAND))
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
+
 func _font(path: String) -> Font:
 	if ResourceLoader.exists(path):
 		return load(path)
@@ -831,9 +976,9 @@ func _key(root: Control, text: String, pos: Vector2, handler: Callable, enabled:
 	var label := Label.new()
 	label.text = text
 	label.position = pos + Vector2(-8, 52)
-	label.size = Vector2(80, 18)
+	label.size = Vector2(80, 22)
 	label.add_theme_font_override("font", _font(FONT_TITLE))
-	label.add_theme_font_size_override("font_size", 14)
+	label.add_theme_font_size_override("font_size", 16)
 	label.add_theme_color_override("font_color", INK)
 	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
@@ -859,8 +1004,6 @@ func _button(root: Control, text: String, rect: Rect2, handler: Callable) -> But
 	btn.text = text
 	btn.position = rect.position
 	btn.size = rect.size
-	btn.add_theme_font_override("font", _font(FONT_TITLE))
-	btn.add_theme_font_size_override("font_size", 22)
 	btn.pressed.connect(handler)
 	btn.visible = false
 	root.add_child(btn)
