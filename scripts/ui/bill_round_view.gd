@@ -38,7 +38,8 @@ const TEX_FRAME := "res://art/caixa/caixa_moldura.png"
 const TEX_KEY := "res://art/caixa/caixa_tecla.png"
 const TEX_KEY_DOWN := "res://art/caixa/caixa_tecla_pressionada.png"
 const TEX_TITLE := "res://art/telas/titulo.png"
-const TEX_END_OK := "res://art/telas/fim_contas_em_dia.png"
+const TEX_HOWTO := "res://art/telas/como_jogar.png"
+const TEX_END_OK :="res://art/telas/fim_contas_em_dia.png"
 const TEX_END_BAD := "res://art/telas/fim_negativado.png"
 const TEX_RECEIPT := "res://art/comprovante/comprovante_termico.png"
 const TEX_SHOP_BG := "res://art/camelo/camelo_fundo.png"
@@ -87,6 +88,8 @@ var _haggle_button: Button
 var _leave_button: Button
 
 var _title: TextureButton
+var _title_extras: Array = []  # textos e botões do título (somem ao começar)
+var _howto: TextureButton      # tela "Como jogar" (clique fecha)
 
 # Verdadeiro durante a animação de pontuação: entrada do jogador fica travada.
 var _busy := false
@@ -133,6 +136,42 @@ func _build_ui() -> void:
 	_title.size = Vector2(1280, 720)
 	_title.pressed.connect(_on_title_pressed)
 	add_child(_title)
+
+	# Por cima do título: aviso piscando e botão "Como jogar" (no quadro-negro).
+	var prompt := Label.new()
+	prompt.text = "INSIRA SEU CARTÃO"
+	prompt.position = Vector2(340, 450)
+	prompt.size = Vector2(600, 60)
+	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	prompt.add_theme_font_override("font", _font(FONT_TITLE))
+	prompt.add_theme_font_size_override("font_size", 40)
+	prompt.add_theme_color_override("font_color", INK)
+	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(prompt)
+	var blink := create_tween().set_loops()
+	blink.tween_property(prompt, "modulate:a", 0.2, 0.6)
+	blink.tween_property(prompt, "modulate:a", 1.0, 0.6)
+
+	var howto_button := Button.new()
+	howto_button.text = "COMO JOGAR"
+	howto_button.position = Vector2(520, 300)
+	howto_button.size = Vector2(240, 60)
+	howto_button.add_theme_font_override("font", _font(FONT_TITLE))
+	howto_button.add_theme_font_size_override("font_size", 28)
+	howto_button.pressed.connect(_on_howto_pressed)
+	add_child(howto_button)
+
+	_howto = TextureButton.new()
+	_howto.texture_normal = _tex(TEX_HOWTO)
+	_howto.ignore_texture_size = true
+	_howto.stretch_mode = TextureButton.STRETCH_SCALE
+	_howto.position = Vector2.ZERO
+	_howto.size = Vector2(1280, 720)
+	_howto.visible = false
+	_howto.pressed.connect(func() -> void: _howto.visible = false)
+	add_child(_howto)
+
+	_title_extras = [prompt, howto_button]
 
 
 # --- Partida ---------------------------------------------------------------
@@ -405,7 +444,13 @@ func _shop_refusal(reason: String) -> String:
 
 func _on_title_pressed() -> void:
 	_title.visible = false
+	for node in _title_extras:
+		node.visible = false
 	_start_run()
+
+
+func _on_howto_pressed() -> void:
+	_howto.visible = true
 
 
 func _start_run() -> void:
