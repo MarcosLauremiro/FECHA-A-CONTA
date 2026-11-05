@@ -1013,6 +1013,22 @@ func _on_card_pressed(note: Note) -> void:
 	if _cards.has(note):
 		_lift(_cards[note], selected)
 	_update_status()
+	_message.text = _formation_text()
+
+
+## Combinação que as notas escolhidas formam, mostrada antes de pagar (só informa; não pontua).
+## Usa as mesmas regras do PAGAR: notas que o chefe não deixa pontuar ficam de fora.
+func _formation_text() -> String:
+	var scoring: Array = []
+	for n in run.bill.selected:
+		if Boss.note_scores(run.bill.boss, n):
+			scoring.append(n)
+	if run.bill.selected.is_empty():
+		return "INSIRA SUAS NOTAS"
+	if scoring.is_empty():
+		return "Nenhuma nota pontua nesta jogada"
+	var kind: String = HandEvaluator.evaluate(scoring)["kind"]
+	return "Formação: %s · %d nota(s) pontuam" % [Balance.TRANSACTIONS[kind]["name"], scoring.size()]
 
 
 func _on_pay_pressed() -> void:
