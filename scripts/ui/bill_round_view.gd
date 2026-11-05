@@ -78,8 +78,6 @@ const HOWTO_COMBO := {
 const TEX_FRAME := "res://art/caixa/caixa_moldura.png"
 const TEX_KEY := "res://art/caixa/caixa_tecla.png"
 const TEX_KEY_DOWN := "res://art/caixa/caixa_tecla_pressionada.png"
-const TEX_TITLE := "res://art/telas/titulo.png"
-const TEX_LOGO := "res://art/logo/logo_boletro.png"
 const TEX_HOWTO := "res://art/telas/como_jogar.png"
 const TEX_END_OK :="res://art/telas/fim_contas_em_dia.png"
 const TEX_END_BAD := "res://art/telas/fim_negativado.png"
@@ -156,13 +154,11 @@ var _shop_owned: Array = []    # [{"thumb", "sell"}] por esquema que você tem
 var _haggle_button: Button
 var _leave_button: Button
 
-var _title: TextureButton
+var _title_screen: TitleScreen  # tela inicial (atração + menu do caixa)
 var _sfx: Sfx                  # sons e música (ver scripts/ui/sfx.gd)
 var _boss_stamp_key := ""      # última fatura com carimbo tocado
 var _end_stamp_played := false
-var _title_extras: Array = []  # textos e botões do título (somem ao começar)
 var _howto: TextureButton      # tela "Como jogar" (clique fecha)
-var _continue_button: Button   # título: CONTINUAR (só aparece com partida salva)
 var _menu_root: Control        # menu de pausa (Esc): continuar, salvar, recomeçar
 var _menu_save: Button
 var _menu_restart: Button
@@ -207,42 +203,14 @@ func _build_ui() -> void:
 	_build_game(_game_root)
 	_build_shop(_shop_root)
 
-	# Título por cima de tudo: clicar nele começa a partida.
-	_title = TextureButton.new()
-	_title.texture_normal = _tex(TEX_TITLE)
-	_title.ignore_texture_size = true
-	_title.stretch_mode = TextureButton.STRETCH_SCALE
-	_title.position = Vector2.ZERO
-	_title.size = Vector2(1280, 720)
-	_title.pressed.connect(_on_title_pressed)
-	add_child(_title)
-
-	# Logo no quadro-negro da tela inicial (640×360 cabe no quadro, que tem 360 de altura).
-	var logo := _texture_rect(TEX_LOGO, Rect2(320, 60, 640, 360), self)
-
-	# Por cima do título: aviso piscando e botão "Como jogar" (no quadro-negro).
-	var prompt := Label.new()
-	prompt.text = "INSIRA SEU CARTÃO"
-	prompt.position = Vector2(340, 436)
-	prompt.size = Vector2(600, 50)
-	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	prompt.add_theme_font_override("font", _font(FONT_TITLE))
-	prompt.add_theme_font_size_override("font_size", 40)
-	prompt.add_theme_color_override("font_color", INK)
-	prompt.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	add_child(prompt)
-	var blink := create_tween().set_loops()
-	blink.tween_property(prompt, "modulate:a", 0.2, 0.6)
-	blink.tween_property(prompt, "modulate:a", 1.0, 0.6)
-
-	var howto_button := Button.new()
-	howto_button.text = "COMO JOGAR"
-	howto_button.position = Vector2(660, 494)
-	howto_button.size = Vector2(240, 52)
-	howto_button.add_theme_font_override("font", _font(FONT_TITLE))
-	howto_button.add_theme_font_size_override("font_size", 28)
-	howto_button.pressed.connect(_on_howto_pressed)
-	add_child(howto_button)
+	# Tela inicial: caixa eletrônico com a atração e o menu (ver scripts/ui/title_screen.gd).
+	_title_screen = TitleScreen.new(SaveGame.exists())
+	_title_screen.started.connect(_sfx.play_music)
+	_title_screen.new_game_pressed.connect(_on_title_pressed)
+	_title_screen.continue_pressed.connect(_on_continue_pressed)
+	_title_screen.howto_pressed.connect(_on_howto_pressed)
+	_title_screen.quit_pressed.connect(func() -> void: get_tree().quit())
+	add_child(_title_screen)
 
 	_howto = TextureButton.new()
 	_howto.texture_normal = _tex(TEX_HOWTO)
@@ -254,19 +222,6 @@ func _build_ui() -> void:
 	_howto.pressed.connect(func() -> void: _howto.visible = false)
 	add_child(_howto)
 	_build_howto_text()
-
-	# Com partida salva, aparece CONTINUAR acima de COMO JOGAR.
-	_continue_button = Button.new()
-	_continue_button.text = "CONTINUAR"
-	_continue_button.position = Vector2(380, 494)
-	_continue_button.size = Vector2(240, 52)
-	_continue_button.add_theme_font_override("font", _font(FONT_TITLE))
-	_continue_button.add_theme_font_size_override("font_size", 28)
-	_continue_button.pressed.connect(_on_continue_pressed)
-	_continue_button.visible = SaveGame.exists()
-	add_child(_continue_button)
-
-	_title_extras = [prompt, howto_button, _continue_button, logo]
 	_build_menu()
 
 
@@ -802,10 +757,7 @@ func _shop_refusal(reason: String) -> String:
 # --- Fluxo -----------------------------------------------------------------
 
 func _on_title_pressed() -> void:
-	_title.visible = false
-	_sfx.play_music()
-	for node in _title_extras:
-		node.visible = false
+	_title_screen.visible = false
 	_start_run()
 
 
@@ -826,12 +778,9 @@ func _start_run() -> void:
 func _on_continue_pressed() -> void:
 	var saved := SaveGame.read()
 	if saved == null:
-		_continue_button.visible = false  # save inválido: não oferece de novo
+		_title_screen.set_has_save(false)  # save inválido: o botão deixa de funcionar
 		return
-	_title.visible = false
-	_sfx.play_music()
-	for node in _title_extras:
-		node.visible = false
+	_title_screen.visible = false
 	_load_run(saved)
 
 
@@ -848,7 +797,7 @@ func _load_run(loaded: RunState) -> void:
 
 
 func _toggle_menu() -> void:
-	if _title.visible or _howto.visible or _busy:
+	if _title_screen.visible or _howto.visible or _busy:
 		return
 	if _menu_root.visible:
 		_close_menu()

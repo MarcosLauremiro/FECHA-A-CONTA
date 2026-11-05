@@ -20,7 +20,7 @@ const PATHS := {
 	"feirante": "res://sfx/loja/s13_grito_feirante.ogg",
 	"plateia": "res://sfx/pontuacao/s14_plateia_uooh.ogg",
 }
-const MUSIC_PATH := "res://music/m01_samba_jazz_loop.ogg"
+const MUSIC_PATH := "res://music/background_music.ogg"
 const POOL_SIZE := 6
 const MUSIC_VOLUME_DB := -8.0
 

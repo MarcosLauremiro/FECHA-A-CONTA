@@ -374,3 +374,65 @@ O maior risco é chegar na hora 18 sem a sequência de pontuação animada. Se a
 - [ ] Tela "Como jogar" ou dica na primeira conta
 - [ ] Página com capa, 3 screenshots, 1 GIF de combo e créditos
 - [ ] Enviado antes do prazo, com folga de 30 minutos
+
+---
+
+## Versão completa (pós-jam): planejamento
+
+O jogo não é mais uma jam: é um jogo próprio, que será lançado. As seções acima descrevem a versão da jam e continuam valendo como referência do que já está pronto. Esta seção guarda o que vem depois.
+
+### Estrutura em desafios de 3 meses
+
+O ano é dividido em 4 desafios. Cada um tem 3 meses, e o jogo sempre começa em janeiro.
+
+| Desafio | Meses | Status |
+| --- | --- | --- |
+| 1 | Janeiro, Fevereiro, Março | A versão atual da jam usa Março, Junho e Janeiro; reorganizar |
+| 2 | Abril, Maio, Junho | A definir |
+| 3 | Julho, Agosto, Setembro | A definir |
+| 4 | Outubro, Novembro, Dezembro | A definir |
+
+- O jogador começa sempre em janeiro e só avança para os próximos 3 meses do desafio atual.
+- Cada desafio tem chefes, contas e esquemas próprios, para dar profundidade sem misturar as regras.
+- Desbloqueio dos desafios: a definir (por exemplo, terminar o desafio anterior).
+
+### Conquistas
+
+- Lista de conquistas com nome, texto e condição (ex.: "Pagou uma conta sem trocar nenhuma nota", "Ficou no Serasa e ganhou mesmo assim").
+- Mostradas no menu de pausa e numa tela própria.
+- Condições a definir por desafio.
+
+### Raridade dos esquemas
+
+- Cada esquema tem uma raridade (comum, rara, lendária). Afeta o preço, a chance de aparecer no Camelô e, se for o caso, o efeito.
+- Mostrada na carta do esquema (cor da borda ou etiqueta).
+- Valores a definir.
+
+### Clareza da mão
+
+Hoje o jogador não sabe se a mão vai bater a meta antes de pagar. A ideia é mostrar, ao selecionar as notas:
+
+- o nome da formação (já existe);
+- a pontuação estimada da jogada (Valor e Juros), com os esquemas e investimentos que se aplicam;
+- quanto falta para a meta, ou se a jogada já bate a meta;
+- a explicação de cada esquema e de cada chefe ao passar o mouse (já existe em parte, falta padronizar).
+
+### Tutorial
+
+- Opção "Tutorial" na tela inicial, que pode ser escolhida no começo ou a qualquer momento.
+- Passo a passo: notas, formação, pagar, trocar, Camelô, chefes.
+- Pode ser refeito quando o jogador quiser.
+
+### Ideias de memes e referências (em aberto)
+
+Nenhuma destas ideias foi aprovada ainda. Ao escolher, cada uma vira uma regra nova ou um texto no jogo.
+
+- **Nazaré Confusa:** chefe ou evento em que as notas da mão aparecem com o valor escondido até pagar ou trocar.
+- **Julius (Todo Mundo Odeia o Chris):** se o jogador sair do Camelô sem comprar nada, a próxima loja tem desconto.
+- **Stonks:** investimento de risco com seta de subida e descida a cada conta.
+- **Calma, calabreso:** botão no Camelô para "prorrogar o boleto" (ganhar 1 dia por um preço), com a frase no texto. Ou aviso de pânico quando o jogador troca demais.
+- **Nome no Serasa:** em vez de perder na hora, o jogador entra no Serasa e perde uma troca por conta até o fim do ano.
+- **Cartão Nubank:** esquema que aumenta o cheque especial, mas a dívida cresce mais rápido. Pode se ligar à forma Crédito.
+- **13º salário:** bônus fixo em uma conta específica, com o valor no comprovante.
+- **"Em setembro vai entrar o grosso":** evento no desafio 3 (Julho a Setembro): uma conta com recompensa grande no fim, anunciada antes.
+- **Graciovos:** a definir (a referência ainda não foi explicada).
