@@ -1,0 +1,3 @@
+ui_caixa_valor_destaque.png 136x56
+9-slice insets (px): left=52 right=12 top=8 bottom=12
+o centro estica; as bordas (com espessura e sombra) ficam fixas

@@ -79,12 +79,32 @@ const TEX_FRAME := "res://art/caixa/caixa_moldura.png"
 const TEX_KEY := "res://art/caixa/caixa_tecla.png"
 const TEX_KEY_DOWN := "res://art/caixa/caixa_tecla_pressionada.png"
 const TEX_TITLE := "res://art/telas/titulo.png"
+const TEX_LOGO := "res://art/logo/logo_boletro.png"
 const TEX_HOWTO := "res://art/telas/como_jogar.png"
 const TEX_END_OK :="res://art/telas/fim_contas_em_dia.png"
 const TEX_END_BAD := "res://art/telas/fim_negativado.png"
 const TEX_RECEIPT := "res://art/comprovante/comprovante_termico.png"
 const TEX_SHOP_BG := "res://art/camelo/camelo_fundo.png"
-const TEX_PRICE := "res://art/camelo/plaquinha_1.png"
+const TEX_SIGNS := [                               # placa de cada oferta (1, 2, 3), com as correntes no topo
+	"res://art/camelo/placa_1.png",
+	"res://art/camelo/placa_2.png",
+	"res://art/camelo/placa_3.png",
+]
+# Ganchos do trilho no fundo (camelo_fundo.png): dois por placa, x das pontas.
+const SIGN_HOOKS := [[253.0, 406.0], [562.0, 718.0], [876.0, 1029.0]]
+const SIGN_CHAIN_LEFT := 35.0         # x da corrente esquerda dentro da placa (220 px de largura)
+const SIGN_SIZE := Vector2(220, 300)
+const SIGN_TOP_Y := 225.0             # topo da placa: as correntes começam na ponta dos ganchos
+const SIGN_CENTER_Y := 375.0          # centro vertical da placa (225 + 300 / 2)
+const SCHEME_SIZE := Vector2(110, 150)  # cartaz de esquema na loja
+const ICON_SIZE := Vector2(120, 120)    # ícone de investimento na loja (não muda)
+const BUY_Y := 480.0                    # botão de compra: y (dentro da placa)
+const BUY_H := 32.0
+const BUY_FONT := 16
+const BUY_MIN_W := 100.0                # largura mínima; cresce com o texto
+const BUY_PAD := 28.0                   # folga para o texto dentro do botão
+const OFFER_ZOOM := 1.12                # zoom da oferta escolhida
+const OFFER_ZOOM_TIME := 0.28           # duração da animação de zoom (s)
 
 # Fontes (pasta fonts/): VT323 = terminal e comprovante, Anton = títulos e botões.
 const FONT_TERMINAL := "res://fonts/VT323/VT323-Regular.ttf"
@@ -130,7 +150,8 @@ var _shop_wallet: Label
 var _shop_cheque: Label
 var _shop_message: Label
 var _shop_levels_row: HBoxContainer
-var _shop_offers: Array = []   # [{"card", "plate", "price", "text", "buy"}] por oferta
+var _shop_offers: Array = []   # [{"card", "icon", "buy"}] por oferta
+var _selected_offer := -1      # oferta escolhida no Camelô (-1 = nenhuma)
 var _shop_owned: Array = []    # [{"thumb", "sell"}] por esquema que você tem
 var _haggle_button: Button
 var _leave_button: Button
@@ -196,11 +217,14 @@ func _build_ui() -> void:
 	_title.pressed.connect(_on_title_pressed)
 	add_child(_title)
 
+	# Logo no quadro-negro da tela inicial (640×360 cabe no quadro, que tem 360 de altura).
+	var logo := _texture_rect(TEX_LOGO, Rect2(320, 60, 640, 360), self)
+
 	# Por cima do título: aviso piscando e botão "Como jogar" (no quadro-negro).
 	var prompt := Label.new()
 	prompt.text = "INSIRA SEU CARTÃO"
-	prompt.position = Vector2(340, 450)
-	prompt.size = Vector2(600, 60)
+	prompt.position = Vector2(340, 436)
+	prompt.size = Vector2(600, 50)
 	prompt.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	prompt.add_theme_font_override("font", _font(FONT_TITLE))
 	prompt.add_theme_font_size_override("font_size", 40)
@@ -213,8 +237,8 @@ func _build_ui() -> void:
 
 	var howto_button := Button.new()
 	howto_button.text = "COMO JOGAR"
-	howto_button.position = Vector2(520, 300)
-	howto_button.size = Vector2(240, 60)
+	howto_button.position = Vector2(660, 494)
+	howto_button.size = Vector2(240, 52)
 	howto_button.add_theme_font_override("font", _font(FONT_TITLE))
 	howto_button.add_theme_font_size_override("font_size", 28)
 	howto_button.pressed.connect(_on_howto_pressed)
@@ -234,15 +258,15 @@ func _build_ui() -> void:
 	# Com partida salva, aparece CONTINUAR acima de COMO JOGAR.
 	_continue_button = Button.new()
 	_continue_button.text = "CONTINUAR"
-	_continue_button.position = Vector2(520, 240)
-	_continue_button.size = Vector2(240, 60)
+	_continue_button.position = Vector2(380, 494)
+	_continue_button.size = Vector2(240, 52)
 	_continue_button.add_theme_font_override("font", _font(FONT_TITLE))
 	_continue_button.add_theme_font_size_override("font_size", 28)
 	_continue_button.pressed.connect(_on_continue_pressed)
 	_continue_button.visible = SaveGame.exists()
 	add_child(_continue_button)
 
-	_title_extras = [prompt, howto_button, _continue_button]
+	_title_extras = [prompt, howto_button, _continue_button, logo]
 	_build_menu()
 
 
@@ -258,8 +282,8 @@ func _build_menu() -> void:
 	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_menu_root.add_child(dim)
 
-	var panel := ColorRect.new()
-	panel.color = RECEIPT_PAPER
+	var panel := Panel.new()
+	panel.add_theme_stylebox_override("panel", _nine("ui_painel", 20, 22, 20, 22))
 	panel.position = Vector2(440, 150)
 	panel.size = Vector2(400, 430)
 	_menu_root.add_child(panel)
@@ -493,33 +517,26 @@ func _build_shop(root: Control) -> void:
 
 	# Ofertas: esquemas (cartaz) e investimentos (ícone), cada uma com preço e compra.
 	for i in range(Balance.SHOP_OFFERS + Balance.SHOP_INVESTMENT_OFFERS):
-		var x := 180.0 + i * 360.0
-		var card := _texture_rect("", Rect2(x, 150, 200, 280), root)
+		# Placa pendurada nos dois ganchos; fica atrás da oferta (criada antes do cartaz).
+		var sign_left: float = SIGN_HOOKS[i][0] - SIGN_CHAIN_LEFT
+		var center_x := sign_left + SIGN_SIZE.x / 2.0
+		_texture_rect(TEX_SIGNS[i], Rect2(sign_left, SIGN_TOP_Y, SIGN_SIZE.x, SIGN_SIZE.y), root)
+		# Cartaz (esquema) e ícone (investimento) centralizados no centro da placa.
+		var card := _texture_rect("", Rect2(center_x - SCHEME_SIZE.x / 2.0, SIGN_CENTER_Y - SCHEME_SIZE.y / 2.0, SCHEME_SIZE.x, SCHEME_SIZE.y), root)
 		card.mouse_filter = Control.MOUSE_FILTER_STOP
-		var icon := _texture_rect("", Rect2(x + 40, 170, 120, 120), root)
+		var icon := _texture_rect("", Rect2(center_x - ICON_SIZE.x / 2.0, SIGN_CENTER_Y - ICON_SIZE.y / 2.0, ICON_SIZE.x, ICON_SIZE.y), root)
 		icon.mouse_filter = Control.MOUSE_FILTER_STOP
 		icon.visible = false
-		_texture_rect(TEX_PRICE, Rect2(x + 150, 162, 80, 50), root)
-		var price := _shop_label(Rect2(x + 150, 162, 80, 50), 22, true)
-		price.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		price.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		price.add_theme_color_override("font_color", INK)
-		root.add_child(price)
-		# Nome do esquema numa linha só, em etiqueta de papel colada sobre o cartaz.
-		var tag := Panel.new()
-		tag.add_theme_stylebox_override("panel", _tag_box())
-		tag.position = Vector2(x + 8, 216)
-		tag.size = Vector2(184, 26)
-		tag.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		root.add_child(tag)
-		var text := _shop_label(Rect2(x + 10, 218, 180, 22), 14, true)
-		text.autowrap_mode = TextServer.AUTOWRAP_OFF
-		text.clip_text = true
-		text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-		text.add_theme_color_override("font_color", INK)
-		root.add_child(text)
-		var buy := _button(root, "COMPRAR", Rect2(x, 440, 200, 44), _on_buy_pressed.bind(i))
-		_shop_offers.append({"card": card, "icon": icon, "price": price, "tag": tag, "text": text, "buy": buy})
+		# Clicar no cartaz ou no ícone escolhe a oferta (ela dá um zoom suave).
+		card.pivot_offset = card.size / 2.0
+		icon.pivot_offset = icon.size / 2.0
+		card.gui_input.connect(_on_offer_gui_input.bind(i))
+		icon.gui_input.connect(_on_offer_gui_input.bind(i))
+		# Botão pequeno, logo abaixo do cartaz: mostra só o preço; com a oferta escolhida, COMPRAR R$ X.
+		# A largura acompanha o texto (ver _fit_buy_button).
+		var buy := _button(root, "R$ 0", Rect2(center_x - 60.0, BUY_Y, 120, BUY_H), _on_offer_button.bind(i))
+		buy.add_theme_font_size_override("font_size", BUY_FONT)
+		_shop_offers.append({"card": card, "icon": icon, "buy": buy, "cx": center_x})
 
 	# Esquemas que você já tem: vender pela metade do preço.
 	for i in range(Balance.MAX_SCHEMES):
@@ -550,6 +567,7 @@ func _shop_label(rect: Rect2, font_size: int, title_font: bool) -> Label:
 
 
 func _refresh_shop() -> void:
+	_selected_offer = -1  # qualquer ação do Camelô (comprar, vender, pechinchar) limpa a escolha
 	_shop_wallet.text = "CARTEIRA R$ %d" % run.wallet
 	_shop_wallet.add_theme_color_override("font_color", WARN if run.wallet < 0 else INK)
 	_shop_cheque.text = "CHEQUE ESPECIAL ATÉ R$ %d" % -Balance.OVERDRAFT_LIMIT
@@ -558,34 +576,27 @@ func _refresh_shop() -> void:
 	for i in range(_shop_offers.size()):
 		var o: Dictionary = _shop_offers[i]
 		var has := i < run.shop_offer.size()
-		for key in ["card", "icon", "price", "tag", "text", "buy"]:
+		for key in ["card", "icon", "buy"]:
 			o[key].visible = has
 		if not has:
 			continue
 		var id: String = run.shop_offer[i]
 		var info: Dictionary = Balance.INVESTMENTS[id] if Investments.is_investment(id) else Balance.SCHEMES[id]
 		var is_inv := Investments.is_investment(id)
-		# Nome do investimento fica abaixo do ícone; o texto do cartaz fica na etiqueta de papel.
-		o["text"].position = Vector2(o["text"].position.x, 296.0 if is_inv else 218.0)
-		o["tag"].position = Vector2(o["tag"].position.x, 216.0)
-		o["tag"].visible = not is_inv
 		o["card"].visible = not is_inv
 		o["icon"].visible = is_inv
+		# Sem nome na tela: ao passar o mouse, só a descrição.
+		# Dica: nome (no cabeçalho da dica) e descrição. O nome não aparece na tela da loja.
 		if is_inv:
 			o["icon"].texture = _tex("res://art/camelo/investimento_%s.png" % id)
-			o["icon"].tooltip_text = "%s
-%s" % [info["name"], info["desc"]]
-			o["text"].text = info["name"]
+			o["icon"].tooltip_text = "%s\n%s" % [info["name"], info["desc"]]
 		else:
 			o["card"].texture = _tex("res://art/esquemas/cartaz_%s.png" % id)
-			o["card"].tooltip_text = "%s
-%s" % [info["name"], info["desc"]]
-			o["text"].text = info["name"]
+			o["card"].tooltip_text = "%s\n%s" % [info["name"], info["desc"]]
 		var price := run.price_of(id)
-		o["price"].text = "R$ %d" % price
-		o["buy"].text = "COMPRAR R$ %d" % price
 		var full := not is_inv and run.schemes.size() >= Balance.MAX_SCHEMES
 		o["buy"].disabled = full or run.wallet - price < Balance.OVERDRAFT_LIMIT
+	_update_offer_visuals()
 
 	for i in range(_shop_owned.size()):
 		var s: Dictionary = _shop_owned[i]
@@ -654,6 +665,99 @@ func _levels_text() -> String:
 		if lvl > 0:
 			parts.append("%s %d" % [Balance.TRANSACTIONS[kind]["name"], lvl])
 	return "nenhum investimento ainda" if parts.is_empty() else " · ".join(parts)
+
+
+## Clique no cartaz ou no ícone: escolhe a oferta (só uma por vez).
+func _on_offer_gui_input(event: InputEvent, index: int) -> void:
+	if event is InputEventMouseButton and event.pressed and event.button_index == MOUSE_BUTTON_LEFT:
+		# Clicar de novo na oferta escolhida tira a seleção.
+		_select_offer(-1 if index == _selected_offer else index)
+
+
+## Botão da oferta: se ela não está escolhida, escolhe; se já está, compra.
+func _on_offer_button(index: int) -> void:
+	if _busy:
+		return
+	if _selected_offer != index:
+		_select_offer(index)
+		return
+	_on_buy_pressed(index)
+
+
+func _select_offer(index: int) -> void:
+	_selected_offer = index
+	_sfx.play("bipe_tecla")
+	_update_offer_visuals()
+
+
+## Zoom e texto do botão: a oferta escolhida cresce suavemente; as outras voltam ao tamanho normal.
+## O botão mostra só o preço; a escolhida mostra COMPRAR R$ X.
+func _update_offer_visuals() -> void:
+	for i in range(_shop_offers.size()):
+		var o: Dictionary = _shop_offers[i]
+		var has := i < run.shop_offer.size()
+		var selected: bool = has and i == _selected_offer
+		if not has:
+			continue
+		var id: String = run.shop_offer[i]
+		var is_inv := Investments.is_investment(id)
+		var node: Control = o["icon"] if is_inv else o["card"]
+		var other: Control = o["card"] if is_inv else o["icon"]
+		_zoom(other, Vector2.ONE)
+		_zoom(node, Vector2.ONE * OFFER_ZOOM if selected else Vector2.ONE)
+		var price := run.price_of(id)
+		o["buy"].text = ("COMPRAR R$ %d" if selected else "R$ %d") % price
+		_style_buy_button(o["buy"], selected)
+		_fit_buy_button(o)
+
+
+## Botão de compra com a arte da caixa do valor; a oferta escolhida usa a versão destacada (amarela).
+func _style_buy_button(btn: Button, selected: bool) -> void:
+	# Sempre a arte ui_loja_valor. A oferta escolhida ganha um tom amarelo por cima (modulate).
+	var sb := _nine("ui_loja_valor", 52, 12, 8, 12)
+	# Área do texto simétrica: sem isso o texto fica deslocado para a direita (a arte tem 52 px à esquerda e 12 à direita).
+	sb.content_margin_left = 12.0
+	sb.content_margin_right = 12.0
+	sb.content_margin_top = 8.0
+	sb.content_margin_bottom = 8.0
+	for state in ["normal", "hover", "pressed", "disabled"]:
+		btn.add_theme_stylebox_override(state, sb)
+	btn.add_theme_color_override("font_color", INK)
+	btn.add_theme_color_override("font_hover_color", INK)
+	btn.add_theme_color_override("font_pressed_color", INK)
+	btn.add_theme_color_override("font_disabled_color", DIM)
+	btn.alignment = HORIZONTAL_ALIGNMENT_CENTER
+	if btn.disabled:
+		btn.modulate = Color(1, 1, 1, 0.55)
+	elif selected:
+		btn.modulate = Color(1.0, 0.9, 0.45)
+	else:
+		btn.modulate = Color.WHITE
+
+
+## Largura do botão de compra segue o texto (fica mais largo com "COMPRAR R$ X"), centrado na placa.
+func _fit_buy_button(o: Dictionary) -> void:
+	var btn: Button = o["buy"]
+	var font := btn.get_theme_font("font")
+	var text_w := font.get_string_size(btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, BUY_FONT).x
+	var w := maxf(BUY_MIN_W, text_w + BUY_PAD)
+	btn.size = Vector2(w, BUY_H)
+	btn.position = Vector2(float(o["cx"]) - w / 2.0, BUY_Y)
+
+
+## Animação de zoom com retorno elástico; cancela a animação anterior do mesmo item.
+func _zoom(node: Control, target: Vector2) -> void:
+	if node.scale.is_equal_approx(target) and not node.has_meta("zooming"):
+		return
+	if node.has_meta("tween"):
+		var old: Tween = node.get_meta("tween")
+		if old != null and old.is_valid():
+			old.kill()
+	var tween := node.create_tween()
+	node.set_meta("tween", tween)
+	node.set_meta("zooming", true)
+	tween.tween_property(node, "scale", target, OFFER_ZOOM_TIME).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.finished.connect(func() -> void: node.set_meta("zooming", false))
 
 
 func _on_buy_pressed(index: int) -> void:
@@ -951,6 +1055,17 @@ func _card_button(note: Note) -> BaseButton:
 		card.texture_normal = tex
 		card.texture_pressed = tex
 		_add_stamp(card, note)
+		# Moldura de cantoneira: cinza-claro ao passar o mouse, amarela quando a carta está selecionada.
+		var frame := Panel.new()
+		frame.position = Vector2(-6, -6)
+		frame.size = CARD_SIZE + Vector2(12, 12)
+		frame.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		frame.visible = false
+		card.add_child(frame)
+		card.set_meta("frame", frame)
+		# Só a moldura de hover; a carta selecionada fica apenas levantada (sem moldura amarela).
+		card.mouse_entered.connect(func() -> void: _set_card_frame(card, 1))
+		card.mouse_exited.connect(func() -> void: _set_card_frame(card, 0))
 		return card
 
 	var btn := Button.new()
@@ -977,6 +1092,18 @@ func _add_stamp(card: Control, note: Note) -> void:
 ## Posição da carta dentro do wrapper: selecionada fica no topo, as outras descem LIFT px.
 func _lifted_position(selected: bool) -> Vector2:
 	return Vector2(0, 0 if selected else LIFT)
+
+
+## Moldura de uma carta: 0 = sem moldura, 1 = ao passar o mouse, 2 = selecionada.
+func _set_card_frame(btn: BaseButton, mode: int) -> void:
+	if not btn.has_meta("frame"):
+		return
+	var frame: Panel = btn.get_meta("frame")
+	frame.visible = mode != 0
+	if mode == 2:
+		frame.add_theme_stylebox_override("panel", _nine("ui_selecao", 22, 24, 22, 24))
+	elif mode == 1:
+		frame.add_theme_stylebox_override("panel", _nine("ui_selecao_hover", 22, 24, 22, 24))
 
 
 ## Sobe ou desce uma carta com animação curta.
@@ -1028,7 +1155,7 @@ func _formation_text() -> String:
 	if scoring.is_empty():
 		return "Nenhuma nota pontua nesta jogada"
 	var kind: String = HandEvaluator.evaluate(scoring)["kind"]
-	return "Formação: %s · %d nota(s) pontuam" % [Balance.TRANSACTIONS[kind]["name"], scoring.size()]
+	return Balance.TRANSACTIONS[kind]["name"]
 
 
 func _on_pay_pressed() -> void:
@@ -1253,15 +1380,31 @@ func _make_theme() -> Theme:
 	t.set_stylebox("disabled", "Button", _button_box(BUTTON_DISABLED, BUTTON_DISABLED_INK, 0, 0))
 	t.set_stylebox("focus", "Button", StyleBoxEmpty.new())
 	# Dica ao passar o mouse: papel e texto escuro, legível sobre qualquer fundo.
-	var tip := _tag_box()
-	tip.set_content_margin_all(8)
+	# Dica: papelão com fita da arte ui_tooltip. O cabeçalho da arte (30 px) fica em cima; o texto começa abaixo dele.
+	var tip := _nine("ui_tooltip", 10, 16, 30, 16)
+	tip.content_margin_left = 16
+	tip.content_margin_right = 16
+	tip.content_margin_top = 4      # o nome cai no cabeçalho da arte; a descrição logo abaixo
+	tip.content_margin_bottom = 12
 	t.set_stylebox("panel", "TooltipPanel", tip)
 	t.set_color("font_color", "TooltipLabel", INK)
 	t.set_font("font", "TooltipLabel", _font(FONT_TERMINAL))
 	t.set_font_size("font_size", "TooltipLabel", 22)
 	# Nome e descrição (separados por \n): a fonte VT323 tem entrelinha alta; apertar um pouco.
-	t.set_constant("line_spacing", "TooltipLabel", -8)
+	t.set_constant("line_spacing", "TooltipLabel", 6)
 	return t
+
+
+## Caixa desenhada a partir de uma arte de art/ui (9-slice): cantos fixos, centro estica.
+## left/right/top/bottom são as margens da arte em px.
+func _nine(file: String, left: int, right: int, top: int, bottom: int) -> StyleBoxTexture:
+	var sb := StyleBoxTexture.new()
+	sb.texture = _tex("res://art/ui/%s.png" % file)
+	sb.texture_margin_left = left
+	sb.texture_margin_right = right
+	sb.texture_margin_top = top
+	sb.texture_margin_bottom = bottom
+	return sb
 
 
 ## Etiqueta de papel colada sobre o cartaz do Camelô.

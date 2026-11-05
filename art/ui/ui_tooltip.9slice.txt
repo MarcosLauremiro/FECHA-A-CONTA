@@ -1,0 +1,3 @@
+ui_tooltip.png 224x128
+9-slice insets (px): left=10 right=16 top=30 bottom=16
+o centro estica; as bordas (com espessura e sombra) ficam fixas
