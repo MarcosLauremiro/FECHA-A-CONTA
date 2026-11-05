@@ -1259,6 +1259,8 @@ func _make_theme() -> Theme:
 	t.set_color("font_color", "TooltipLabel", INK)
 	t.set_font("font", "TooltipLabel", _font(FONT_TERMINAL))
 	t.set_font_size("font_size", "TooltipLabel", 22)
+	# Nome e descrição (separados por \n): a fonte VT323 tem entrelinha alta; apertar um pouco.
+	t.set_constant("line_spacing", "TooltipLabel", -8)
 	return t
 
 
