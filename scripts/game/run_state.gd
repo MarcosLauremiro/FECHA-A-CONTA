@@ -256,3 +256,38 @@ func _rand_int(n: int) -> int:
 	if _rng != null:
 		return _rng.randi_range(0, n - 1)
 	return randi_range(0, n - 1)
+
+
+## Partida inteira para salvar (JSON). Ver SaveGame.
+func to_dict() -> Dictionary:
+	return {
+		"wallet": wallet,
+		"month_index": month_index,
+		"bill_index": bill_index,
+		"state": state,
+		"max_saldo": max_saldo,
+		"schemes": schemes,
+		"cunhado_bonus": cunhado_bonus,
+		"shop_offer": shop_offer,
+		"levels": levels,
+		"receipt": receipt,
+		"bill": bill.to_dict(),
+	}
+
+
+static func from_dict(d: Dictionary) -> RunState:
+	var r := RunState.new()
+	r.wallet = int(d["wallet"])
+	r.month_index = int(d["month_index"])
+	r.bill_index = int(d["bill_index"])
+	r.state = String(d["state"])
+	r.max_saldo = int(d["max_saldo"])
+	r.schemes = d["schemes"]
+	r.cunhado_bonus = int(d["cunhado_bonus"])
+	r.shop_offer = d["shop_offer"]
+	r.levels = {}
+	for k in d["levels"]:
+		r.levels[k] = int(d["levels"][k])
+	r.receipt = d["receipt"]
+	r.bill = BillRound.from_dict(d["bill"])
+	return r

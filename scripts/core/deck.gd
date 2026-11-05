@@ -53,3 +53,14 @@ func discard(notes: Array) -> void:
 
 func total_cards() -> int:
 	return draw_pile.size() + discard_pile.size()
+
+
+func to_dict() -> Dictionary:
+	return {"draw": Note.list_to_data(draw_pile), "discard": Note.list_to_data(discard_pile)}
+
+
+static func from_dict(d: Dictionary) -> Deck:
+	var deck := Deck.new()
+	deck.draw_pile = Note.list_from_data(d.get("draw", []))
+	deck.discard_pile = Note.list_from_data(d.get("discard", []))
+	return deck

@@ -27,10 +27,30 @@ func suit_name() -> String:
 	return Balance.SUIT_NAMES[suit]
 
 
-## Caminho da frente desta nota (nota já com a forma de pagamento impressa).
+## Caminho da frente desta nota: cédula neutra, sem forma de pagamento.
 func face_path() -> String:
-	return "res://art/notas/frentes/frente_%d_%s.png" % [value, Balance.SUIT_KEYS[suit]]
+	return "res://art/notas/neutras/nota_%d.png" % value
+
+
+## Caminho do selo da forma de pagamento (carimbo desenhado por cima da cédula).
+func stamp_path() -> String:
+	return "res://art/notas/selos/selo_%s.png" % Balance.SUIT_KEYS[suit]
 
 
 func _to_string() -> String:
 	return "R$%d·%s" % [value, suit_name()]
+
+
+## Versão guardável (salvar partida): [valor, forma].
+static func list_to_data(notes: Array) -> Array:
+	var out: Array = []
+	for n in notes:
+		out.append([n.value, n.suit])
+	return out
+
+
+static func list_from_data(data: Array) -> Array:
+	var out: Array = []
+	for d in data:
+		out.append(Note.new(int(d[0]), int(d[1])))
+	return out
