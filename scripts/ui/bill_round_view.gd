@@ -7,6 +7,9 @@ const LIFT := 24
 const CARD_SIZE := Vector2(120, 180)
 const STAMP_POS := Vector2(74, 128)   # canto inferior direito da cédula neutra (ajustar se ficar mal)
 const STAMP_SIZE := Vector2(40, 40)
+const SORT_NORMAL := "normal"      # ordem em que as notas entraram na mão
+const SORT_SUIT := "forma"         # agrupada por forma de pagamento (selo)
+const SORT_VALUE := "valor"        # por valor crescente
 const LIFT_TIME := 0.12
 
 # Sensação da pontuação (só apresentação; a regra já foi resolvida em RunState.pay()).
@@ -109,6 +112,9 @@ var _message: Label
 var _strip_slots: Array = []   # [{"slot", "empty", "card"}] por espaço de esquema
 var _hand_area: Control
 var _hand_box: HBoxContainer
+var _sort_key: TextureButton       # tecla FORMA (ordem da mão: por forma de pagamento)
+var _sort_value_key: TextureButton # tecla VALOR (ordem da mão: por valor)
+var _sort_mode := SORT_NORMAL      # como a mão é exibida; não muda a regra
 var _pay_key: TextureButton
 var _swap_key: TextureButton
 var _restart_button: Button
@@ -306,8 +312,10 @@ func _build_game(root: Control) -> void:
 
 	_pay_key = _key(root, "PAGAR", Vector2(1184, 150), _on_pay_pressed)
 	_swap_key = _key(root, "TROCAR", Vector2(1184, 250), _on_swap_pressed)
-	_key(root, "VALOR", Vector2(24, 150), Callable(), false)
-	_key(root, "FORMA", Vector2(24, 250), Callable(), false)
+	# VALOR: mesma ideia, ordena a mão por valor crescente.
+	_sort_value_key = _key(root, "VALOR", Vector2(24, 150), _on_sort_value_pressed, false)
+	# FORMA: alterna a mão entre a ordem normal e agrupada por forma de pagamento (selo).
+	_sort_key = _key(root, "FORMA", Vector2(24, 250), _on_sort_suit_pressed, false)
 
 	_hand_area = Control.new()
 	_hand_area.position = HAND_POS
@@ -819,6 +827,8 @@ func _update_status() -> void:
 	_levels.visible = not paid and not won and levels_text != "nenhum investimento ainda"
 	_set_key_enabled(_pay_key, playing)
 	_set_key_enabled(_swap_key, playing)
+	_set_key_enabled(_sort_key, playing)
+	_set_key_enabled(_sort_value_key, playing)
 	_hand_area.visible = playing
 	_restart_button.visible = over
 	# Vitória: o comprovante final ocupa o meio da tela, e o botão de jogar de novo vai para baixo dele.
@@ -877,7 +887,7 @@ func _rebuild_hand() -> void:
 	_cards.clear()
 
 	var playing := run.state == RunState.PLAYING
-	for note in run.bill.hand:
+	for note in _hand_order():
 		var wrap := Control.new()
 		wrap.custom_minimum_size = CARD_SIZE + Vector2(0, LIFT)
 		var btn := _card_button(note)
@@ -888,6 +898,45 @@ func _rebuild_hand() -> void:
 		_hand_box.add_child(wrap)
 		_cards[note] = btn
 		btn.position = _lifted_position(run.bill.selected.has(note))
+
+
+## Ordem de exibição da mão. Só muda a tela: a regra (quais notas estão na mão) não muda.
+func _hand_order() -> Array:
+	var notes: Array = run.bill.hand.duplicate()
+	match _sort_mode:
+		SORT_SUIT:
+			notes.sort_custom(func(a: Note, b: Note) -> bool:
+				if a.suit != b.suit:
+					return a.suit < b.suit
+				return a.value < b.value)
+		SORT_VALUE:
+			notes.sort_custom(func(a: Note, b: Note) -> bool:
+				if a.value != b.value:
+					return a.value < b.value
+				return a.suit < b.suit)
+	return notes
+
+
+func _on_sort_suit_pressed() -> void:
+	_set_sort_mode(SORT_NORMAL if _sort_mode == SORT_SUIT else SORT_SUIT)
+
+
+func _on_sort_value_pressed() -> void:
+	_set_sort_mode(SORT_NORMAL if _sort_mode == SORT_VALUE else SORT_VALUE)
+
+
+func _set_sort_mode(mode: String) -> void:
+	if _busy or run.state != RunState.PLAYING:
+		return
+	_sort_mode = mode
+	match mode:
+		SORT_SUIT:
+			_message.text = "Mão organizada por forma de pagamento"
+		SORT_VALUE:
+			_message.text = "Mão organizada por valor"
+		_:
+			_message.text = "Mão na ordem normal"
+	_rebuild_hand()
 
 
 ## Uma nota da mão: a frente em PNG. Se a arte ainda não existir, cai num botão de texto.
