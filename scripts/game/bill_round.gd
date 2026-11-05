@@ -169,6 +169,47 @@ func _rand_int(n: int) -> int:
 	return randi_range(0, n - 1)
 
 
+## Estado da conta para salvar. As notas selecionadas são guardadas pela posição na mão.
+func to_dict() -> Dictionary:
+	var selected_idx: Array = []
+	for n in selected:
+		selected_idx.append(hand.find(n))
+	return {
+		"goal": goal,
+		"boss": boss,
+		"days_left": days_left,
+		"swaps_left": swaps_left,
+		"saldo": saldo,
+		"state": state,
+		"schemes": schemes,
+		"cunhado_bonus": cunhado_bonus,
+		"levels": levels,
+		"relampago_used": _relampago_used,
+		"deck": deck.to_dict(),
+		"hand": Note.list_to_data(hand),
+		"selected": selected_idx,
+	}
+
+
+static func from_dict(d: Dictionary) -> BillRound:
+	var levels_in: Dictionary = {}
+	for k in d["levels"]:
+		levels_in[k] = int(d["levels"][k])
+	var b := BillRound.new(int(d["goal"]), String(d["boss"]), null, d["schemes"], int(d["cunhado_bonus"]), levels_in)
+	b.deck = Deck.from_dict(d["deck"])
+	b.hand = Note.list_from_data(d["hand"])
+	b.selected = []
+	for i in d["selected"]:
+		if int(i) >= 0 and int(i) < b.hand.size():
+			b.selected.append(b.hand[int(i)])
+	b.days_left = int(d["days_left"])
+	b.swaps_left = int(d["swaps_left"])
+	b.saldo = int(d["saldo"])
+	b.state = String(d["state"])
+	b._relampago_used = bool(d["relampago_used"])
+	return b
+
+
 func _leave_hand(cards: Array) -> void:
 	for c in cards:
 		hand.erase(c)

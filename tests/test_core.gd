@@ -262,15 +262,19 @@ func _test_run_state() -> void:
 
 
 func _test_assets() -> void:
-	# Cada uma das 32 cartas (8 valores × 4 formas) precisa de frente 120×180.
+	# Cada valor tem uma cédula neutra 120×180; cada forma de pagamento tem um selo 40×40.
+	for value in Balance.VALUES:
+		var path := n(value).face_path()
+		check(ResourceLoader.exists(path), "cédula existe: %s" % path)
+		if ResourceLoader.exists(path):
+			var tex: Texture2D = load(path)
+			check(tex.get_width() == 120 and tex.get_height() == 180, "cédula %s tem 120x180" % path)
 	for suit in Note.Suit.values():
-		for value in Balance.VALUES:
-			var note := n(value, suit)
-			var path := note.face_path()
-			check(ResourceLoader.exists(path), "frente existe: %s" % path)
-			if ResourceLoader.exists(path):
-				var tex: Texture2D = load(path)
-				check(tex.get_width() == 120 and tex.get_height() == 180, "frente %s tem 120x180" % path)
+		var spath := n(1, suit).stamp_path()
+		check(ResourceLoader.exists(spath), "selo existe: %s" % spath)
+		if ResourceLoader.exists(spath):
+			var stex: Texture2D = load(spath)
+			check(stex.get_width() == 40 and stex.get_height() == 40, "selo %s tem 40x40" % spath)
 
 
 func _test_schemes() -> void:

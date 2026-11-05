@@ -5,6 +5,8 @@ extends Control
 ## Quanto a cédula sobe quando selecionada (px).
 const LIFT := 24
 const CARD_SIZE := Vector2(120, 180)
+const STAMP_POS := Vector2(74, 128)   # canto inferior direito da cédula neutra (ajustar se ficar mal)
+const STAMP_SIZE := Vector2(40, 40)
 const LIFT_TIME := 0.12
 
 # Sensação da pontuação (só apresentação; a regra já foi resolvida em RunState.pay()).
@@ -16,6 +18,7 @@ const SHAKE_MAX := 16.0          # tremor máximo (px)
 const BIG_RECEIPT_RATIO := 5     # saldo acima de 5× a meta: comprovante gigante
 const BIG_RECEIPT_SCALE := 2.2
 const RECEIPT_POS := Vector2(520, 60)
+const PRINT_TIME := 2.0                # tempo para o comprovante sair da impressora (igual ao som)
 const HIGHLIGHT := Color("FFE066")
 const FLY_TIME := 0.35  # cartas indo para a máquina ao pagar
 
@@ -112,6 +115,7 @@ var _restart_button: Button
 var _next_button: Button
 var _end_stamp: TextureRect
 var _receipt: NinePatchRect
+var _receipt_clip: Control          # janela da impressora: o papel aparece de cima para baixo
 var _receipt_label: Label
 
 # Interface do Camelô (escondida na partida).
@@ -131,6 +135,12 @@ var _boss_stamp_key := ""      # última fatura com carimbo tocado
 var _end_stamp_played := false
 var _title_extras: Array = []  # textos e botões do título (somem ao começar)
 var _howto: TextureButton      # tela "Como jogar" (clique fecha)
+var _continue_button: Button   # título: CONTINUAR (só aparece com partida salva)
+var _menu_root: Control        # menu de pausa (Esc): continuar, salvar, recomeçar
+var _menu_save: Button
+var _menu_restart: Button
+var _menu_status: Label
+var _restart_armed := false    # RECOMEÇAR pede confirmação com um segundo clique
 
 # Verdadeiro durante a animação de pontuação: entrada do jogador fica travada.
 var _busy := false
@@ -143,8 +153,10 @@ func _ready() -> void:
 	_build_ui()
 
 
-## F11 alterna tela cheia e janela (útil no desenvolvimento).
+## Esc abre o menu de pausa. F11 alterna tela cheia e janela (útil no desenvolvimento).
 func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		_toggle_menu()
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
 		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
@@ -213,7 +225,68 @@ func _build_ui() -> void:
 	add_child(_howto)
 	_build_howto_text()
 
-	_title_extras = [prompt, howto_button]
+	# Com partida salva, aparece CONTINUAR acima de COMO JOGAR.
+	_continue_button = Button.new()
+	_continue_button.text = "CONTINUAR"
+	_continue_button.position = Vector2(520, 240)
+	_continue_button.size = Vector2(240, 60)
+	_continue_button.add_theme_font_override("font", _font(FONT_TITLE))
+	_continue_button.add_theme_font_size_override("font_size", 28)
+	_continue_button.pressed.connect(_on_continue_pressed)
+	_continue_button.visible = SaveGame.exists()
+	add_child(_continue_button)
+
+	_title_extras = [prompt, howto_button, _continue_button]
+	_build_menu()
+
+
+## Menu de pausa (Esc): fica por cima de tudo e bloqueia os cliques da partida.
+func _build_menu() -> void:
+	_menu_root = Control.new()
+	_menu_root.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_menu_root.visible = false
+	add_child(_menu_root)
+
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_menu_root.add_child(dim)
+
+	var panel := ColorRect.new()
+	panel.color = RECEIPT_PAPER
+	panel.position = Vector2(440, 150)
+	panel.size = Vector2(400, 430)
+	_menu_root.add_child(panel)
+
+	var title := Label.new()
+	title.text = "PAUSA"
+	title.position = Vector2(440, 168)
+	title.size = Vector2(400, 60)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.add_theme_font_override("font", _font(FONT_TITLE))
+	title.add_theme_font_size_override("font_size", 40)
+	title.add_theme_color_override("font_color", INK)
+	_menu_root.add_child(title)
+
+	_menu_button("CONTINUAR", Rect2(490, 250, 300, 56), _close_menu)
+	_menu_save = _menu_button("SALVAR PARTIDA", Rect2(490, 326, 300, 56), _on_save_pressed)
+	_menu_restart = _menu_button("RECOMEÇAR", Rect2(490, 402, 300, 56), _on_restart_pressed)
+
+	_menu_status = Label.new()
+	_menu_status.position = Vector2(440, 486)
+	_menu_status.size = Vector2(400, 50)
+	_menu_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_menu_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_menu_status.add_theme_font_override("font", _font(FONT_TERMINAL))
+	_menu_status.add_theme_font_size_override("font_size", 22)
+	_menu_status.add_theme_color_override("font_color", INK)
+	_menu_root.add_child(_menu_status)
+
+
+func _menu_button(text: String, rect: Rect2, handler: Callable) -> Button:
+	var btn := _button(_menu_root, text, rect, handler)
+	btn.visible = true
+	return btn
 
 
 # --- Partida ---------------------------------------------------------------
@@ -340,10 +413,17 @@ func _build_receipt(root: Control) -> void:
 	_receipt.patch_margin_right = 24
 	_receipt.patch_margin_top = 40
 	_receipt.patch_margin_bottom = 40
-	_receipt.position = Vector2(520, 60)
+	# O comprovante fica dentro de uma janela que corta o que ainda não saiu da impressora.
+	_receipt_clip = Control.new()
+	_receipt_clip.position = RECEIPT_POS
+	_receipt_clip.size = Vector2(240, 600)
+	_receipt_clip.clip_contents = true
+	_receipt_clip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_receipt_clip.visible = false
+	root.add_child(_receipt_clip)
+
 	_receipt.size = Vector2(240, 600)
-	_receipt.visible = false
-	root.add_child(_receipt)
+	_receipt_clip.add_child(_receipt)
 
 	# Papel liso por baixo do texto: as linhas pintadas na arte atrapalhavam a leitura.
 	var paper := ColorRect.new()
@@ -631,6 +711,71 @@ func _start_run() -> void:
 	_refresh()
 
 
+func _on_continue_pressed() -> void:
+	var saved := SaveGame.read()
+	if saved == null:
+		_continue_button.visible = false  # save inválido: não oferece de novo
+		return
+	_title.visible = false
+	_sfx.play_music()
+	for node in _title_extras:
+		node.visible = false
+	_load_run(saved)
+
+
+## Retoma uma partida salva. Carimbo da fatura atual não toca de novo; o comprovante fica inteiro.
+func _load_run(loaded: RunState) -> void:
+	run = loaded
+	_message.text = ""
+	_boss_stamp_key = "%d-%d" % [run.month_index, run.bill_index]
+	_end_stamp_played = false
+	_shop_message.text = ""
+	_restart_button.visible = false
+	_receipt_clip.size = Vector2(240, 600)
+	_refresh()
+
+
+func _toggle_menu() -> void:
+	if _title.visible or _howto.visible or _busy:
+		return
+	if _menu_root.visible:
+		_close_menu()
+	else:
+		_open_menu()
+
+
+func _open_menu() -> void:
+	_menu_root.visible = true
+	_menu_status.text = ""
+	_menu_save.disabled = run.state == RunState.WON or run.state == RunState.LOST
+	_menu_status.text = "Partida terminada não pode ser salva." if _menu_save.disabled else ""
+
+
+func _close_menu() -> void:
+	_menu_root.visible = false
+	_restart_armed = false
+	_menu_restart.text = "RECOMEÇAR"
+	_menu_status.text = ""
+
+
+func _on_save_pressed() -> void:
+	if SaveGame.write(run):
+		_menu_status.text = "Partida salva."
+	else:
+		_menu_status.text = "Não consegui salvar. Tente de novo."
+
+
+## Primeiro clique pede confirmação; o segundo recomeça (o último save não é apagado).
+func _on_restart_pressed() -> void:
+	if not _restart_armed:
+		_restart_armed = true
+		_menu_restart.text = "TEM CERTEZA?"
+		_menu_status.text = "O progresso não salvo se perde."
+		return
+	_close_menu()
+	_start_run()
+
+
 func _refresh() -> void:
 	if run == null:
 		return
@@ -680,7 +825,7 @@ func _update_status() -> void:
 	_restart_button.position = Vector2(392, 664) if won else Vector2(540, 436)
 	_restart_button.size = Vector2(240, 52) if won else Vector2(200, 56)
 	_next_button.visible = paid
-	_receipt.visible = paid or won
+	_receipt_clip.visible = paid or won
 	_header.visible = not (paid or won)
 	_stats.visible = not (paid or won)
 	_message.visible = not won
@@ -694,6 +839,7 @@ func _update_status() -> void:
 		_end_stamp_played = true
 		_sfx.play("carimbo")
 	if over:
+		SaveGame.delete()  # partida terminada não tem o que continuar
 		_end_stamp.texture = _tex(TEX_END_OK if run.state == RunState.WON else TEX_END_BAD)
 
 	_update_strip()
@@ -755,12 +901,28 @@ func _card_button(note: Note) -> BaseButton:
 		card.stretch_mode = TextureButton.STRETCH_SCALE
 		card.texture_normal = tex
 		card.texture_pressed = tex
+		_add_stamp(card, note)
 		return card
 
 	var btn := Button.new()
 	btn.toggle_mode = true
 	btn.text = "R$ %d\n%s" % [note.value, note.suit_name()]
 	return btn
+
+
+## Selo da forma de pagamento por cima da cédula neutra (sem bloquear o clique na carta).
+func _add_stamp(card: Control, note: Note) -> void:
+	var path := note.stamp_path()
+	if not ResourceLoader.exists(path):
+		return
+	var stamp := TextureRect.new()
+	stamp.texture = load(path)
+	stamp.position = STAMP_POS
+	stamp.size = STAMP_SIZE
+	stamp.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	stamp.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	card.add_child(stamp)
 
 
 ## Posição da carta dentro do wrapper: selecionada fica no topo, as outras descem LIFT px.
@@ -953,26 +1115,26 @@ func _shake(strength: float) -> void:
 	tween.tween_property(_game_root, "position", Vector2.ZERO, step_time)
 
 
-## Comprovante sai da impressora (desce); acima de 5× a meta ele chega gigante e treme.
+## Comprovante sai da impressora (aparece de cima para baixo); acima de 5× a meta ele chega gigante e treme.
 func _print_receipt(big: bool) -> void:
 	_sfx.play("impressora")
 	if int(run.receipt.get("reward", 0)) > 0:
-		get_tree().create_timer(0.5).timeout.connect(_sfx.play.bind("moedas"))
+		get_tree().create_timer(PRINT_TIME * 0.5).timeout.connect(_sfx.play.bind("moedas"))
 	if int(run.receipt.get("troco", 0)) > 0:
-		get_tree().create_timer(0.9).timeout.connect(_sfx.play.bind("relampago"))
-	_receipt.pivot_offset = _receipt.size / 2.0
-	var tween := create_tween()
+		get_tree().create_timer(PRINT_TIME * 0.9).timeout.connect(_sfx.play.bind("relampago"))
+	# Papel sai da impressora: a janela cresce de cima para baixo, no ritmo do som.
+	_receipt_clip.position = RECEIPT_POS
+	_receipt_clip.pivot_offset = Vector2(120, 300)
+	_receipt_clip.size = Vector2(240, 0)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(_receipt_clip, "size:y", 600.0, PRINT_TIME).set_trans(Tween.TRANS_LINEAR)
 	if big:
-		_receipt.position = RECEIPT_POS
-		_receipt.scale = Vector2(BIG_RECEIPT_SCALE, BIG_RECEIPT_SCALE)
-		tween.tween_property(_receipt, "scale", Vector2.ONE, 0.5) \
+		_receipt_clip.scale = Vector2(BIG_RECEIPT_SCALE, BIG_RECEIPT_SCALE)
+		tween.tween_property(_receipt_clip, "scale", Vector2.ONE, PRINT_TIME) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
-		_shake(SHAKE_MAX)
+		tween.finished.connect(_shake.bind(SHAKE_MAX))
 	else:
-		_receipt.scale = Vector2.ONE
-		_receipt.position = Vector2(RECEIPT_POS.x, -_receipt.size.y)
-		tween.tween_property(_receipt, "position", RECEIPT_POS, 0.5) \
-			.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+		_receipt_clip.scale = Vector2.ONE
 
 
 func _set_stat(key: String, text: String, color: Color) -> void:
