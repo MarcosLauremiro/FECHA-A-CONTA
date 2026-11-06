@@ -20,24 +20,35 @@ const SHAKE_STEPS := 6
 const SHAKE_MAX := 16.0          # tremor máximo (px)
 const BIG_RECEIPT_RATIO := 5     # saldo acima de 5× a meta: comprovante gigante
 const BIG_RECEIPT_SCALE := 2.2
-const RECEIPT_POS := Vector2(520, 60)
+const RECEIPT_POS := Vector2(520, 34)  # sai logo abaixo da fenda da impressora (arte)
 const PRINT_TIME := 2.0                # tempo para o comprovante sair da impressora (igual ao som)
 const HIGHLIGHT := Color("FFE066")
 const FLY_TIME := 0.35  # cartas indo para a máquina ao pagar
 
-# Números do caixa, na ordem da linha de cima (cada um vira um bloco com nome e valor).
-const STAT_ORDER := ["carteira", "meta", "saldo", "dias", "trocas"]
-const STAT_CAPTIONS := {"carteira": "CARTEIRA", "meta": "META", "saldo": "SALDO", "dias": "DIAS", "trocas": "TROCAS"}
+# Como cada número aparece na arte: o texto é o valor preenchido em %s.
+const STAT_FORMAT := {
+	"carteira": "%s",
+	"meta": "%s",
+	"saldo": "SALDO  %s",
+	"dias": "DIAS  %s",
+	"trocas": "TROCAS  %s",
+}
 
-# Janela vazada da moldura (A1) e área da mão embaixo, sobre a bancada.
-const SCREEN := Rect2(240, 60, 800, 360)
-const HAND_POS := Vector2(118, 506)
-const HAND_AREA := Vector2(1044, 204)
+# Janela da tela na mesa (tela_caixa_mesa.aseprite): canto e tamanho da abertura da moldura.
+const SCREEN := Rect2(316, 102, 649, 383)
+# Mão embaixo da tela, à esquerda da calculadora (que começa em x 1062).
+const HAND_POS := Vector2(40, 500)
+const HAND_AREA := Vector2(1000, 192)
+const HAND_SEPARATION := 4          # 8 cartas cabem nos 1000 px
 
-# Faixa de esquemas dentro da tela (embaixo).
-const STRIP_POS := Vector2(0, 188)
-const STRIP_SLOT := Vector2(96, 134)
-const STRIP_GAP := 8
+# Faixa de esquemas dentro da tela: 5 espaços já desenhados na arte (posição em coordenadas da tela).
+const STRIP_POS := Vector2(39, 92)
+const STRIP_SLOT := Vector2(98, 136)
+const STRIP_GAP := 20
+
+# Cores sobre o display da calculadora.
+const LCD_INK := Color("1E3B2A")
+const DANGER_LCD := Color("B5382C")
 
 const TERMINAL_BG := Color("0F2A1A")
 const TERMINAL_TEXT := Color("9BFFB0")
@@ -75,9 +86,20 @@ const HOWTO_COMBO := {
 	"cofrinho": "4 notas de mesmo valor",
 }
 
-const TEX_FRAME := "res://art/caixa/caixa_moldura.png"
-const TEX_KEY := "res://art/caixa/caixa_tecla.png"
-const TEX_KEY_DOWN := "res://art/caixa/caixa_tecla_pressionada.png"
+# Mesa do caixa (exportada de art/caixa/tela_caixa_mesa.aseprite): fundo, calculadora e impressora de cima.
+const TEX_MESA_FUNDO := "res://art/caixa/mesa/mesa_fundo.png"
+const TEX_MESA_CALC := "res://art/caixa/mesa/mesa_calculadora.png"
+const TEX_MESA_IMPRESSORA := "res://art/caixa/mesa/mesa_impressora.png"
+
+# Teclas da calculadora: folhas do aseprite (8 quadros de 76x72, na ordem do arquivo).
+# Tags: repouso = quadro 0; hover = quadros 1 a 3 (loop); clique = quadros 4 a 7 (uma vez).
+const CALC_SHEET_DIR := "res://art/caixa/mesa/ui/calculadora/"
+const CALC_FRAMES := 8
+const CALC_FRAME_SIZE := Vector2(76, 72)
+const CALC_FRAME_TIMES := [0.1, 0.06, 0.06, 0.12, 0.04, 0.05, 0.06, 0.07]  # segundos por quadro
+const CALC_IDLE := [0]
+const CALC_HOVER := [1, 2, 3]
+const CALC_CLICK := [4, 5, 6, 7]
 const TEX_HOWTO := "res://art/telas/como_jogar.png"
 const TEX_END_OK :="res://art/telas/fim_contas_em_dia.png"
 const TEX_END_BAD := "res://art/telas/fim_negativado.png"
@@ -119,8 +141,9 @@ var run: RunState
 # Interface da partida (escondida no Camelô).
 var _game_root: Control
 var _screen: Control
-var _header: Label
-var _stats: HBoxContainer
+var _header: Label                  # mês (papel creme, à esquerda)
+var _bill_label: Label             # tipo de boleto (papel creme, à direita)
+var _stats: Control                # saldo, dias e trocas (dentro da tela)
 var _stat_values: Dictionary = {}  # {carteira/meta/saldo/dias/trocas: Label com o valor}
 var _boss_text: Label
 var _boss_art: TextureRect
@@ -130,11 +153,11 @@ var _message: Label
 var _strip_slots: Array = []   # [{"slot", "empty", "card"}] por espaço de esquema
 var _hand_area: Control
 var _hand_box: HBoxContainer
-var _sort_key: TextureButton       # tecla FORMA (ordem da mão: por forma de pagamento)
-var _sort_value_key: TextureButton # tecla VALOR (ordem da mão: por valor)
+var _sort_key: Button              # tecla FORMA (ordem da mão: por forma de pagamento)
+var _sort_value_key: Button        # tecla VALOR (ordem da mão: por valor)
 var _sort_mode := SORT_NORMAL      # como a mão é exibida; não muda a regra
-var _pay_key: TextureButton
-var _swap_key: TextureButton
+var _pay_key: Button
+var _swap_key: Button
 var _restart_button: Button
 var _next_button: Button
 var _end_stamp: TextureRect
@@ -277,113 +300,100 @@ func _menu_button(text: String, rect: Rect2, handler: Callable) -> Button:
 # --- Partida ---------------------------------------------------------------
 
 func _build_game(root: Control) -> void:
-	# Fundo verde do terminal: aparece pela janela vazada da moldura.
-	var screen_bg := ColorRect.new()
-	screen_bg.color = TERMINAL_BG
-	screen_bg.position = SCREEN.position
-	screen_bg.size = SCREEN.size
-	screen_bg.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(screen_bg)
-
-	_texture_rect(TEX_FRAME, Rect2(Vector2.ZERO, Vector2(1280, 720)), root)
+	# Fundo da mesa: carcaça, moldura, tela e espaços dos esquemas. Fica atrás de tudo.
+	_texture_rect(TEX_MESA_FUNDO, Rect2(Vector2.ZERO, Vector2(1280, 720)), root)
 
 	_build_screen_content(root)
-
-	_pay_key = _key(root, "PAGAR", Vector2(1184, 150), _on_pay_pressed)
-	_swap_key = _key(root, "TROCAR", Vector2(1184, 250), _on_swap_pressed)
-	# VALOR: mesma ideia, ordena a mão por valor crescente.
-	_sort_value_key = _key(root, "VALOR", Vector2(24, 150), _on_sort_value_pressed, false)
-	# FORMA: alterna a mão entre a ordem normal e agrupada por forma de pagamento (selo).
-	_sort_key = _key(root, "FORMA", Vector2(24, 250), _on_sort_suit_pressed, false)
 
 	_hand_area = Control.new()
 	_hand_area.position = HAND_POS
 	_hand_area.size = HAND_AREA
 	root.add_child(_hand_area)
 	_hand_box = HBoxContainer.new()
-	_hand_box.add_theme_constant_override("separation", 12)
+	_hand_box.add_theme_constant_override("separation", HAND_SEPARATION)
 	_hand_area.add_child(_hand_box)
 
-	_restart_button = _button(root, "JOGAR DE NOVO", Rect2(540, 436, 200, 56), _start_run)
+	_restart_button = _button(root, "JOGAR DE NOVO", Rect2(540, 528, 200, 56), _start_run)
 	_next_button = _button(root, "IR AO CAMELÔ", Rect2(392, 664, 240, 52), _on_next_pressed)
 
-	# Carimbo de fim fica na área vazia ao lado da faixa de esquemas (não cobre o texto).
-	_end_stamp = _texture_rect(TEX_END_OK, Rect2(800, 296, 240, 120), root)
+	# Carimbo de fim: por cima dos esquemas, no centro da tela.
+	_end_stamp = _texture_rect(TEX_END_OK, Rect2(520, 236, 240, 120), root)
 	_end_stamp.visible = false
+
+	# Calculadora e mini impressora da arte; as teclas e os números ficam por cima.
+	_texture_rect(TEX_MESA_CALC, Rect2(Vector2.ZERO, Vector2(1280, 720)), root)
+	_build_calculator(root)
 
 	_build_receipt(root)
 
+	# Impressora de cima por último: o comprovante sai de baixo dela.
+	_texture_rect(TEX_MESA_IMPRESSORA, Rect2(Vector2.ZERO, Vector2(1280, 720)), root)
 
+
+## Calculadora: display com a carteira, teclas por cima dos botões e mini impressora com a meta.
+func _build_calculator(root: Control) -> void:
+	_stat_values["carteira"] = _label(root, Rect2(1092, 252, 127, 39), 44, LCD_INK, HORIZONTAL_ALIGNMENT_RIGHT)
+	# Meta no papel da mini impressora: o nome pequeno em cima, o valor embaixo (como antes).
+	var meta_name := _label(root, Rect2(1100, 40, 110, 18), 14, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	meta_name.text = "META"
+	_stat_values["meta"] = _label(root, Rect2(1100, 56, 110, 26), 22, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	# Esquerda: VALOR em cima, FORMA embaixo. Direita: PAGAR em cima, TROCAR embaixo.
+	_sort_value_key = _calc_key(root, "VALOR", "Organiza a mão por valor, do menor para o maior.", Rect2(1086, 326, 72, 62), _on_sort_value_pressed, false, "tecla_valor.png")
+	_sort_key = _calc_key(root, "FORMA", "Agrupa a mão por forma de pagamento (selo).", Rect2(1086, 410, 72, 62), _on_sort_suit_pressed, false, "tecla_forma.png")
+	_pay_key = _calc_key(root, "PAGAR", "Paga a conta com as notas selecionadas.", Rect2(1170, 326, 72, 62), _on_pay_pressed, true, "tecla_soma.png")
+	_swap_key = _calc_key(root, "TROCAR", "Troca as notas selecionadas por outras. Gasta uma troca.", Rect2(1170, 410, 72, 62), _on_swap_pressed, true, "tecla_subtracao.png")
+
+
+## Dentro da janela da tela: cabeçalho (mês e tipo), saldo, mensagens, chefe e a linha de dias e trocas.
 func _build_screen_content(root: Control) -> void:
 	_screen = Control.new()
-	_screen.position = SCREEN.position + Vector2(16, 16)
-	_screen.size = SCREEN.size - Vector2(32, 32)
+	_screen.position = SCREEN.position
+	_screen.size = SCREEN.size
+	_screen.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	root.add_child(_screen)
 
-	# Cabeçalho: nome da conta. Abaixo, uma linha de blocos com carteira, meta, saldo, dias e trocas.
-	_header = _terminal_label(32)
+	# Cabeçalho sobre o papel creme da arte: mês à esquerda; tipo de boleto à direita, em cima do traço.
+	_header = _label(_screen, Rect2(20, 14, 229, 47), 34, INK, HORIZONTAL_ALIGNMENT_CENTER)
 	_header.add_theme_font_override("font", _font(FONT_TITLE))
-	_header.position = Vector2(0, 0)
-	_header.size = Vector2(620, 40)
-	_screen.add_child(_header)
+	_bill_label = _label(_screen, Rect2(274, 12, 353, 26), 22, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	_bill_label.add_theme_font_override("font", _font(FONT_TITLE))
 
-	_stats = HBoxContainer.new()
-	_stats.position = Vector2(0, 44)
-	_stats.size = Vector2(620, 58)
-	_stats.add_theme_constant_override("separation", 10)
+	# Saldo, dias e trocas: saldo embaixo do traço (direita); dias e trocas na faixa escura de baixo.
+	_stats = Control.new()
+	_stats.size = SCREEN.size
+	_stats.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_screen.add_child(_stats)
-	for key in STAT_ORDER:
-		var block := VBoxContainer.new()
-		block.custom_minimum_size = Vector2(116, 58)
-		var caption := _terminal_label(16)
-		caption.text = STAT_CAPTIONS[key]
-		caption.add_theme_color_override("font_color", Color(TERMINAL_TEXT, 0.6))
-		block.add_child(caption)
-		var value := _terminal_label(34)
-		block.add_child(value)
-		_stats.add_child(block)
-		_stat_values[key] = value
+	_stat_values["saldo"] = _label(_stats, Rect2(274, 40, 353, 22), 22, INK, HORIZONTAL_ALIGNMENT_LEFT)
+	_stat_values["dias"] = _label(_stats, Rect2(42, 352, 299, 24), 22, TERMINAL_TEXT, HORIZONTAL_ALIGNMENT_LEFT)
+	_stat_values["trocas"] = _label(_stats, Rect2(384, 352, 240, 24), 22, TERMINAL_TEXT, HORIZONTAL_ALIGNMENT_LEFT)
 
-	# Mensagem da jogada (uma linha), depois os níveis dos investimentos.
-	_message = _terminal_label(26)
-	_message.position = Vector2(0, 108)
-	_message.size = Vector2(620, 30)
-	_message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_screen.add_child(_message)
-
-	_levels = _terminal_label(22)
-	_levels.position = Vector2(0, 140)
-	_levels.size = Vector2(620, 26)
-	_screen.add_child(_levels)
-
-	# Descrição do chefe no canto direito, ao lado da faixa de esquemas.
-	_boss_text = _terminal_label(18)
-	_boss_text.position = Vector2(530, 186)
-	_boss_text.size = Vector2(238, 140)
+	# Mensagem da jogada, níveis e descrição do chefe: área vazia abaixo dos esquemas.
+	_message = _label(_screen, Rect2(24, 240, 500, 30), 26, TERMINAL_TEXT, HORIZONTAL_ALIGNMENT_LEFT)
+	_levels = _label(_screen, Rect2(24, 272, 500, 24), 20, TERMINAL_TEXT, HORIZONTAL_ALIGNMENT_LEFT)
+	_boss_text = _label(_screen, Rect2(24, 298, 500, 50), 17, TERMINAL_TEXT, HORIZONTAL_ALIGNMENT_LEFT)
 	_boss_text.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_screen.add_child(_boss_text)
+	_boss_text.vertical_alignment = VERTICAL_ALIGNMENT_TOP
 
-	# Imagem do chefe no canto direito da tela, só quando a fatura está ativa.
-	_boss_art = _texture_rect("", Rect2(_screen.size.x - 120, 0, 120, 120), _screen)
+	# Imagem do chefe no canto direito, só quando a fatura está ativa.
+	_boss_art = _texture_rect("", Rect2(SCREEN.size.x - 120, 236, 110, 110), _screen)
 	_boss_art.visible = false
 	_boss_stamp_text = Label.new()
-	_boss_stamp_text.size = Vector2(120, 120)
+	_boss_stamp_text.size = Vector2(110, 110)
 	_boss_stamp_text.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_boss_stamp_text.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
 	_boss_stamp_text.add_theme_font_override("font", _font(FONT_TITLE))
-	_boss_stamp_text.add_theme_font_size_override("font_size", 15)
+	_boss_stamp_text.add_theme_font_size_override("font_size", 14)
 	_boss_stamp_text.add_theme_color_override("font_color", STAMP_INK)
 	_boss_stamp_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_boss_art.add_child(_boss_stamp_text)
 
-	# Faixa de esquemas: 5 espaços, cada um com tooltip (nome e efeito).
+	# Faixa de esquemas: 5 espaços (já desenhados na arte), cada um com tooltip (nome e efeito).
 	for i in range(Balance.MAX_SCHEMES):
 		var slot := Control.new()
 		slot.position = STRIP_POS + Vector2(i * (STRIP_SLOT.x + STRIP_GAP), 0)
 		slot.size = STRIP_SLOT
 		slot.mouse_filter = Control.MOUSE_FILTER_STOP
-		var empty := ColorRect.new()
-		empty.color = Color(TERMINAL_TEXT, 0.12)
+		var empty := Control.new()  # sem desenho: o espaço vazio é o da arte
 		empty.size = STRIP_SLOT
 		empty.mouse_filter = Control.MOUSE_FILTER_IGNORE
 		slot.add_child(empty)
@@ -858,10 +868,11 @@ func _update_status() -> void:
 	var paid := run.state == RunState.BILL_PAID
 	var won := run.state == RunState.WON
 
-	_header.text = run.bill_title()
-	_set_stat("carteira", "R$ %d" % run.wallet, WARN if run.wallet < 0 else TERMINAL_TEXT)
-	_set_stat("meta", "R$ %d" % bill.goal, TERMINAL_TEXT)
-	_set_stat("saldo", "R$ %d" % bill.saldo, TERMINAL_TEXT)
+	_header.text = run.month_name()
+	_bill_label.text = Balance.BILL_LABELS[run.bill_key()]
+	_set_stat("carteira", "R$ %d" % run.wallet, DANGER_LCD if run.wallet < 0 else LCD_INK)
+	_set_stat("meta", "R$ %d" % bill.goal, INK)
+	_set_stat("saldo", "R$ %d" % bill.saldo, INK)
 	_set_stat("dias", str(bill.days_left), TERMINAL_TEXT)
 	_set_stat("trocas", str(bill.swaps_left), TERMINAL_TEXT)
 
@@ -885,11 +896,12 @@ func _update_status() -> void:
 	_hand_area.visible = playing
 	_restart_button.visible = over
 	# Vitória: o comprovante final ocupa o meio da tela, e o botão de jogar de novo vai para baixo dele.
-	_restart_button.position = Vector2(392, 664) if won else Vector2(540, 436)
+	_restart_button.position = Vector2(392, 664) if won else Vector2(540, 528)
 	_restart_button.size = Vector2(240, 52) if won else Vector2(200, 56)
 	_next_button.visible = paid
 	_receipt_clip.visible = paid or won
 	_header.visible = not (paid or won)
+	_bill_label.visible = not (paid or won)
 	_stats.visible = not (paid or won)
 	_message.visible = not won
 	_end_stamp.visible = over and not won
@@ -1240,7 +1252,7 @@ func _sway_scheme(id: String) -> void:
 func _count_saldo(from: int, to: int) -> void:
 	var tween := create_tween()
 	_sfx.play("registradora")
-	tween.tween_method(func(v: float) -> void: _stat_values["saldo"].text = "R$ %d" % int(v), float(from), float(to), 0.5)
+	tween.tween_method(func(v: float) -> void: _set_stat("saldo", "R$ %d" % int(v), INK), float(from), float(to), 0.5)
 	await tween.finished
 
 
@@ -1278,8 +1290,8 @@ func _print_receipt(big: bool) -> void:
 		_receipt_clip.scale = Vector2.ONE
 
 
-func _set_stat(key: String, text: String, color: Color) -> void:
-	_stat_values[key].text = text
+func _set_stat(key: String, value: String, color: Color) -> void:
+	_stat_values[key].text = STAT_FORMAT[key] % value
 	_stat_values[key].add_theme_color_override("font_color", color)
 
 
@@ -1452,41 +1464,97 @@ func _terminal_label(font_size: int) -> Label:
 	return label
 
 
-## Tecla do caixa (A2) com rótulo logo abaixo. Teclas sem função ficam apagadas.
-func _key(root: Control, text: String, pos: Vector2, handler: Callable, enabled: bool = true) -> TextureButton:
-	var key := TextureButton.new()
-	key.texture_normal = _tex(TEX_KEY)
-	key.texture_pressed = _tex(TEX_KEY_DOWN)
-	key.ignore_texture_size = true
-	key.stretch_mode = TextureButton.STRETCH_SCALE
-	key.position = pos
-	key.size = Vector2(64, 48)
-
-	# Rótulo abaixo da tecla (a setinha da arte fica no meio da tecla).
+## Texto solto sobre a arte (cabeçalho, display, papel da impressora, mensagens).
+func _label(parent: Node, rect: Rect2, font_size: int, color: Color, align: HorizontalAlignment) -> Label:
 	var label := Label.new()
-	label.text = text
-	label.position = pos + Vector2(-8, 52)
-	label.size = Vector2(80, 22)
-	label.add_theme_font_override("font", _font(FONT_TITLE))
-	label.add_theme_font_size_override("font_size", 16)
-	label.add_theme_color_override("font_color", INK)
-	label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	label.position = rect.position
+	label.size = rect.size
+	label.horizontal_alignment = align
+	label.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	root.add_child(label)
+	parent.add_child(label)
+	return label
 
-	if handler.is_valid():
-		key.pressed.connect(handler)
+
+## Tecla da calculadora: desenho animado (folha do aseprite em ui/calculadora) por cima do botão da arte.
+## Repouso = quadro 0; ao passar o mouse, quadros 1 a 3 em loop; ao clicar, quadros 4 a 7 uma vez.
+## O nome e a descrição saem na dica (tooltip). Apagada quando não pode ser usada.
+func _calc_key(root: Control, name: String, desc: String, rect: Rect2, handler: Callable, enabled: bool, sheet: String) -> Button:
+	var frames: Array = []
+	for i in range(CALC_FRAMES):
+		var at := AtlasTexture.new()
+		at.atlas = _tex(CALC_SHEET_DIR + sheet)
+		at.region = Rect2(i * CALC_FRAME_SIZE.x, 0, CALC_FRAME_SIZE.x, CALC_FRAME_SIZE.y)
+		frames.append(at)
+	var visual := TextureRect.new()
+	visual.texture = frames[0]
+	visual.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	visual.stretch_mode = TextureRect.STRETCH_KEEP
+	visual.size = CALC_FRAME_SIZE
+	visual.position = rect.get_center() - CALC_FRAME_SIZE / 2.0
+	visual.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	root.add_child(visual)
+
+	var key := Button.new()
+	key.tooltip_text = "%s\n%s" % [name, desc]
+	key.position = rect.position
+	key.size = rect.size
+	key.focus_mode = Control.FOCUS_NONE
+	for state in ["normal", "hover", "pressed", "focus", "disabled"]:
+		key.add_theme_stylebox_override(state, StyleBoxEmpty.new())
+	var anim := {"visual": visual, "frames": frames, "key": key, "hovered": false, "tween": null}
+	key.set_meta("anim", anim)
+	key.mouse_entered.connect(func() -> void:
+		anim["hovered"] = true
+		if not key.disabled:
+			_key_play(anim, CALC_HOVER, true))
+	key.mouse_exited.connect(func() -> void:
+		anim["hovered"] = false
+		_key_rest(anim))
+	key.pressed.connect(_key_click.bind(anim))
+	key.pressed.connect(handler)
 	key.disabled = not enabled
-	if not enabled:
-		key.modulate = DIM
-		label.modulate = DIM
 	root.add_child(key)
 	return key
 
 
-func _set_key_enabled(key: TextureButton, enabled: bool) -> void:
+func _set_key_enabled(key: Button, enabled: bool) -> void:
 	key.disabled = not enabled
-	key.modulate = Color.WHITE if enabled else DIM
+	if not enabled:
+		_key_rest(key.get_meta("anim"))
+
+
+## Toca uma sequência de quadros da tecla (loop para o hover). Devolve a animação para encadear.
+func _key_play(anim: Dictionary, seq: Array, loop: bool) -> Tween:
+	if anim["tween"] != null and anim["tween"].is_valid():
+		anim["tween"].kill()
+	var tween := create_tween()
+	if loop:
+		tween.set_loops()
+	for i in seq:
+		tween.tween_callback(_set_key_frame.bind(anim, i))
+		tween.tween_interval(CALC_FRAME_TIMES[i])
+	anim["tween"] = tween
+	return tween
+
+
+func _set_key_frame(anim: Dictionary, index: int) -> void:
+	anim["visual"].texture = anim["frames"][index]
+
+
+func _key_click(anim: Dictionary) -> void:
+	var tween := _key_play(anim, CALC_CLICK, false)
+	tween.tween_callback(_key_rest.bind(anim))
+
+
+## Volta ao repouso: quadro 0, ou o hover em loop se o mouse ainda estiver na tecla.
+func _key_rest(anim: Dictionary) -> void:
+	if anim["hovered"] and not anim["key"].disabled:
+		_key_play(anim, CALC_HOVER, true)
+	else:
+		_key_play(anim, CALC_IDLE, false)
 
 
 func _button(root: Control, text: String, rect: Rect2, handler: Callable) -> Button:
