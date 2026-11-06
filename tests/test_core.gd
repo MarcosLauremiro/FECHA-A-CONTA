@@ -80,7 +80,7 @@ func _test_transactions() -> void:
 
 
 func _test_priority() -> void:
-	# Escadinha (30×4=120) perde para Tudo no Relâmpago (35×4=140) quando as 5 são da mesma forma.
+	# Escadinha (25×3=75) perde para Tudo no Relâmpago (35×4=140) quando as 5 são da mesma forma.
 	var both := [n(1, Note.Suit.DEBITO), n(2, Note.Suit.DEBITO), n(5, Note.Suit.DEBITO), n(10, Note.Suit.DEBITO), n(20, Note.Suit.DEBITO)]
 	check(HandEvaluator.evaluate(both)["kind"] == "tudo_no_relampago", "Relâmpago vence Escadinha quando ambas servem")
 
@@ -151,9 +151,9 @@ func _test_scoring() -> void:
 	s = Scorer.score(HandEvaluator.evaluate([n(50), n(50, Note.Suit.DEBITO), n(50, Note.Suit.CREDITO), n(50, Note.Suit.RELAMPAGO)]))
 	check(s["total"] == 644, "Cofrinho de 50 = 644 (got %s)" % s["total"])
 
-	# Escadinha 1-2-5-10-20: pontos 2+3+5+6+7 = 23; (30 + 23) × 4 = 212
+	# Escadinha 1-2-5-10-20: pontos 2+3+5+6+7 = 23; (25 + 23) × 3 = 144
 	s = Scorer.score(HandEvaluator.evaluate([n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.RELAMPAGO)]))
-	check(s["total"] == 212, "Escadinha = 212 (got %s)" % s["total"])
+	check(s["total"] == 144, "Escadinha = 144 (got %s)" % s["total"])
 
 	# Nenhuma nota: saldo 0 e evento final presente.
 	s = Scorer.score(HandEvaluator.evaluate([]))
@@ -413,8 +413,8 @@ func _test_investments() -> void:
 	check(Scorer.score(HandEvaluator.evaluate(pair), {"levels": {"dobradinha": 1}})["total"] == 96, "Poupança nível 1: (10+12+10) × 3 = 96")
 	check(Scorer.score(HandEvaluator.evaluate(pair), {"levels": {"escadinha": 1}})["total"] == 44, "nível de outra transação não muda a Dobradinha")
 
-	var esc := [n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.RELAMPAGO)]  # Escadinha: (30+23) × 4 = 212
-	check(Scorer.score(HandEvaluator.evaluate(esc), {"levels": {"escadinha": 1}})["total"] == 365, "Tesouro nível 1: (30+23+20) × 5 = 365")
+	var esc := [n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.RELAMPAGO)]  # Escadinha: (25+23) × 3 = 144
+	check(Scorer.score(HandEvaluator.evaluate(esc), {"levels": {"escadinha": 1}})["total"] == 272, "Tesouro nível 1: (25+23+20) × 4 = 272")
 
 	var flush := [n(1, Note.Suit.DEBITO), n(2, Note.Suit.DEBITO), n(5, Note.Suit.DEBITO), n(10, Note.Suit.DEBITO), n(20, Note.Suit.DEBITO)]
 	check(Scorer.score(HandEvaluator.evaluate(flush), {"levels": {"tudo_no_relampago": 1}})["total"] == 498, "Cripto nível 1: (35+23+25) × 6 = 498")

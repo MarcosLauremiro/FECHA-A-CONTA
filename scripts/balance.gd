@@ -19,7 +19,7 @@ const TRANSACTIONS := {
 	"trocado": {"name": "Trocado", "base": 5, "juros": 1},
 	"dobradinha": {"name": "Dobradinha", "base": 10, "juros": 2},
 	"bolada": {"name": "Bolada", "base": 30, "juros": 3},
-	"escadinha": {"name": "Escadinha", "base": 30, "juros": 4},
+	"escadinha": {"name": "Escadinha", "base": 25, "juros": 3},
 	"tudo_no_relampago": {"name": "Tudo no Relâmpago", "base": 35, "juros": 4},
 	"cofrinho": {"name": "Cofrinho", "base": 60, "juros": 7},
 }

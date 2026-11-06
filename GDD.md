@@ -73,7 +73,7 @@ Formas de pagamento ("naipes"): Dinheiro, Relâmpago (o "Pix" do jogo), Débito,
 | Trocado | 1 carta solta (a maior) | 5 | ×1 | +0% |
 | Dobradinha | 2 notas de mesmo valor | 10 | ×2 | +100% |
 | Bolada | 3 iguais | 30 | ×3 | +200% |
-| Escadinha | 5 valores em sequência | 30 | ×4 | +300% |
+| Escadinha | 5 valores em sequência | 25 | ×3 | +200% |
 | Tudo no Relâmpago | 5 da mesma forma de pagamento | 35 | ×4 | +300% |
 | Cofrinho | 4 iguais | 60 | ×7 | +600% |
 
@@ -422,6 +422,42 @@ Hoje o jogador não sabe se a mão vai bater a meta antes de pagar. A ideia é m
 - Opção "Tutorial" na tela inicial, que pode ser escolhida no começo ou a qualquer momento.
 - Passo a passo: notas, formação, pagar, trocar, Camelô, chefes.
 - Pode ser refeito quando o jogador quiser.
+
+### Combinações e cartas que mudam a regra (em planejamento)
+
+Decisões tomadas:
+
+- **Conta Conjunta** é o full house (trinca + par, 5 notas). Assim não conflita com o Par, que é a Dobradinha.
+- **Cesta Básica** é 5 valores diferentes, sem sequência. Não aparece como jogada comum: fica ativável por cartas no meio da partida, e tem raridade maior.
+- **Dois Carnês** (dois pares) e **PIX** (sequência da mesma forma, topo da tabela) são propostas, ainda não aprovadas.
+- **Truco mineiro:** descartado.
+
+Cartas que mudam a dinâmica (aprovadas para desenho, valores a definir):
+
+- **Nota Falsa:** vale como qualquer valor e forma, mas rende menos pontos.
+- **Cheque Pré-datado:** os pontos da jogada só entram na conta seguinte.
+- **Mutirão:** combinação de 4 notas conta como se tivesse 5.
+- **Fiador:** protege da negativação uma vez por partida.
+- **Juros Compostos:** cada combinação feita aumenta o Juros de forma permanente, na partida.
+
+Resultados da simulação (`tests/sim_combos.gd`, 50 mil mãos de 8 notas, regras atuais, melhor jogada possível):
+
+Antes do ajuste (Escadinha 30×4 = 120):
+
+- Melhor jogada: Dobradinha 43,7%, Escadinha 25,2%, Bolada 25,0%, Tudo no Relâmpago 4,6%, Cofrinho 1,5%, Trocado 0%.
+
+Depois do ajuste (Escadinha 25×3 = 75, abaixo da Bolada 90):
+
+- Melhor jogada: Dobradinha 43,7%, Bolada 28,2%, Escadinha 22,0%, Tudo no Relâmpago 4,6%, Cofrinho 1,5%, Trocado 0%. Pontos médios da melhor jogada: 22,7.
+- Presença em alguma jogada de 5 notas: algum par 99,4%, Conta Conjunta 23,0%, Dois Carnês 78,9%, Cesta Básica 90,1%, Cesta Básica barata 64,3%, PIX 0,4%.
+
+Decisões do ajuste de balanceamento:
+
+- **Escadinha** agora perde para a Bolada (3 iguais) e só vence a Dobradinha. Antes ela ganhava da Bolada em todas as mãos com sequência e trinca.
+- **Trocado** nunca é a melhor jogada porque quase toda mão de 8 notas tem par (99,4%). Fica como fallback: uma carta solta só se o jogador escolher jogar uma nota.
+- **Cesta Básica** sai da mão comum. Ela só é ativada por carta no meio da partida, então a frequência natural não define o jogo. A variante "cesta barata" (64%) continua alta demais para ser regra fixa, e fica para decidir com a carta que a ativa.
+- **Conta Conjunta** ainda não tem base e Juros. Proposta: base 35, Juros ×3 (105), acima da Bolada (90) por exigir 5 notas, e abaixo do Cofrinho (420). Não aplicada ainda.
+- Para rodar: `godot --headless --path . -s res://tests/sim_combos.gd` (cerca de 2 minutos com 50 mil mãos).
 
 ### Ideias de memes e referências (em aberto)
 

@@ -192,14 +192,21 @@ func _settle_paid_bill() -> void:
 	var reward := bill.reward(base)
 	var extra := troco(bill.saldo, bill.goal)
 
+	# Cada passo fica guardado no comprovante, para a conta da carteira aparecer inteira.
+	var wallet_before := wallet
+
 	# Dívida cresce antes de receber; a recompensa paga a dívida primeiro (carteira negativa sobe).
+	var growth := 0
 	if wallet < 0:
-		wallet -= debt_growth(-wallet)
+		growth = debt_growth(-wallet)
+		wallet -= growth
 	wallet += reward + extra
 
 	# Agiota cobra uma porcentagem da carteira a cada conta paga.
+	var agiota := 0
 	if schemes.has("agiota"):
-		wallet -= SchemeRules.agiota_charge(wallet)
+		agiota = SchemeRules.agiota_charge(wallet)
+		wallet -= agiota
 
 	max_saldo = maxi(max_saldo, bill.saldo)
 	receipt = {
@@ -208,6 +215,9 @@ func _settle_paid_bill() -> void:
 		"goal": bill.goal,
 		"reward": reward,
 		"troco": extra,
+		"wallet_before": wallet_before,
+		"growth": growth,
+		"agiota": agiota,
 		"wallet": wallet,
 		"days_left": bill.days_left,
 	}

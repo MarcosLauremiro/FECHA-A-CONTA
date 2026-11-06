@@ -98,7 +98,7 @@ const CALC_FRAMES := 8
 const CALC_FRAME_SIZE := Vector2(76, 72)
 const CALC_FRAME_TIMES := [0.1, 0.06, 0.06, 0.12, 0.04, 0.05, 0.06, 0.07]  # segundos por quadro
 const CALC_IDLE := [0]
-const CALC_HOVER := [1, 2, 3]
+const CALC_HOVER := [1]  # hover: imagem fixa (quadro 1), sem piscar
 const CALC_CLICK := [4, 5, 6, 7]
 const TEX_HOWTO := "res://art/telas/como_jogar.png"
 const TEX_END_OK :="res://art/telas/fim_contas_em_dia.png"
@@ -163,7 +163,8 @@ var _next_button: Button
 var _end_stamp: TextureRect
 var _receipt: NinePatchRect
 var _receipt_clip: Control          # janela da impressora: o papel aparece de cima para baixo
-var _receipt_label: Label
+var _receipt_title: Label
+var _receipt_rows: VBoxContainer
 
 # Interface do Camelô (escondida na partida).
 var _shop_root: Control
@@ -337,11 +338,12 @@ func _build_calculator(root: Control) -> void:
 	var meta_name := _label(root, Rect2(1100, 40, 110, 18), 14, INK, HORIZONTAL_ALIGNMENT_CENTER)
 	meta_name.text = "META"
 	_stat_values["meta"] = _label(root, Rect2(1100, 56, 110, 26), 22, INK, HORIZONTAL_ALIGNMENT_CENTER)
-	# Esquerda: VALOR em cima, FORMA embaixo. Direita: PAGAR em cima, TROCAR embaixo.
-	_sort_value_key = _calc_key(root, "VALOR", "Organiza a mão por valor, do menor para o maior.", Rect2(1086, 326, 72, 62), _on_sort_value_pressed, false, "tecla_valor.png")
-	_sort_key = _calc_key(root, "FORMA", "Agrupa a mão por forma de pagamento (selo).", Rect2(1086, 410, 72, 62), _on_sort_suit_pressed, false, "tecla_forma.png")
-	_pay_key = _calc_key(root, "PAGAR", "Paga a conta com as notas selecionadas.", Rect2(1170, 326, 72, 62), _on_pay_pressed, true, "tecla_soma.png")
-	_swap_key = _calc_key(root, "TROCAR", "Troca as notas selecionadas por outras. Gasta uma troca.", Rect2(1170, 410, 72, 62), _on_swap_pressed, true, "tecla_subtracao.png")
+	# Quatro teclas, centralizadas um pouco à esquerda do corpo da calculadora.
+	# Esquerda: VALOR em cima, FORMA embaixo. Direita: TROCAR em cima, PAGAR embaixo.
+	_sort_value_key = _calc_key(root, "VALOR", "Organiza a mão por valor, do menor para o maior.", Rect2(1078, 326, 72, 62), _on_sort_value_pressed, false, "tecla_valor.png")
+	_sort_key = _calc_key(root, "FORMA", "Agrupa a mão por forma de pagamento (selo).", Rect2(1078, 410, 72, 62), _on_sort_suit_pressed, false, "tecla_forma.png")
+	_swap_key = _calc_key(root, "TROCAR", "Troca as notas selecionadas por outras. Gasta uma troca.", Rect2(1162, 326, 72, 62), _on_swap_pressed, true, "tecla_subtracao.png")
+	_pay_key = _calc_key(root, "PAGAR", "Paga a conta com as notas selecionadas.", Rect2(1162, 410, 72, 62), _on_pay_pressed, true, "tecla_soma.png")
 
 
 ## Dentro da janela da tela: cabeçalho (mês e tipo), saldo, mensagens, chefe e a linha de dias e trocas.
@@ -430,14 +432,17 @@ func _build_receipt(root: Control) -> void:
 	paper.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_receipt.add_child(paper)
 
-	_receipt_label = Label.new()
-	_receipt_label.position = Vector2(36, 64)
-	_receipt_label.size = Vector2(168, 470)
-	_receipt_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
-	_receipt_label.add_theme_font_size_override("font_size", 20)
-	_receipt_label.add_theme_color_override("font_color", INK)
-	_receipt_label.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_receipt.add_child(_receipt_label)
+	# Cabeçalho do comprovante: escrito sobre a faixa escura da arte.
+	_receipt_title = _label(_receipt, Rect2(24, 14, 192, 26), 22, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_receipt_title.text = "COMPROVANTE"
+
+	# Corpo: linhas de texto em colunas (nome à esquerda, valor à direita), separadas por tracejados.
+	_receipt_rows = VBoxContainer.new()
+	_receipt_rows.position = Vector2(36, 66)
+	_receipt_rows.size = Vector2(168, 466)
+	_receipt_rows.add_theme_constant_override("separation", 4)
+	_receipt_rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_receipt.add_child(_receipt_rows)
 
 
 # --- Camelô ----------------------------------------------------------------
@@ -921,12 +926,14 @@ func _update_status() -> void:
 
 	if run.state == RunState.WON:
 		_message.text = "CONTAS EM DIA   ·   Saldo máximo R$ %d" % run.max_saldo
-		_receipt_label.text = _final_receipt_text()
+		_receipt_title.text = "COMPROVANTE FINAL"
+		_fill_receipt(_final_receipt_lines())
 	elif run.state == RunState.LOST:
 		_message.text = "NOME NEGATIVADO"
 	elif paid:
 		_message.text = "CONTA PAGA"
-		_receipt_label.text = _receipt_text()
+		_receipt_title.text = "COMPROVANTE"
+		_fill_receipt(_receipt_lines())
 
 
 ## Faixa de esquemas dentro da tela: uma carta por esquema ativo.
@@ -1076,20 +1083,93 @@ func _lift(btn: BaseButton, selected: bool) -> void:
 
 
 ## Comprovante final (pagou a última fatura de Janeiro): CONTAS EM DIA e o saldo máximo do ano.
-func _final_receipt_text() -> String:
-	return "COMPROVANTE FINAL\n\nCONTAS EM DIA\n\nContas pagas\n%d de %d\n\nSaldo máximo\nR$ %d\n\nCarteira R$ %d" % [
-		Balance.MONTHS.size() * Balance.BILL_KEYS.size(),
-		Balance.MONTHS.size() * Balance.BILL_KEYS.size(),
-		run.max_saldo,
-		run.wallet,
+## Linhas do comprovante final. Cada linha: [texto à esquerda, valor à direita, estilo].
+func _final_receipt_lines() -> Array:
+	var total := Balance.MONTHS.size() * Balance.BILL_KEYS.size()
+	return [
+		["CONTAS EM DIA", "", "titulo"],
+		["", "", "tracejado"],
+		["Contas pagas", "%d de %d" % [total, total], ""],
+		["Saldo máximo", "R$ %d" % run.max_saldo, ""],
+		["", "", "tracejado"],
+		["CARTEIRA", "R$ %d" % run.wallet, "total"],
 	]
 
 
-func _receipt_text() -> String:
+## Linhas do comprovante de uma conta paga: a carteira mostra cada passo até o total.
+func _receipt_lines() -> Array:
 	var r := run.receipt
-	return "COMPROVANTE\n%s\n\nSaldo R$ %d\nMeta R$ %d\n\nRecompensa +R$ %d\nTroco +R$ %d\n\nCarteira R$ %d" % [
-		r["title"], r["saldo"], r["goal"], r["reward"], r["troco"], r["wallet"],
+	# Saves antigos não guardam a carteira de antes: ela é reconstruída a partir do total.
+	var before: int = int(r.get("wallet_before", int(r["wallet"]) - int(r["reward"]) - int(r["troco"])))
+	var lines: Array = [
+		[str(r["title"]), "", "titulo"],
+		["", "", "tracejado"],
+		["Saldo da conta", "R$ %d" % int(r["saldo"]), ""],
+		["Meta", "R$ %d" % int(r["goal"]), ""],
+		["Dias sobrando", str(int(r.get("days_left", 0))), ""],
+		["", "", "tracejado"],
+		["Carteira antes", "R$ %d" % before, ""],
 	]
+	if int(r.get("growth", 0)) > 0:
+		lines.append(["Juros da dívida", "−R$ %d" % int(r["growth"]), "perda"])
+	lines.append(["Recompensa", "+R$ %d" % int(r["reward"]), "ganho"])
+	lines.append(["Troco", "+R$ %d" % int(r["troco"]), "ganho"])
+	if int(r.get("agiota", 0)) > 0:
+		lines.append(["Agiota (10%)", "−R$ %d" % int(r["agiota"]), "perda"])
+	lines.append(["", "", "tracejado"])
+	lines.append(["CARTEIRA", "R$ %d" % int(r["wallet"]), "total"])
+	return lines
+
+
+## Monta as linhas do comprovante na tela. Estilos: titulo, tracejado, ganho, perda, total.
+func _fill_receipt(lines: Array) -> void:
+	for child in _receipt_rows.get_children():
+		_receipt_rows.remove_child(child)
+		child.queue_free()
+	for line in lines:
+		var style: String = line[2]
+		if style == "tracejado":
+			var dashes := Label.new()
+			dashes.text = "- - - - - - - - - - - - - - - - -"
+			dashes.add_theme_font_size_override("font_size", 14)
+			dashes.add_theme_color_override("font_color", DIM)
+			dashes.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_receipt_rows.add_child(dashes)
+			continue
+		if style == "titulo":
+			var title := Label.new()
+			title.text = line[0]
+			title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+			title.add_theme_font_size_override("font_size", 22)
+			title.add_theme_color_override("font_color", INK)
+			title.mouse_filter = Control.MOUSE_FILTER_IGNORE
+			_receipt_rows.add_child(title)
+			continue
+		var row := HBoxContainer.new()
+		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var size := 30 if style == "total" else 20
+		var color := INK
+		if style == "ganho":
+			color = LCD_INK
+		elif style == "perda":
+			color = DANGER_LCD
+		elif style == "total":
+			color = DANGER_LCD if line[1].begins_with("R$ -") else LCD_INK
+		var left := _receipt_text_label(line[0], size, color, HORIZONTAL_ALIGNMENT_LEFT)
+		left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		row.add_child(left)
+		row.add_child(_receipt_text_label(line[1], size, color, HORIZONTAL_ALIGNMENT_RIGHT))
+		_receipt_rows.add_child(row)
+
+
+func _receipt_text_label(text: String, font_size: int, color: Color, align: HorizontalAlignment) -> Label:
+	var label := Label.new()
+	label.text = text
+	label.horizontal_alignment = align
+	label.add_theme_font_size_override("font_size", font_size)
+	label.add_theme_color_override("font_color", color)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	return label
 
 
 func _on_card_pressed(note: Note) -> void:
@@ -1509,7 +1589,7 @@ func _calc_key(root: Control, name: String, desc: String, rect: Rect2, handler: 
 	key.mouse_entered.connect(func() -> void:
 		anim["hovered"] = true
 		if not key.disabled:
-			_key_play(anim, CALC_HOVER, true))
+			_key_play(anim, CALC_HOVER, false))
 	key.mouse_exited.connect(func() -> void:
 		anim["hovered"] = false
 		_key_rest(anim))
@@ -1552,7 +1632,7 @@ func _key_click(anim: Dictionary) -> void:
 ## Volta ao repouso: quadro 0, ou o hover em loop se o mouse ainda estiver na tecla.
 func _key_rest(anim: Dictionary) -> void:
 	if anim["hovered"] and not anim["key"].disabled:
-		_key_play(anim, CALC_HOVER, true)
+		_key_play(anim, CALC_HOVER, false)
 	else:
 		_key_play(anim, CALC_IDLE, false)
 
