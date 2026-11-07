@@ -1,6 +1,6 @@
 class_name RunState
 extends RefCounted
-## A partida inteira: 3 meses × (Boleto, Aluguel, Fatura), carteira, esquemas e progresso.
+## A partida inteira: 12 meses × (Boleto, Aluguel, Fatura), carteira, esquemas e progresso.
 ## Dono das contas (BillRound), da carteira e do Camelô. A interface só chama métodos daqui.
 ##
 ## Estados:
@@ -27,6 +27,10 @@ var schemes: Array = []       # esquemas ativos (ids), da esquerda para a direit
 var cunhado_bonus: int = 0    # Juros acumulado do Cunhado Investidor
 var shop_offer: Array = []    # ofertas do Camelô agora: ids de esquemas e de investimentos
 var levels: Dictionary = {}   # níveis dos investimentos, {transação: nível}
+var curso_matriculado := false  # Curso do Primo Rico: matrícula paga (uma vez na partida)
+var curso_contas := 0           # contas pagas depois da matrícula (a cada 2, o Valor sobe)
+var bought_last_shop := false   # comprou algo no Camelô antes desta conta (Julius)
+var boss_note := ""             # resultado do chefe desta conta (Urubu, matrícula), mostrado na tela
 
 # Último comprovante (preenchido ao pagar uma conta).
 var receipt: Dictionary = {}
@@ -45,17 +49,25 @@ func bill_key() -> String:
 
 
 func month_name() -> String:
-	return Balance.MONTHS[month_index]["name"]
+	return tr(Balance.MONTHS[month_index]["name"])
 
 
 func bill_title() -> String:
-	return "%s · %s" % [month_name(), Balance.BILL_LABELS[bill_key()]]
+	return "%s · %s" % [month_name(), tr(Balance.BILL_LABELS[bill_key()])]
 
 
+## Chefe do mês: só na fatura (3ª conta do mês). Boleto e Aluguel não têm chefe.
 func boss_id() -> String:
 	if bill_key() == "fatura":
 		return Balance.BOSS_BY_MONTH[month_index]
 	return Boss.NONE
+
+
+## Valor extra do Curso do Primo Rico, em %: CURSO_VALOR_PERCENT a cada CURSO_STEP_CONTAS contas pagas.
+func valor_percent() -> int:
+	if not curso_matriculado:
+		return 0
+	return Balance.CURSO_VALOR_PERCENT * (curso_contas / Balance.CURSO_STEP_CONTAS)
 
 
 func is_last_bill() -> bool:
@@ -71,6 +83,8 @@ func pay() -> Dictionary:
 
 	# Cashback devolve na carteira na hora; Cunhado acumula a cada Escadinha.
 	wallet += int(result.get("cash", 0))
+	# Bandeira vermelha: cada dia usado custa energia.
+	wallet -= Boss.day_cost(boss_id())
 	if result["score"]["kind"] == "escadinha" and schemes.has("cunhado"):
 		cunhado_bonus += 1
 
@@ -91,6 +105,9 @@ func swap() -> Dictionary:
 	var result := bill.swap()
 	if result["ok"]:
 		wallet -= cost
+		# Dia dos Pais: a troca pode acabar a conta (último dia).
+		if result["state"] == BillRound.LOST:
+			state = LOST
 	return result
 
 
@@ -99,6 +116,7 @@ func next_bill() -> bool:
 	if state != BILL_PAID:
 		return false
 	state = SHOP
+	bought_last_shop = false
 	shop_offer = _random_ids(Balance.SCHEME_ORDER, Balance.SHOP_OFFERS, schemes) + _random_ids(Balance.INVESTMENT_ORDER, Balance.SHOP_INVESTMENT_OFFERS, [])
 	return true
 
@@ -123,6 +141,8 @@ func buy(index: int) -> Dictionary:
 	if not refusal.is_empty():
 		return refusal
 	var id: String = shop_offer[index]
+	if id == "":  # oferta já comprada: o espaço fica vazio até a próxima visita
+		return {"ok": false, "reason": "bad_index"}
 	var price := price_of(id)
 	if wallet - price < Balance.OVERDRAFT_LIMIT:
 		return {"ok": false, "reason": "no_money"}
@@ -132,14 +152,17 @@ func buy(index: int) -> Dictionary:
 		var kind := Investments.transaction_of(id)
 		var drop := id == "cripto" and _rand_int(Balance.CRIPTO_DROP_ODDS) == 0
 		levels[kind] = Investments.level_after_purchase(id, int(levels.get(kind, 0)), drop)
-		shop_offer.remove_at(index)
+		# A oferta comprada vira espaço vazio: as outras não mudam de lugar.
+		shop_offer[index] = ""
+		bought_last_shop = true
 		return {"ok": true, "reason": "", "id": id, "dropped": drop}
 
 	if schemes.size() >= Balance.MAX_SCHEMES:
 		return {"ok": false, "reason": "slots_full"}
 	wallet -= price
 	schemes.append(id)
-	shop_offer.remove_at(index)
+	shop_offer[index] = ""
+	bought_last_shop = true
 	return {"ok": true, "reason": "", "id": id}
 
 
@@ -189,15 +212,18 @@ static func debt_growth(debt: int) -> int:
 func _settle_paid_bill() -> void:
 	var key := bill_key()
 	var base: int = Balance.BILL_REWARDS[key]
-	var reward := bill.reward(base)
+	# Recompensa da conta: base + dia não usado, depois o chefe (Grosso dobra; Bolsa e 13º somam).
+	var reward := bill.reward(base) * Boss.reward_mult(boss_id()) + Boss.reward_bonus(boss_id()) + Investments.reward_bonus(levels)
 	var extra := troco(bill.saldo, bill.goal)
+	if curso_matriculado:
+		curso_contas += 1
 
 	# Cada passo fica guardado no comprovante, para a conta da carteira aparecer inteira.
 	var wallet_before := wallet
 
 	# Dívida cresce antes de receber; a recompensa paga a dívida primeiro (carteira negativa sobe).
 	var growth := 0
-	if wallet < 0:
+	if wallet < 0 and not schemes.has("consignado"):
 		growth = debt_growth(-wallet)
 		wallet -= growth
 	wallet += reward + extra
@@ -207,6 +233,11 @@ func _settle_paid_bill() -> void:
 	if schemes.has("agiota"):
 		agiota = SchemeRules.agiota_charge(wallet)
 		wallet -= agiota
+
+	# Parcelas e dízimo dos esquemas (Vendedor de Consórcio, Consignado, Pastor).
+	var parcelas := SchemeRules.parcelas_per_bill(schemes)
+	var dizimo := SchemeRules.dizimo_charge(schemes, wallet)
+	wallet -= parcelas + dizimo
 
 	max_saldo = maxi(max_saldo, bill.saldo)
 	receipt = {
@@ -218,6 +249,7 @@ func _settle_paid_bill() -> void:
 		"wallet_before": wallet_before,
 		"growth": growth,
 		"agiota": agiota,
+		"parcelas": parcelas + dizimo,
 		"wallet": wallet,
 		"days_left": bill.days_left,
 	}
@@ -225,11 +257,31 @@ func _settle_paid_bill() -> void:
 
 
 func _start_bill() -> void:
+	var boss := boss_id()
 	var active := schemes.duplicate()
-	# Golpe do WhatsApp (fatura de Janeiro): um esquema aleatório fica desativado nesta conta.
-	if boss_id() == "janeiro_impostos" and not active.is_empty():
+	boss_note = ""
+	# Golpe do WhatsApp (IPVA de Janeiro): um esquema aleatório fica desativado em cada conta.
+	if boss == "janeiro_impostos" and not active.is_empty():
 		active.remove_at(_rand_int(active.size()))
-	bill = BillRound.new(Balance.MONTHS[month_index][bill_key()], boss_id(), _rng, active, cunhado_bonus, levels)
+	# Curso do Primo Rico: a matrícula é paga uma vez, na primeira conta do mês.
+	if boss == "curso_primo_rico" and not curso_matriculado:
+		curso_matriculado = true
+		wallet -= Balance.CURSO_COST
+		boss_note = tr("Matrícula paga: -R$ %d.") % Balance.CURSO_COST
+	# Urubu do Pix: no começo de cada conta, 1 em 2 chance de dobrar a carteira.
+	if boss == "urubu_pix":
+		if _rand_int(2) == 0:
+			if wallet > 0:
+				wallet *= 2
+				boss_note = tr("Urubu: a carteira dobrou!")
+			else:
+				boss_note = tr("Urubu: não tinha o que dobrar.")
+		else:
+			wallet -= Balance.URUBU_LOSS
+			boss_note = tr("Urubu: golpe, perdeu R$ %d.") % Balance.URUBU_LOSS
+	var goal: int = Balance.MONTHS[month_index][bill_key()]
+	goal = goal * Boss.goal_percent(boss, bought_last_shop) / 100
+	bill = BillRound.new(goal, boss, _rng, active, cunhado_bonus, levels, valor_percent())
 
 
 ## Pirâmide: a cada mês, 1 em PIRAMIDE_ODDS chance de colapsar (sai da lista).
@@ -248,18 +300,32 @@ func _check_shop(index: int, offer: Array) -> Dictionary:
 
 
 ## Sorteia até `count` ids distintos de `pool` que não estejam em `exclude`.
+## Quanto mais rara a oferta (Balance.RARITY_WEIGHT), menor a chance de sair.
 func _random_ids(pool_all: Array, count: int, exclude: Array) -> Array:
 	var pool: Array = []
 	for id in pool_all:
 		if not exclude.has(id):
 			pool.append(id)
-	# Embaralha (Fisher–Yates com o mesmo RNG da partida).
-	for i in range(pool.size() - 1, 0, -1):
-		var j := _rand_int(i + 1)
-		var tmp = pool[i]
-		pool[i] = pool[j]
-		pool[j] = tmp
-	return pool.slice(0, mini(count, pool.size()))
+	var out: Array = []
+	while out.size() < count and not pool.is_empty():
+		var total := 0
+		for id in pool:
+			total += _weight_of(id)
+		var roll := _rand_int(total)
+		var acc := 0
+		for i in range(pool.size()):
+			acc += _weight_of(pool[i])
+			if roll < acc:
+				out.append(pool[i])
+				pool.remove_at(i)
+				break
+	return out
+
+
+## Peso de sorteio de um esquema ou investimento, pela raridade.
+static func _weight_of(id: String) -> int:
+	var info: Dictionary = Balance.INVESTMENTS[id] if Investments.is_investment(id) else Balance.SCHEMES[id]
+	return int(Balance.RARITY_WEIGHT[info["rarity"]])
 
 
 func _rand_int(n: int) -> int:
@@ -280,6 +346,10 @@ func to_dict() -> Dictionary:
 		"cunhado_bonus": cunhado_bonus,
 		"shop_offer": shop_offer,
 		"levels": levels,
+		"curso_matriculado": curso_matriculado,
+		"curso_contas": curso_contas,
+		"bought_last_shop": bought_last_shop,
+		"boss_note": boss_note,
 		"receipt": receipt,
 		"bill": bill.to_dict(),
 	}
@@ -298,6 +368,10 @@ static func from_dict(d: Dictionary) -> RunState:
 	r.levels = {}
 	for k in d["levels"]:
 		r.levels[k] = int(d["levels"][k])
+	r.curso_matriculado = bool(d["curso_matriculado"])
+	r.curso_contas = int(d["curso_contas"])
+	r.bought_last_shop = bool(d["bought_last_shop"])
+	r.boss_note = String(d["boss_note"])
 	r.receipt = d["receipt"]
 	r.bill = BillRound.from_dict(d["bill"])
 	return r

@@ -19,17 +19,21 @@ var boss: String = Boss.NONE  # id do chefe desta conta ("" = conta comum)
 var schemes: Array = []       # esquemas ativos nesta conta (ids)
 var cunhado_bonus: int = 0    # Juros acumulado do Cunhado (vem da partida)
 var levels: Dictionary = {}   # níveis dos investimentos, {transação: nível} (vem da partida)
+var valor_percent: int = 0    # Valor extra em % (Curso do Primo Rico, vem da partida)
+var hand_size: int = Balance.HAND_SIZE  # cartas na mão (Férias na praia tem menos)
 
 var _rng: RandomNumberGenerator
-var _relampago_used := false  # Relâmpago Errado só duplica uma vez por conta
+var _pix_used := false  # Pix Errado só duplica uma vez por conta
 
 
-func _init(p_goal: int, p_boss: String = Boss.NONE, rng: RandomNumberGenerator = null, p_schemes: Array = [], p_cunhado: int = 0, p_levels: Dictionary = {}) -> void:
+func _init(p_goal: int, p_boss: String = Boss.NONE, rng: RandomNumberGenerator = null, p_schemes: Array = [], p_cunhado: int = 0, p_levels: Dictionary = {}, p_valor_percent: int = 0) -> void:
 	goal = p_goal
 	boss = p_boss
 	schemes = p_schemes.duplicate()
 	cunhado_bonus = p_cunhado
 	levels = p_levels.duplicate()
+	valor_percent = p_valor_percent
+	hand_size = Boss.hand_size(p_boss)
 	_rng = rng
 	deck = Deck.new(rng)
 	_refill()
@@ -63,21 +67,16 @@ func pay() -> Dictionary:
 		if Boss.note_scores(boss, n):
 			scoring.append(n)
 
-	var fx := {
-		"schemes": schemes,
-		"played": played.size(),
-		"hand_points": _hand_points_left(played),
-		"cunhado_bonus": cunhado_bonus,
-		"levels": levels,
-		"rifa": _roll_rifa(),
-	}
-	var score := Scorer.score(HandEvaluator.evaluate(scoring), fx)
+	var score := Scorer.score(HandEvaluator.evaluate(scoring, unlocked()), _score_fx(played, scoring, _roll_rifa()))
 	var tax := Boss.play_tax(boss, score["total"])
 	score["tax"] = tax
 	saldo += score["total"] - tax
 
 	var cash := SchemeRules.cash_from_scoring(schemes, scoring)
-	_relampago_copy(played)
+	# Bicheiro: 1 em BICHEIRO_ODDS de a jogada render o prêmio na carteira.
+	if schemes.has("bicheiro") and _rand_int(Balance.BICHEIRO_ODDS) == 0:
+		cash += Balance.BICHEIRO_PRIZE
+	_pix_copy(played)
 
 	_leave_hand(played)
 	deck.discard(played)
@@ -92,6 +91,45 @@ func pay() -> Dictionary:
 	return {"ok": true, "reason": "", "score": score, "state": state, "cash": cash}
 
 
+## Prévia da jogada: quanto as notas escolhidas valeriam se fossem pagas agora. Não muda nada.
+## Usa as mesmas regras do PAGAR, sem a sorte da Rifa (que só sai ao pagar).
+## Devolve o Dictionary do Scorer (com "tax"), ou {} se nenhuma nota pontua.
+func preview(played: Array) -> Dictionary:
+	var scoring: Array = []
+	for n in played:
+		if Boss.note_scores(boss, n):
+			scoring.append(n)
+	if scoring.is_empty():
+		return {}
+	var score := Scorer.score(HandEvaluator.evaluate(scoring, unlocked()), _score_fx(played, scoring, false))
+	score["tax"] = Boss.play_tax(boss, score["total"])
+	return score
+
+
+## Formações liberadas pelos investimentos da partida (nível acima de zero).
+func unlocked() -> Array:
+	var out: Array = []
+	for kind in Balance.UNLOCKABLE_KINDS:
+		if int(levels.get(kind, 0)) > 0:
+			out.append(kind)
+	return out
+
+
+## Entradas do Scorer para uma jogada. `rifa` vem de quem chama (sorteio só no PAGAR).
+func _score_fx(played: Array, scoring: Array, rifa: bool) -> Dictionary:
+	return {
+		"schemes": schemes,
+		"played": played.size(),
+		"scoring": scoring,
+		"hand_points": _hand_points_left(played),
+		"cunhado_bonus": cunhado_bonus,
+		"levels": levels,
+		"rifa": rifa,
+		"valor_percent": valor_percent,
+		"debito_bonus": Boss.debito_bonus(boss),
+	}
+
+
 ## TROCAR: descarta as notas escolhidas e compra o mesmo número de novas. Gasta 1 troca.
 func swap() -> Dictionary:
 	var refusal := _check_can_act()
@@ -104,6 +142,11 @@ func swap() -> Dictionary:
 	_leave_hand(discarded)
 	deck.discard(discarded)
 	swaps_left -= 1
+	# Dia dos Pais: a troca também gasta um dia; no último dia, a conta acaba.
+	if Boss.swap_costs_day(boss):
+		days_left -= 1
+		if days_left == 0:
+			state = LOST
 	_refill()
 
 	return {"ok": true, "reason": "", "state": state}
@@ -151,15 +194,15 @@ func _roll_rifa() -> bool:
 	return _rand_int(Balance.RIFA_ODDS) == 0
 
 
-## Relâmpago Errado: a primeira nota de Relâmpago jogada nesta conta é copiada para o baralho.
-func _relampago_copy(played: Array) -> void:
-	if not schemes.has("relampago_errado") or _relampago_used:
+## Pix Errado: a primeira nota de Pix jogada nesta conta é copiada para o baralho.
+func _pix_copy(played: Array) -> void:
+	if not schemes.has("relampago_errado") or _pix_used:
 		return
 	for n in played:
-		if n.suit == Note.Suit.RELAMPAGO:
+		if n.suit == Note.Suit.PIX:
 			deck.draw_pile.append(Note.new(n.value, n.suit))
 			deck.shuffle(_rng)
-			_relampago_used = true
+			_pix_used = true
 			return
 
 
@@ -184,7 +227,8 @@ func to_dict() -> Dictionary:
 		"schemes": schemes,
 		"cunhado_bonus": cunhado_bonus,
 		"levels": levels,
-		"relampago_used": _relampago_used,
+		"valor_percent": valor_percent,
+		"pix_used": _pix_used,
 		"deck": deck.to_dict(),
 		"hand": Note.list_to_data(hand),
 		"selected": selected_idx,
@@ -195,7 +239,7 @@ static func from_dict(d: Dictionary) -> BillRound:
 	var levels_in: Dictionary = {}
 	for k in d["levels"]:
 		levels_in[k] = int(d["levels"][k])
-	var b := BillRound.new(int(d["goal"]), String(d["boss"]), null, d["schemes"], int(d["cunhado_bonus"]), levels_in)
+	var b := BillRound.new(int(d["goal"]), String(d["boss"]), null, d["schemes"], int(d["cunhado_bonus"]), levels_in, int(d.get("valor_percent", 0)))
 	b.deck = Deck.from_dict(d["deck"])
 	b.hand = Note.list_from_data(d["hand"])
 	b.selected = []
@@ -206,7 +250,7 @@ static func from_dict(d: Dictionary) -> BillRound:
 	b.swaps_left = int(d["swaps_left"])
 	b.saldo = int(d["saldo"])
 	b.state = String(d["state"])
-	b._relampago_used = bool(d["relampago_used"])
+	b._pix_used = bool(d.get("pix_used", false))
 	return b
 
 
@@ -217,6 +261,6 @@ func _leave_hand(cards: Array) -> void:
 
 
 func _refill() -> void:
-	var missing := Balance.HAND_SIZE - hand.size()
+	var missing := hand_size - hand.size()
 	if missing > 0:
 		hand.append_array(deck.draw(missing, _rng))

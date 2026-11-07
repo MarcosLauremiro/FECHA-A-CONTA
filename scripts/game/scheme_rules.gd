@@ -24,11 +24,48 @@ static func score_effect(id: String, fx: Dictionary) -> Dictionary:
 			else:
 				eff["add"] = -1
 		"vaquinha":
-			eff["value"] = int(fx.get("hand_points", 0))
+			eff["value"] = int(fx.get("hand_points", 0)) * Balance.VAQUINHA_PERCENT / 100
 		"rifa":
 			if bool(fx.get("rifa", false)):
 				eff["mult"] = Balance.RIFA_MULT
+		"vendedor_consorcio":
+			eff["value"] = Balance.CONSORCIO_VALUE * _count_suit(fx, Note.Suit.DINHEIRO)
+		"tia_do_pix":
+			eff["add"] = Balance.TIA_PIX_JUROS * _count_suit(fx, Note.Suit.DEBITO)
+		"consignado":
+			eff["add"] = Balance.CONSIGNADO_JUROS
+		"nubank":
+			eff["value"] = Balance.NUBANK_VALUE * _count_suit(fx, Note.Suit.CREDITO)
+		"pastor":
+			eff["value"] = Balance.PASTOR_VALUE
+		"influenciador":
+			if int(fx.get("played", 0)) >= Balance.INFLUENCIADOR_MIN_NOTAS:
+				eff["add"] = Balance.INFLUENCIADOR_JUROS
 	return eff
+
+
+## Notas que pontuam de um naipe (fx["scoring"], as notas da jogada que pontuam).
+static func _count_suit(fx: Dictionary, suit: int) -> int:
+	var total := 0
+	for n in fx.get("scoring", []):
+		if n.suit == suit:
+			total += 1
+	return total
+
+
+## Parcelas fixas que os esquemas cobram a cada conta paga (Vendedor de Consórcio).
+static func parcelas_per_bill(schemes: Array) -> int:
+	var total := 0
+	if schemes.has("vendedor_consorcio"):
+		total += Balance.CONSORCIO_PARCELA
+	return total
+
+
+## Dízimo do Pastor a cada conta paga: % da carteira, só com saldo positivo.
+static func dizimo_charge(schemes: Array, wallet: int) -> int:
+	if not schemes.has("pastor") or wallet <= 0:
+		return 0
+	return wallet * Balance.PASTOR_PERCENT / 100
 
 
 ## Dinheiro que a jogada devolve na carteira (Cashback): R$ 1 por nota de Crédito que pontua.

@@ -32,9 +32,11 @@ var _cache := {}
 func _ready() -> void:
 	for i in range(POOL_SIZE):
 		var player := AudioStreamPlayer.new()
+		player.bus = Settings.BUS_SFX
 		add_child(player)
 		_players.append(player)
 	_music = AudioStreamPlayer.new()
+	_music.bus = Settings.BUS_MUSIC
 	_music.volume_db = MUSIC_VOLUME_DB
 	add_child(_music)
 

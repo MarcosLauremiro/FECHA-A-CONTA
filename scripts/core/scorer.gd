@@ -32,10 +32,14 @@ static func score(evaluation: Dictionary, fx: Dictionary = {}) -> Dictionary:
 
 	var points := 0
 	var cards: Array = evaluation["cards"]
+	var debito_bonus: bool = fx.get("debito_bonus", false)
 	for i in range(cards.size()):
 		var pts: int = cards[i].points()
+		# Bandeira vermelha: notas de Débito pontuam a mais.
+		if debito_bonus and cards[i].suit == Note.Suit.DEBITO:
+			pts += pts * Balance.BANDEIRA_DEBITO_PERCENT / 100
 		points += pts
-		events.append({"type": "note", "index": i, "amount": pts})
+		events.append({"type": "note", "index": i, "amount": pts, "card": cards[i]})
 
 	# Somas (Valor e Juros) primeiro: nível de investimento desta transação.
 	var levels: Dictionary = fx.get("levels", {})
@@ -54,10 +58,16 @@ static func score(evaluation: Dictionary, fx: Dictionary = {}) -> Dictionary:
 		mult *= eff["mult"]
 		events.append({"type": "scheme", "id": id, "value": eff["value"], "add": eff["add"], "mult": eff["mult"]})
 
+	# Curso do Primo Rico: Valor extra em porcentagem, depois das somas e antes dos Juros.
+	var pre := base + points + value_add
+	var boss_value: int = pre * int(fx.get("valor_percent", 0)) / 100
+	if boss_value > 0:
+		events.append({"type": "boss", "value": boss_value})
+
 	var juros_final := maxi(0, juros + juros_add)
 	events.append({"type": "juros", "value": juros_final})
 
-	var total := (base + points + value_add) * juros_final * mult
+	var total := (pre + boss_value) * juros_final * mult
 	events.append({"type": "total", "value": total})
 
 	return {"kind": kind, "base": base, "points": points, "juros": juros_final, "total": total, "events": events}

@@ -2,6 +2,7 @@ extends SceneTree
 ## Simulador: joga muitas partidas inteiras com escolhas aleatórias e confere as regras a cada passo.
 ##   godot --headless -s res://tests/test_fuzz.gd
 ## Não mede balanceamento. Serve para achar travamentos e estados que não deveriam existir.
+## O bot guloso (mesmo código que a simulação de balanceamento usa) também dá um número de referência.
 
 const RUNS := 300
 const MAX_STEPS := 3000
@@ -82,20 +83,7 @@ func _play_bill_step(run: RunState, rng: RandomNumberGenerator) -> void:
 		_fail("mão vazia numa conta em andamento (%s)" % run.bill_title())
 		return
 	if _greedy:
-		for n in bill.selected.duplicate():
-			bill.toggle_select(n)
-		var best := HandEvaluator.evaluate(bill.hand)
-		# Mão fraca (só trocado ou dobradinha) e ainda há trocas: troca as cartas fora da combinação.
-		if best["kind"] in ["trocado", "dobradinha"] and bill.swaps_left > 0:
-			for n in bill.hand:
-				if not best["cards"].has(n):
-					bill.toggle_select(n)
-			if not bill.selected.is_empty():
-				_check_refusal(run.swap(), "swap")
-				return
-		for n in best["cards"]:
-			bill.toggle_select(n)
-		_check_refusal(run.pay(), "pay")
+		_greedy_step(run)
 		return
 	if bill.selected.is_empty() or rng.randf() < 0.2:
 		var picks := rng.randi_range(1, Balance.MAX_PLAYED)
@@ -108,6 +96,38 @@ func _play_bill_step(run: RunState, rng: RandomNumberGenerator) -> void:
 	else:
 		var pay := run.pay()
 		_check_refusal(pay, "pay")
+
+
+## Bot guloso: joga a melhor combinação entre as notas que pontuam neste mês (o chefe pode tirar algumas).
+## Mão fraca (só trocado, dobradinha ou nada) e com trocas sobrando: troca as cartas fora da combinação.
+func _greedy_step(run: RunState) -> void:
+	var bill := run.bill
+	for n in bill.selected.duplicate():
+		bill.toggle_select(n)
+	var scoring: Array = []
+	for n in bill.hand:
+		if Boss.note_scores(bill.boss, n):
+			scoring.append(n)
+	var best := HandEvaluator.evaluate(scoring, bill.unlocked())
+	var weak: bool = best["kind"] in ["trocado", "dobradinha", "none"]
+	if weak and bill.swaps_left > 0:
+		for n in bill.hand:
+			if not best["cards"].has(n):
+				bill.toggle_select(n)
+		if not bill.selected.is_empty():
+			var swapped: Dictionary = run.swap()
+			_check_refusal(swapped, "swap")
+			if swapped["ok"]:
+				return
+			# Troca recusada (sem dinheiro para o custo do chefe): o bot segue para pagar.
+			for n in bill.selected.duplicate():
+				bill.toggle_select(n)
+	if best["cards"].is_empty():
+		bill.toggle_select(bill.hand[0])
+	else:
+		for n in best["cards"]:
+			bill.toggle_select(n)
+	_check_refusal(run.pay(), "pay")
 
 
 func _check_refusal(result: Dictionary, what: String) -> void:
@@ -129,7 +149,7 @@ func _shop_step(run: RunState, rng: RandomNumberGenerator) -> void:
 		_fail("leave_shop recusado no Camelô")
 
 
-## Cartas da conta: 32 do baralho (mais 1 se o Relâmpago Errado copiou uma), sem repetir nenhuma.
+## Cartas da conta: 32 do baralho (mais 1 se o Pix Errado copiou uma), sem repetir nenhuma.
 func _check_bill_pieces(run: RunState, when: String) -> void:
 	var seen := {}
 	var total := 0
@@ -157,7 +177,7 @@ func _check_run(run: RunState, seed_value: int) -> void:
 			_fail("nível negativo em %s (%s)" % [kind, tag])
 	if run.state == RunState.PLAYING:
 		var bill := run.bill
-		if bill.hand.size() > Balance.HAND_SIZE:
+		if bill.hand.size() > Boss.hand_size(bill.boss):
 			_fail("mão com %d cartas (%s)" % [bill.hand.size(), tag])
 		if bill.selected.size() > Balance.MAX_PLAYED:
 			_fail("%d notas selecionadas (%s)" % [bill.selected.size(), tag])

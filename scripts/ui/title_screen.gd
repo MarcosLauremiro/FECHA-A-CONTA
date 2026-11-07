@@ -121,7 +121,7 @@ func _build_attract() -> void:
 
 	# Aviso piscando devagar e quase transparente.
 	_blink = Label.new()
-	_blink.text = "CLIQUE EM QUALQUER LUGAR PARA INICIAR O SERVIÇO"
+	_blink.text = tr("CLIQUE EM QUALQUER LUGAR PARA INICIAR O SERVIÇO")
 	_blink.position = Vector2(0, 468)
 	_blink.size = Vector2(WIN.size.x, 40)
 	_blink.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
@@ -179,21 +179,21 @@ func _build_menu() -> void:
 	_phrase.add_theme_font_size_override("font_size", 26)
 	_phrase.add_theme_color_override("font_color", INK)
 	_phrase.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_phrase.text = PHRASES[0]
+	_phrase.text = tr(PHRASES[0])
 	_menu.add_child(_phrase)
 
 	# Coluna esquerda.
-	_continue_btn = _menu_button("CONTINUAR", LEFT_X, ROWS[1], true, _on_continue)
-	_menu_button("NOVO JOGO", LEFT_X, ROWS[0], true, _on_new_game)
-	_menu_button("COMO JOGAR", LEFT_X, ROWS[2], true, _on_howto)
-	_menu_button("CRÉDITOS", LEFT_X, ROWS[3], true, _on_coming_soon.bind("Créditos"))
+	_continue_btn = _menu_button(tr("CONTINUAR"), LEFT_X, ROWS[1], true, _on_continue)
+	_menu_button(tr("NOVO JOGO"), LEFT_X, ROWS[0], true, _on_new_game)
+	_menu_button(tr("COMO JOGAR"), LEFT_X, ROWS[2], true, _on_howto)
+	_menu_button(tr("CRÉDITOS"), LEFT_X, ROWS[3], true, _on_coming_soon.bind(tr("Créditos")))
 
 	# Coluna direita.
-	_menu_button("COLEÇÃO", RIGHT_X, ROWS[0], false, _on_coming_soon.bind("Coleção"))
-	_menu_button("CONQUISTAS", RIGHT_X, ROWS[1], false, _on_coming_soon.bind("Conquistas"))
-	_menu_button("SAIR", RIGHT_X, ROWS[2], false, _on_quit)
-	# 4º botão da coluna direita: só enfeite, como na arte (sem texto e sem função).
-	_button_art(RIGHT_X, ROWS[3])
+	_menu_button(tr("COLEÇÃO"), RIGHT_X, ROWS[0], false, _on_coming_soon.bind(tr("Coleção")))
+	_menu_button(tr("CONQUISTAS"), RIGHT_X, ROWS[1], false, _on_coming_soon.bind(tr("Conquistas")))
+	_menu_button(tr("SAIR"), RIGHT_X, ROWS[2], false, _on_quit)
+	# 4º botão da coluna direita (era só enfeite na arte): agora abre as Opções.
+	_menu_button(tr("OPÇÕES"), RIGHT_X, ROWS[3], false, _on_options)
 
 	set_has_save(_has_save)
 
@@ -266,15 +266,25 @@ func _on_quit() -> void:
 	quit_pressed.emit()
 
 
+func _on_options() -> void:
+	OptionsScreen.open(self, _on_options_closed)
+
+
+## Se o idioma mudou, a cena inteira é recarregada para os textos saírem no novo idioma.
+func _on_options_closed(language_changed: bool) -> void:
+	if language_changed:
+		get_tree().reload_current_scene()
+
+
 ## Coleção, Conquistas e Créditos ainda não existem: a frase do cabeçalho mostra "Em breve".
 func _on_coming_soon(what: String) -> void:
-	_phrase.text = "%s: em breve." % what
+	_phrase.text = tr("%s: em breve.") % what
 	_phrase_timer.start()
 
 
 func _next_phrase() -> void:
 	_phrase_index = (_phrase_index + 1) % PHRASES.size()
-	_phrase.text = PHRASES[_phrase_index]
+	_phrase.text = tr(PHRASES[_phrase_index])
 	_phrase.modulate.a = 0.0
 	create_tween().tween_property(_phrase, "modulate:a", 1.0, 0.4)
 
