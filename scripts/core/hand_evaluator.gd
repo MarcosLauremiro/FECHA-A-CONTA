@@ -4,7 +4,8 @@ extends RefCounted
 ## Resultado: {"kind": String (id em Balance.TRANSACTIONS, ou "none"), "cards": Array[Note]}
 
 
-static func evaluate(hand: Array) -> Dictionary:
+## unlocked: formações liberadas por investimento (ids de Balance.UNLOCKABLE_KINDS). Sem elas, não são consideradas.
+static func evaluate(hand: Array, unlocked: Array = []) -> Dictionary:
 	if hand.is_empty():
 		return _result("none", [])
 
@@ -33,11 +34,30 @@ static func evaluate(hand: Array) -> Dictionary:
 		if group.size() >= 4:
 			candidates.append(_result("cofrinho", group.slice(0, 4)))
 
+	# Dois Carnês: dois pares de valores diferentes (4 notas).
+	if unlocked.has("dois_carnes"):
+		var pairs: Array = []
+		for v in by_value:
+			if by_value[v].size() >= 2:
+				pairs.append(by_value[v])
+		for i in range(pairs.size()):
+			for j in range(i + 1, pairs.size()):
+				candidates.append(_result("dois_carnes", pairs[i].slice(0, 2) + pairs[j].slice(0, 2)))
+
+	# Conta Conjunta: trinca + par de outro valor (5 notas).
+	if unlocked.has("conta_conjunta"):
+		for v in by_value:
+			if by_value[v].size() < 3:
+				continue
+			for w in by_value:
+				if w != v and by_value[w].size() >= 2:
+					candidates.append(_result("conta_conjunta", by_value[v].slice(0, 3) + by_value[w].slice(0, 2)))
+
 	if hand.size() == 5:
 		if _is_sequence(hand):
 			candidates.append(_result("escadinha", hand.duplicate()))
 		if _is_same_suit(hand):
-			candidates.append(_result("tudo_no_relampago", hand.duplicate()))
+			candidates.append(_result("tudo_no_pix", hand.duplicate()))
 
 	var best: Dictionary = candidates[0]
 	for c in candidates:

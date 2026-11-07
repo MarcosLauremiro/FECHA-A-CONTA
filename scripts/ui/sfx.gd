@@ -20,7 +20,7 @@ const PATHS := {
 	"feirante": "res://sfx/loja/s13_grito_feirante.ogg",
 	"plateia": "res://sfx/pontuacao/s14_plateia_uooh.ogg",
 }
-const MUSIC_PATH := "res://music/m01_samba_jazz_loop.ogg"
+const MUSIC_PATH := "res://music/background_music.ogg"
 const POOL_SIZE := 6
 const MUSIC_VOLUME_DB := -8.0
 
@@ -32,9 +32,11 @@ var _cache := {}
 func _ready() -> void:
 	for i in range(POOL_SIZE):
 		var player := AudioStreamPlayer.new()
+		player.bus = Settings.BUS_SFX
 		add_child(player)
 		_players.append(player)
 	_music = AudioStreamPlayer.new()
+	_music.bus = Settings.BUS_MUSIC
 	_music.volume_db = MUSIC_VOLUME_DB
 	add_child(_music)
 

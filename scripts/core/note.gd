@@ -2,7 +2,7 @@ class_name Note
 extends RefCounted
 ## Uma nota do baralho: valor em R$ e forma de pagamento (naipe).
 
-enum Suit { DINHEIRO, RELAMPAGO, DEBITO, CREDITO }
+enum Suit { DINHEIRO, PIX, DEBITO, CREDITO }
 
 var value: int
 var suit: int
@@ -24,7 +24,7 @@ func points() -> int:
 
 
 func suit_name() -> String:
-	return Balance.SUIT_NAMES[suit]
+	return tr(Balance.SUIT_NAMES[suit])
 
 
 ## Caminho da frente desta nota: cédula neutra, sem forma de pagamento.

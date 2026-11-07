@@ -32,7 +32,7 @@ A jam corta o MVP de 3–4 meses para cerca de um décimo: 3 meses de partida, 5
 | --- | --- | --- | --- |
 | Meses | 8 meses + Janeiro | 3 meses (Março, Junho, Janeiro) | Meses 4 a 8 |
 | Contas por mês | 3 (boleto, aluguel, fatura) | 3 (boleto, aluguel, fatura) | — |
-| Transações | 8 | 6 (Trocado, Dobradinha, Bolada, Escadinha, Tudo no Relâmpago, Cofrinho) | Parcelado, Relâmpago Premiado |
+| Transações | 8 | 6 (Trocado, Dobradinha, Bolada, Escadinha, Tudo no Pix, Cofrinho) | Parcelado, Pix Premiado |
 | Esquemas | 40 | 8 | 32 restantes |
 | Chefes (faturas) | 10 | 3 (Banco fora do ar, Taxa de manutenção, Janeiro) | 7 restantes |
 | Camelô | Esquemas, investimentos, carimbos, cupons | Esquemas + 3 investimentos | Carimbos, cupons |
@@ -64,7 +64,7 @@ O baralho tem 32 cartas: 8 valores × 4 formas de pagamento, como um baralho de 
 | --- | --- | --- | --- | --- | --- | --- | --- | --- |
 | Pontos de Valor | 2 | 3 | 5 | 6 | 7 | 8 | 10 | 11 |
 
-Formas de pagamento ("naipes"): Dinheiro, Relâmpago (o "Pix" do jogo), Débito, Crédito. A sequência de valores segue a ordem das notas: 1-2-5-10-20-50-100-200.
+Formas de pagamento ("naipes"): Dinheiro, Pix (o "Pix" do jogo), Débito, Crédito. A sequência de valores segue a ordem das notas: 1-2-5-10-20-50-100-200.
 
 ### Transações
 
@@ -73,8 +73,8 @@ Formas de pagamento ("naipes"): Dinheiro, Relâmpago (o "Pix" do jogo), Débito,
 | Trocado | 1 carta solta (a maior) | 5 | ×1 | +0% |
 | Dobradinha | 2 notas de mesmo valor | 10 | ×2 | +100% |
 | Bolada | 3 iguais | 30 | ×3 | +200% |
-| Escadinha | 5 valores em sequência | 30 | ×4 | +300% |
-| Tudo no Relâmpago | 5 da mesma forma de pagamento | 35 | ×4 | +300% |
+| Escadinha | 5 valores em sequência | 25 | ×3 | +200% |
+| Tudo no Pix | 5 da mesma forma de pagamento | 35 | ×4 | +300% |
 | Cofrinho | 4 iguais | 60 | ×7 | +600% |
 
 ### Pontuação
@@ -87,11 +87,7 @@ Ordem de resolução (importa para a animação e para os esquemas): base da tra
 
 ### Metas e dinheiro
 
-| Mês | Boleto | Aluguel | Fatura (chefe) |
-| --- | --- | --- | --- |
-| 1 — Março | 300 | 450 | 600 |
-| 2 — Junho | 900 | 1.300 | 1.800 |
-| 3 — Janeiro | 2.500 | 3.500 | 5.000 |
+Metas das 12 contas de cada mês: ver a seção "Ano de 12 meses, um chefe por mês" (em `scripts/balance.gd`, MONTHS). Janeiro vai de R$ 210 (boleto) a R$ 425 (fatura), e Dezembro de R$ 3.565 a R$ 7.125.
 
 - Recompensa por conta paga: Boleto R$ 3, Aluguel R$ 4, Fatura R$ 5, + R$ 1 por dia não usado.
 - **Troco vira grana:** R$ 1 a cada 25% acima da meta, no máximo R$ 5.
@@ -101,20 +97,29 @@ Ordem de resolução (importa para a animação e para os esquemas): base da tra
 
 ## Conteúdo da jam
 
-A jam tem 8 esquemas, 3 investimentos e 3 chefes. Os esquemas foram escolhidos para formar dois combos claros: "baralho de Relâmpago" (Relâmpago Errado + Cashback + Coach) e "empilhar Juros" (Cunhado + Pirâmide + Agiota).
+A jam tem 8 esquemas, 3 investimentos e 3 chefes. Os esquemas foram escolhidos para formar dois combos claros: "baralho de Pix" (Pix Errado + Cashback + Coach) e "empilhar Juros" (Cunhado + Pirâmide + Agiota).
 
 ### Esquemas (cartazes de poste)
 
-| Esquema | Efeito | Preço | Texto do cartaz |
-| --- | --- | --- | --- |
-| Agiota | +5 de Juros; cobra 10% da carteira a cada conta paga | R$ 4 | EMPRESTO DINHEIRO NA HORA |
-| Cunhado Investidor | Cada Escadinha jogada dá +1 de Juros a ele, para sempre | R$ 5 | GANHE 30% AO MÊS SEM RISCO |
-| Coach Financeiro | ×2 de Juros se jogar exatamente 5 notas; se jogar menos, perde 1 de Juros | R$ 6 | MENTALIDADE MILIONÁRIA EM 7 DIAS |
-| Pirâmide | +1 de Juros por outro esquema ativo; 1 em 6 de colapsar a cada mês | R$ 5 | INDIQUE 3 AMIGOS E FIQUE RICO |
-| Cashback | Notas de Crédito que pontuam devolvem R$ 1 | R$ 4 | SEU DINHEIRO DE VOLTA\* |
-| Rifa do Bairro | 1 em 4 de multiplicar o Juros por 5 | R$ 5 | RIFA DE 1 PORCO — R$ 2 O NÚMERO |
-| Vaquinha | Soma os pontos das notas que ficaram na mão ao Valor | R$ 6 | AJUDE O JUNINHO A PAGAR O ALUGUEL |
-| Relâmpago Errado | A primeira nota de Relâmpago jogada em cada conta é duplicada no baralho | R$ 5 | FIZ UM RELÂMPAGO ERRADO, DEVOLVE PFV |
+Raridade: Comum, Incomum, Rara, Lendária (ver "Raridade dos itens"). Personagens e referências brasileiras em negrito no nome.
+
+| Esquema | Raridade | Efeito | Preço | Texto do cartaz |
+| --- | --- | --- | --- | --- |
+| Agiota | Comum | +3 de Juros; cobra 10% da carteira a cada conta paga | R$ 8 | EMPRESTO DINHEIRO NA HORA |
+| Cashback | Comum | Notas de Crédito que pontuam devolvem R$ 1 | R$ 8 | SEU DINHEIRO DE VOLTA\* |
+| Pix Errado | Comum | A primeira nota de Pix jogada em cada conta é duplicada no baralho | R$ 10 | FIZ UM PIX ERRADO, DEVOLVE PFV |
+| **Vendedor de Consórcio** | Comum | +3 de Valor por nota de Dinheiro que pontua; cada conta paga custa R$ 1 de parcela | R$ 8 | SUA CARTA SAI NA 60ª PARCELA |
+| **Tia do Pix** | Comum | +1 de Juros por nota de Débito que pontua | R$ 8 | MANDA A CHAVE QUE EU PAGO |
+| Cunhado Investidor | Incomum | Cada Escadinha jogada dá +1 de Juros a ele, para sempre | R$ 10 | GANHE 30% AO MÊS SEM RISCO |
+| Rifa do Bairro | Incomum | 1 em 4 de multiplicar o Juros por 5 | R$ 10 | RIFA DE 1 PORCO — R$ 2 O NÚMERO |
+| Vaquinha | Incomum | Soma metade dos pontos das notas que ficaram na mão ao Valor | R$ 12 | AJUDE O JUNINHO A PAGAR O ALUGUEL |
+| **Bicheiro do Bairro** | Incomum | 1 em 3 de cada jogada render R$ 6 na carteira | R$ 12 | JOGO DO BICHO: SAIU O VEADO |
+| **Nubank** | Incomum | +3 de Valor por nota de Crédito que pontua | R$ 12 | A ROXINHA QUE MELHORA SEU CRÉDITO |
+| **Pastor da Prosperidade** | Rara | +8 de Valor em cada jogada; cada conta paga 5% da carteira de dízimo | R$ 14 | DEUS É FIEL, PAGUE O DÍZIMO |
+| Pirâmide | Rara | +1 de Juros por outro esquema ativo; 1 em 6 de colapsar a cada mês | R$ 14 | INDIQUE 3 AMIGOS E FIQUE RICO |
+| Coach Financeiro | Rara | ×2 de Juros se jogar exatamente 5 notas; se jogar menos, perde 1 de Juros | R$ 14 | MENTALIDADE MILIONÁRIA EM 7 DIAS |
+| **Influenciador de Finanças** | Rara | +3 de Juros em jogadas com 3 ou mais notas | R$ 16 | SEGUE QUE EU TE ENSINO A FICAR RICO |
+| **Consignado** | Lendária | +1 de Juros em cada jogada; a dívida do cheque especial não cresce | R$ 22 | DINHEIRO NA HORA, SEM CONSULTA AO SERASA |
 
 ### Camelô (loja entre contas)
 
@@ -123,23 +128,95 @@ A jam tem 8 esquemas, 3 investimentos e 3 chefes. Os esquemas foram escolhidos p
 - **Vender esquema:** devolve metade do preço, arredondado para baixo.
 - **Pegar no cheque especial:** botão visível sempre que o jogador não tiver dinheiro para um item.
 
-| Investimento | Melhora | Efeito por nível | Preço |
-| --- | --- | --- | --- |
-| Poupança | Dobradinha | +10 Valor, +1 Juros | R$ 3 |
-| Tesouro Direto | Escadinha | +20 Valor, +1 Juros | R$ 3 |
-| Cripto | Tudo no Relâmpago | +25 Valor, +2 Juros; 1 em 4 de cair um nível em vez disso | R$ 3 |
+| Investimento | Raridade | Melhora | Efeito por nível | Preço |
+| --- | --- | --- | --- | --- |
+| **Poupança** | Comum | Dobradinha | +10 Valor, +1 Juros | R$ 6 |
+| **Consórcio** | Comum | Trocado | +8 Valor, +1 Juros | R$ 6 |
+| **Tesouro Direto** | Incomum | Escadinha | +20 Valor, +2 Juros | R$ 6 |
+| **Previdência Privada** | Incomum | Cofrinho | +30 Valor, +2 Juros | R$ 8 |
+| **Carnê** | Incomum | Libera Dois Carnês | +10 Valor, +1 Juros por nível (depois da compra, a formação pontua) | R$ 16 |
+| **Fundo de Investimento** | Rara | Bolada | +10 Valor, +1 Juros | R$ 16 |
+| **Conta Conjunta** | Rara | Libera Conta Conjunta | +10 Valor, +1 Juros por nível (depois da compra, a formação pontua) | R$ 20 |
+| **Duolingo** | Incomum | Recompensa: +R$ 2 por nível em cada conta paga (não muda a pontuação) | R$ 10 |
+| **Cripto** | Lendária | Tudo no Pix | +40 Valor, +3 Juros; 1 em 4 de cair um nível em vez disso | R$ 8 |
+
+Investimentos com personagens ou referências: a caderneta do seu Zé (Poupança), o Consórcio da carta contemplada, o Tesouro do tio do churrasco, a Previdência que só resgata na aposentadoria, o Fundo com taxa de gestão, e a Cripto do primo que vive no grupo da família.
+
+### Bateria de esquemas (`tests/sim_esquemas.gd`)
+
+Dois jogadores simulados, com as mesmas sementes:
+- **oráculo**: sempre joga a melhor combinação das notas que pontuam e compra no Camelô sempre que pode pagar com folga de R$ 2.
+- **humano**: erra 10% das vezes (joga um conjunto aleatório) e compra só 60% das vezes.
+
+Taxa de vitória, ao começar a partida com um item (linha) contra a partida sem nada. Rodada depois de adicionar os 6 esquemas e 2 investimentos novos:
+
+| Cenário | Oráculo | Humano |
+| --- | --- | --- |
+| Sem nada | 10,8% | 4,0% |
+| Agiota | 21,3% | 10,3% |
+| Cunhado Investidor | 8,0% | 2,3% |
+| Coach Financeiro | 2,8% | 1,3% |
+| Pirâmide | 18,8% | 6,5% |
+| Cashback | 14,0% | 5,8% |
+| Rifa do Bairro | 32,8% | 16,8% |
+| Vaquinha | 17,8% | 12,8% |
+| Pix Errado | 8,8% | 2,8% |
+| Vendedor de Consórcio | 8,3% | 3,0% |
+| Tia do Pix | 14,0% | 5,0% |
+| Bicheiro do Bairro | 25,0% | 8,5% |
+| Pastor da Prosperidade | 11,5% | 6,3% |
+| Influenciador de Finanças | 27,3% | 17,8% |
+| Consignado | 12,8% | 7,3% |
+| Poupança | 16,5% | 7,0% |
+| Consórcio | 8,3% | 5,0% |
+| Tesouro Direto | 8,3% | 3,8% |
+| Previdência Privada | 8,3% | 4,5% |
+| Carnê | 23,5% | 10,3% |
+| Fundo de Investimento | 15,8% | 9,8% |
+| Conta Conjunta | 23,3% | 13,8% |
+| Cripto | 8,3% | 3,8% |
+| Nubank | 9,0% | 2,3% |
+| Duolingo | 17,3% | 6,0% |
+| 5 esquemas juntos | 29,3% | 21,3% |
+
+Leitura:
+- O "sem nada" caiu de 20% para 11% (oráculo) e de 9% para 4% (humano). A causa: esquemas comprados ao acaso gastam o dinheiro que faria falta para investimentos, e os investimentos são o que mais ajuda (sem nenhum, o oráculo perde tudo). Decidir se a dificuldade deve voltar para algo perto de 20%.
+- Tesouro, Consórcio, Previdência e Cripto ficam em 8%: o oráculo escolhe a formação pelo valor base, sem olhar o investimento, então quase nunca joga Escadinha, Cofrinho, Tudo no Pix ou Trocado com o nível. Para medir esses, o bot precisaria escolher a formação pela pontuação final.
+- Duolingo é o investimento mais forte da rodada (+10 pontos sobre o sem nada): a recompensa entra em toda conta, então o efeito é grande. Nubank fica perto do sem nada, porque só vale para notas de Crédito. Números desta rodada: sem nada 6,8% (oráculo) e 2,5% (humano); a mudança do Camelô (dois itens novos) mudou a base.
+- Influenciador, Rifa e Bicheiro são os mais fortes entre os esquemas. Coach continua armadilha.
+
+### Raridade dos itens
+
+Implementada em `balance.gd` (campo `rarity`, em esquemas e investimentos). No Camelô, a oferta é sorteada com peso pela raridade, sem repetir:
+
+| Raridade | Peso no sorteio |
+| --- | --- |
+| Comum | 50 |
+| Incomum | 30 |
+| Rara | 15 |
+| Lendária | 5 |
+
+A dica da oferta mostra a raridade ("Pastor da Prosperidade · Rara"). Ainda não há cor de borda por raridade no cartaz.
+
+Arte: os cartazes e ícones dos itens novos ainda não existem em `art/`. Enquanto isso, o esquema aparece como papel com o nome escrito no lugar do desenho, e o investimento aparece como nome no lugar do ícone.
 
 ### Chefes: as faturas
 
-| Mês | Fatura | Regra |
-| --- | --- | --- |
-| Março | Banco fora do ar | Notas de Relâmpago não pontuam |
-| Junho | Taxa de manutenção | Cada troca custa R$ 1 (pode usar cheque especial) |
-| Janeiro | IPVA + IPTU + Material escolar | Três regras juntas: Leão da Receita (27,5% do saldo de cada jogada some), Golpe do WhatsApp (1 esquema aleatório desativado) e Taxa de manutenção |
+Os 3 chefes da jam (Banco fora do ar, Taxa de manutenção e IPVA de janeiro) continuam no jogo, agora dentro do ano de 12 meses. Os 12 chefes, um por mês, e suas regras estão na seção "Ano de 12 meses, um chefe por mês", na parte de planejamento.
 
 ## Interface e fluxo de telas
 
 O jogo inteiro acontece dentro de um caixa eletrônico dos anos 90/2000: a tela verde do terminal fica no centro e as notas de papel ficam sobre a "bancada" em primeiro plano. Resolução base 1280×720, escalando por múltiplos inteiros.
+
+### Idiomas e opções
+
+- Idiomas: português (padrão), inglês e espanhol. Os textos ficam em `i18n/textos.csv` (colunas `pt`, `en`, `es`). A chave é o texto em português, e a interface chama `tr("texto em português")`. Sem tradução, aparece o português.
+- Valores com moeda continuam "R$" em todos os idiomas, de propósito (o jogo é sobre contas brasileiras).
+- Dados em `balance.gd` (nomes, descrições, chefes, meses) são traduzidos no ponto de exibição, com `tr(...)`.
+- A arte (cartazes, logo, carimbos) continua com texto em português. Nenhum texto dentro de imagem foi traduzido.
+- Opções (botão OPÇÕES no título e no menu de pausa): idioma, música, efeitos sonoros, tela cheia, VSync, limite de quadros por segundo (30, 60, 120 ou sem limite), tremor da tela, e PADRÕES. Ficam em `user://config.cfg`.
+- Ao trocar o idioma, o jogo recarrega a cena quando as opções fecham. Dentro de uma partida, a partida é salva antes da recarga.
+- Teste: `tests/test_i18n.gd` (todo texto tem os três idiomas; opções salvam e carregam).
 
 ### Layout da tela de jogo
 
@@ -152,12 +229,13 @@ O jogo inteiro acontece dentro de um caixa eletrônico dos anos 90/2000: a tela 
 
 ### Sequência de pontuação (o momento mais importante do jogo)
 
-1. Tela mostra "AGUARDE… PROCESSANDO" por 0,4 s.
-2. Cada nota que pontua pula e solta seus pontos em Valor, com bipe que sobe de tom.
+1. As cartas jogadas sobem acima da mão e ficam lá. Tela mostra "AGUARDE… PROCESSANDO" por 0,4 s.
+2. Cada nota que pontua solta seus pontos logo acima dela, com bipe que sobe de tom.
 3. Cada esquema ativo balança e mostra seu efeito sobre o cartaz.
 4. Juros aparece em % e cresce com som de maquininha de cartão.
 5. Total cai no saldo com caixa registradora; a tela treme proporcional ao tamanho do saldo.
-6. Acima de 5× a meta: o comprovante sai gigante, atravessando a tela.
+6. As cartas jogadas descem para fora da tela, e a mão é reposta.
+7. Acima de 5× a meta: o comprovante sai gigante, atravessando a tela.
 
 ### Telas
 
@@ -226,7 +304,7 @@ O jogo fica jogável com retângulos coloridos na hora 7, com conteúdo completo
 **Horas 9–12 · Esquemas**
 
 - [ ] Sistema de ganchos e faixa de esquemas (máx. 5)
-- [ ] Implementar os 8 esquemas, na ordem: Agiota, Coach, Rifa, Cashback, Vaquinha, Cunhado, Pirâmide, Relâmpago Errado
+- [ ] Implementar os 8 esquemas, na ordem: Agiota, Coach, Rifa, Cashback, Vaquinha, Cunhado, Pirâmide, Pix Errado
 - [ ] Tooltip ao passar o mouse sobre o cartaz
 
 **Horas 12–14 · Camelô**
@@ -284,7 +362,7 @@ São 46 peças de arte, 14 sons e 1 música, em três entregas: P1 até a hora 1
 | A1 | Moldura do caixa eletrônico | Carcaça bege, fenda de cartão, boca da impressora, área da tela vazada | 1280×720 | 1 | P1 | Hora 6 |
 | A2 | Teclas laterais | Tecla com setinha, estados normal e pressionado | 64×48 | 2 | P1 | Hora 6 |
 | A3 | Frente das notas | Papel texturizado com bicho: R$ 1 sabiá (moeda), R$ 2 tatu, R$ 5 quati, R$ 10 bicho-preguiça, R$ 20 tamanduá, R$ 50 capivara, R$ 100 boto-cor-de-rosa, R$ 200 jacaré | 120×180 | 8 | P1 | Hora 10 |
-| A4 | Selos de forma de pagamento | Carimbo para Dinheiro, Relâmpago, Débito, Crédito | 40×40 | 4 | P1 | Hora 10 |
+| A4 | Selos de forma de pagamento | Carimbo para Dinheiro, Pix, Débito, Crédito | 40×40 | 4 | P1 | Hora 10 |
 | A5 | Verso da nota | Padrão de papel-moeda genérico | 120×180 | 1 | P1 | Hora 10 |
 | A6 | Cartazes de esquema | Lambe-lambe xerox, cores estouradas, telefone rasgado embaixo (textos na seção de conteúdo) | 200×280 | 8 | P1 | Hora 14 |
 | A7 | Contas impressas | Boleto, aluguel (recibo de imobiliária) e fatura de cartão genéricos | 260×360 | 3 | P1 | Hora 14 |
@@ -312,7 +390,7 @@ São 46 peças de arte, 14 sons e 1 música, em três entregas: P1 até a hora 1
 | S5 | Impressora térmica | Comprovante saindo | P1 |
 | S6 | Papel embaralhando | Trocar / comprar cartas | P1 |
 | S7 | Moedas caindo | Receber dinheiro | P2 |
-| S8 | "Relâmpago recebido" (notificação de celular inventada) | Cashback e troco | P2 |
+| S8 | "Pix recebido" (notificação de celular inventada) | Cashback e troco | P2 |
 | S9 | Fita adesiva / cartaz colando | Comprar esquema | P2 |
 | S10 | Carimbo batendo | Chefe aparece, fim de partida | P2 |
 | S11 | Erro de caixa (bipe grave duplo) | Ação inválida, cheque especial | P2 |
@@ -352,7 +430,7 @@ O maior risco é chegar na hora 18 sem a sequência de pontuação animada. Se a
 
 | Risco | Sinal de alerta | Resposta |
 | --- | --- | --- |
-| Avaliador de transações com bug | Hora 7 sem conta jogável | Lançar só Trocado, Dobradinha, Bolada e Tudo no Relâmpago; Escadinha depois |
+| Avaliador de transações com bug | Hora 7 sem conta jogável | Lançar só Trocado, Dobradinha, Bolada e Tudo no Pix; Escadinha depois |
 | Balanceamento impossível | Ninguém passa do mês 2 no playtest | Baixar metas em 30% no `balance.gd` |
 | Export web falha | Áudio mudo ou tela preta no navegador | Testado na hora 1; manter build Windows como plano B |
 | Arte atrasa | P1 não entregue na hora 14 | Placeholder fica; arte entra até a hora 19 |
@@ -361,7 +439,7 @@ O maior risco é chegar na hora 18 sem a sequência de pontuação animada. Se a
 ### Cuidados legais
 
 - **Notas inventadas:** nada de reproduzir cédulas reais do Real; bichos, cores e layout próprios.
-- **"Pix":** é marca do Banco Central, então a jam usa "Relâmpago". Consultar advogado antes de usar o nome numa versão comercial.
+- **"Pix":** é marca do Banco Central, então a jam usa "Pix". Consultar advogado antes de usar o nome numa versão comercial.
 - **Bancos e empresas:** nenhum nome ou logo real em cartazes, contas ou faturas.
 - **Fontes, sons e música:** só com licença que permita uso em jogo; listar créditos na página.
 - **Visual:** nada de pixel art com efeito CRT nem layout parecido com o de Balatro.
@@ -374,3 +452,117 @@ O maior risco é chegar na hora 18 sem a sequência de pontuação animada. Se a
 - [ ] Tela "Como jogar" ou dica na primeira conta
 - [ ] Página com capa, 3 screenshots, 1 GIF de combo e créditos
 - [ ] Enviado antes do prazo, com folga de 30 minutos
+
+---
+
+## Versão completa (pós-jam): planejamento
+
+O jogo não é mais uma jam: é um jogo próprio, que será lançado. As seções acima descrevem a versão da jam e continuam valendo como referência do que já está pronto. Esta seção guarda o que vem depois.
+
+### Ano de 12 meses, um chefe por mês
+
+A partida é um rogue-like de um ano só: começa em janeiro e termina em dezembro. Não há divisão em desafios. A dificuldade cresce mês a mês, e o jogador vai melhorando (esquemas, investimentos, Curso) para enfrentar os últimos meses.
+
+- A partida tem 12 meses × 3 contas (Boleto, Aluguel, Fatura) = 36 contas.
+- Cada mês tem **um chefe**, que aparece só na fatura (a 3ª conta do mês). Boleto e Aluguel são contas comuns. Eventos também são chefes: não existe evento separado.
+- O jogo salva a cada conta (save único, como hoje), então a partida pode ser retomada em sessões de qualquer tamanho.
+- Tamanho: não há limite fixo de tempo. A média esperada é de cerca de 30 minutos por trecho de partida, mas a regra é o ritmo do rogue-like, não um corte de tempo.
+
+| Mês | Chefe | Regra |
+| --- | --- | --- |
+| Janeiro | IPVA + IPTU + Material escolar | Leão da Receita leva 15% de cada jogada. Cada troca custa R$ 1. Golpe do WhatsApp: 1 esquema desativado em cada conta |
+| Fevereiro | Bolsa Família | +R$ 3 ao pagar a fatura, mas a meta da fatura sobe 15% |
+| Março | Banco fora do ar | Notas de Pix não pontuam |
+| Abril | Curso do Primo Rico | Matrícula de R$ 6, paga uma vez. A cada 2 contas pagas depois da matrícula, o Valor sobe 20% (acumula na partida) |
+| Maio | Urubu do Pix | No começo de cada conta, 1 em 2: a carteira dobra (se for positiva). Se não, perde R$ 5 |
+| Junho | Taxa de manutenção | Cada troca custa R$ 1 |
+| Julho | Férias na praia | A mão tem 6 cartas, em vez de 8 |
+| Agosto | Dia dos Pais | Cada troca consome um dia (a última troca acaba a conta) |
+| Setembro | Entrar o Grosso | As metas dobram e a recompensa dobra |
+| Outubro | Bandeira vermelha | Cada dia usado custa R$ 1 de energia. Notas de Débito pontuam 50% a mais |
+| Novembro | Julius | Se você não comprou nada no Camelô antes da conta, a meta cai 20% |
+| Dezembro | 13º salário | A recompensa sobe R$ 3, mas as metas sobem 25% |
+
+Números da tabela de metas por mês estão em `scripts/balance.gd` (MONTHS). A curva atual vai de R$ 210 (boleto de janeiro) a R$ 7.125 (fatura de dezembro). Ela é ajustada pela bateria `tests/sim_esquemas.gd` (ver "Bateria de esquemas" abaixo).
+
+**Resultado da simulação (bot guloso, 300 partidas, chefe só na fatura):** 23% de vitórias, 21 contas pagas em média. As derrotas se concentram nas faturas de março, agosto e setembro. O bot aleatório perde na primeira conta, então serve só de piso.
+
+### Conquistas
+
+- Lista de conquistas com nome, texto e condição (ex.: "Pagou uma conta sem trocar nenhuma nota", "Ficou no Serasa e ganhou mesmo assim").
+- Mostradas no menu de pausa e numa tela própria.
+- Condições a definir por desafio.
+
+### Raridade dos esquemas
+
+- Implementada: ver "Raridade dos itens" acima. Falta só a cor da borda ou etiqueta no cartaz.
+
+### Clareza da mão
+
+Hoje o jogador não sabe se a mão vai bater a meta antes de pagar. A ideia é mostrar, ao selecionar as notas:
+
+- o nome da formação (já existe);
+- Valor e Juros da formação, no formato da contagem (ex.: "Dobradinha · VALOR 24 · JUROS x2", com cartaz e Leão quando houver). Já implementado: a prévia usa as mesmas regras do PAGAR;
+- a pontuação estimada da jogada (Valor e Juros), com os esquemas e investimentos que se aplicam;
+- quanto falta para a meta, ou se a jogada já bate a meta;
+- a explicação de cada esquema e de cada chefe ao passar o mouse (já existe em parte, falta padronizar).
+
+### Tutorial
+
+- Botão "COMO JOGAR" na tela inicial abre um tutorial em 7 páginas (antes era uma tela só com a tabela de formações). Ainda não é possível abrir pelo menu de pausa (Esc); fica como pendente.
+- Páginas: O objetivo, Suas notas (com exemplo de selos), As formações (tabela), Como se pontua (exemplo com conta), Dias e troco, O Camelô, Os chefes.
+- Navegação: ANTERIOR, PRÓXIMO, CONCLUIR e FECHAR (sempre visível). Texto e tabela escritos à mão, sobre papel de caderno desenhado em código.
+
+### Combinações e cartas que mudam a regra (em planejamento)
+
+Decisões tomadas:
+
+- **Conta Conjunta** é o full house (trinca + par, 5 notas). Assim não conflita com o Par, que é a Dobradinha.
+- **Cesta Básica** é 5 valores diferentes, sem sequência. Não aparece como jogada comum: fica ativável por cartas no meio da partida, e tem raridade maior.
+- **Dois Carnês** (dois pares, 4 notas, base 15 × Juros 2) e **Conta Conjunta** (trinca + par, base 35 × Juros 3) são formações liberadas por investimento no Camelô: **Carnê** (R$ 16) e **Conta Conjunta** (R$ 20). Antes da compra, não pontuam.
+- **Fundo de Investimento** (R$ 16): sobe a Bolada (+10 de Valor e +1 de Juros por nível).
+- **PIX** (sequência da mesma forma, topo da tabela) continua como proposta, não aprovada.
+- Simulação (`tests/sim_combos.gd`, 30 mil mãos): com as duas formações liberadas, Dois Carnês vira a melhor jogada em 41% das mãos (dois pares são comuns), e a Conta Conjunta em 21%. A Bolada cai para 6%, porque a Conta Conjunta assume as mãos de trinca com par. Isso é esperado, já que a Conta Conjunta vale mais que a Bolada.
+- Bateria de partidas inteiras (`tests/sim_esquemas.gd`, 400 partidas por cenário): ver a seção "Bateria de esquemas" abaixo. O número antigo do bot guloso não vale mais como referência.
+- **Truco mineiro:** descartado.
+
+Cartas que mudam a dinâmica (aprovadas para desenho, valores a definir):
+
+- **Nota Falsa:** vale como qualquer valor e forma, mas rende menos pontos.
+- **Cheque Pré-datado:** os pontos da jogada só entram na conta seguinte.
+- **Mutirão:** combinação de 4 notas conta como se tivesse 5.
+- **Fiador:** protege da negativação uma vez por partida.
+- **Juros Compostos:** cada combinação feita aumenta o Juros de forma permanente, na partida.
+
+Resultados da simulação (`tests/sim_combos.gd`, 50 mil mãos de 8 notas, regras atuais, melhor jogada possível):
+
+Antes do ajuste (Escadinha 30×4 = 120):
+
+- Melhor jogada: Dobradinha 43,7%, Escadinha 25,2%, Bolada 25,0%, Tudo no Pix 4,6%, Cofrinho 1,5%, Trocado 0%.
+
+Depois do ajuste (Escadinha 25×3 = 75, abaixo da Bolada 90):
+
+- Melhor jogada: Dobradinha 43,7%, Bolada 28,2%, Escadinha 22,0%, Tudo no Pix 4,6%, Cofrinho 1,5%, Trocado 0%. Pontos médios da melhor jogada: 22,7.
+- Presença em alguma jogada de 5 notas: algum par 99,4%, Conta Conjunta 23,0%, Dois Carnês 78,9%, Cesta Básica 90,1%, Cesta Básica barata 64,3%, PIX 0,4%.
+
+Decisões do ajuste de balanceamento:
+
+- **Escadinha** agora perde para a Bolada (3 iguais) e só vence a Dobradinha. Antes ela ganhava da Bolada em todas as mãos com sequência e trinca.
+- **Trocado** nunca é a melhor jogada porque quase toda mão de 8 notas tem par (99,4%). Fica como fallback: uma carta solta só se o jogador escolher jogar uma nota.
+- **Cesta Básica** sai da mão comum. Ela só é ativada por carta no meio da partida, então a frequência natural não define o jogo. A variante "cesta barata" (64%) continua alta demais para ser regra fixa, e fica para decidir com a carta que a ativa.
+- **Conta Conjunta** ainda não tem base e Juros. Proposta: base 35, Juros ×3 (105), acima da Bolada (90) por exigir 5 notas, e abaixo do Cofrinho (420). Não aplicada ainda.
+- Para rodar: `godot --headless --path . -s res://tests/sim_combos.gd` (cerca de 2 minutos com 50 mil mãos).
+
+### Ideias de memes e referências (em aberto)
+
+Ideias que já viraram chefe (Julius, 13º salário, Entrar o Grosso) estão na seção "Ano de 12 meses, um chefe por mês". As outras seguem em aberto: ao escolher, cada uma vira uma regra nova ou um texto no jogo.
+
+- **Nazaré Confusa:** chefe ou evento em que as notas da mão aparecem com o valor escondido até pagar ou trocar.
+- **Julius (Todo Mundo Odeia o Chris):** se o jogador sair do Camelô sem comprar nada, a próxima loja tem desconto.
+- **Stonks:** investimento de risco com seta de subida e descida a cada conta.
+- **Calma, calabreso:** botão no Camelô para "prorrogar o boleto" (ganhar 1 dia por um preço), com a frase no texto. Ou aviso de pânico quando o jogador troca demais.
+- **Nome no Serasa:** em vez de perder na hora, o jogador entra no Serasa e perde uma troca por conta até o fim do ano.
+- **Cartão Nubank:** esquema que aumenta o cheque especial, mas a dívida cresce mais rápido. Pode se ligar à forma Crédito.
+- **13º salário:** bônus fixo em uma conta específica, com o valor no comprovante.
+- **"Em setembro vai entrar o grosso":** evento no desafio 3 (Julho a Setembro): uma conta com recompensa grande no fim, anunciada antes.
+- **Graciovos:** a definir (a referência ainda não foi explicada).

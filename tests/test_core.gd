@@ -15,6 +15,9 @@ func _init() -> void:
 	_test_bill_round()
 	_test_bosses()
 	_test_run_state()
+	_test_chefes_novos()
+	_test_previa()
+	_test_formacoes_liberadas()
 	_test_assets()
 	_test_schemes()
 	_test_investments()
@@ -65,24 +68,24 @@ func _test_transactions() -> void:
 	t = HandEvaluator.evaluate([n(20), n(20, Note.Suit.DEBITO), n(20, Note.Suit.CREDITO)])
 	check(t["kind"] == "bolada", "três iguais é Bolada")
 
-	t = HandEvaluator.evaluate([n(50), n(50, Note.Suit.DEBITO), n(50, Note.Suit.CREDITO), n(50, Note.Suit.RELAMPAGO)])
+	t = HandEvaluator.evaluate([n(50), n(50, Note.Suit.DEBITO), n(50, Note.Suit.CREDITO), n(50, Note.Suit.PIX)])
 	check(t["kind"] == "cofrinho", "quatro iguais é Cofrinho")
 
-	t = HandEvaluator.evaluate([n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.RELAMPAGO)])
+	t = HandEvaluator.evaluate([n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.PIX)])
 	check(t["kind"] == "escadinha", "1-2-5-10-20 em sequência é Escadinha")
 
-	t = HandEvaluator.evaluate([n(1, Note.Suit.DINHEIRO), n(5, Note.Suit.DEBITO), n(20, Note.Suit.CREDITO), n(100, Note.Suit.RELAMPAGO), n(200, Note.Suit.DINHEIRO)])
+	t = HandEvaluator.evaluate([n(1, Note.Suit.DINHEIRO), n(5, Note.Suit.DEBITO), n(20, Note.Suit.CREDITO), n(100, Note.Suit.PIX), n(200, Note.Suit.DINHEIRO)])
 	check(t["kind"] == "trocado", "5 valores sem sequência e formas variadas vira Trocado")
 
 	var same_suit: Array = [n(1, Note.Suit.CREDITO), n(5, Note.Suit.CREDITO), n(20, Note.Suit.CREDITO), n(100, Note.Suit.CREDITO), n(200, Note.Suit.CREDITO)]
 	t = HandEvaluator.evaluate(same_suit)
-	check(t["kind"] == "tudo_no_relampago", "5 da mesma forma é Tudo no Relâmpago")
+	check(t["kind"] == "tudo_no_pix", "5 da mesma forma é Tudo no Pix")
 
 
 func _test_priority() -> void:
-	# Escadinha (30×4=120) perde para Tudo no Relâmpago (35×4=140) quando as 5 são da mesma forma.
+	# Escadinha (25×3=75) perde para Tudo no Pix (35×4=140) quando as 5 são da mesma forma.
 	var both := [n(1, Note.Suit.DEBITO), n(2, Note.Suit.DEBITO), n(5, Note.Suit.DEBITO), n(10, Note.Suit.DEBITO), n(20, Note.Suit.DEBITO)]
-	check(HandEvaluator.evaluate(both)["kind"] == "tudo_no_relampago", "Relâmpago vence Escadinha quando ambas servem")
+	check(HandEvaluator.evaluate(both)["kind"] == "tudo_no_pix", "Pix vence Escadinha quando ambas servem")
 
 	# Dobradinha (10×2=20) vence Trocado (5×1=5) mesmo com carta maior na mão.
 	var pair_and_high := [n(2), n(2, Note.Suit.DEBITO), n(100)]
@@ -148,12 +151,12 @@ func _test_scoring() -> void:
 	check(s["total"] == 153, "Bolada de 20 = 153 (got %s)" % s["total"])
 
 	# Cofrinho de 50s: (60 + 8×4) × 7 = 644
-	s = Scorer.score(HandEvaluator.evaluate([n(50), n(50, Note.Suit.DEBITO), n(50, Note.Suit.CREDITO), n(50, Note.Suit.RELAMPAGO)]))
+	s = Scorer.score(HandEvaluator.evaluate([n(50), n(50, Note.Suit.DEBITO), n(50, Note.Suit.CREDITO), n(50, Note.Suit.PIX)]))
 	check(s["total"] == 644, "Cofrinho de 50 = 644 (got %s)" % s["total"])
 
-	# Escadinha 1-2-5-10-20: pontos 2+3+5+6+7 = 23; (30 + 23) × 4 = 212
-	s = Scorer.score(HandEvaluator.evaluate([n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.RELAMPAGO)]))
-	check(s["total"] == 212, "Escadinha = 212 (got %s)" % s["total"])
+	# Escadinha 1-2-5-10-20: pontos 2+3+5+6+7 = 23; (25 + 23) × 3 = 144
+	s = Scorer.score(HandEvaluator.evaluate([n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.PIX)]))
+	check(s["total"] == 144, "Escadinha = 144 (got %s)" % s["total"])
 
 	# Nenhuma nota: saldo 0 e evento final presente.
 	s = Scorer.score(HandEvaluator.evaluate([]))
@@ -165,17 +168,17 @@ func _test_bosses() -> void:
 	var rng := RandomNumberGenerator.new()
 	rng.seed = 7
 
-	# Banco fora do ar: Relâmpago não pontua. Dobradinha de 10 (Dinheiro + Relâmpago) vira Trocado de 10 (Dinheiro): 11.
+	# Banco fora do ar: Pix não pontua. Dobradinha de 10 (Dinheiro + Pix) vira Trocado de 10 (Dinheiro): 11.
 	var bill := BillRound.new(999999, "banco_fora_do_ar", rng)
-	bill.hand = [n(10, Note.Suit.RELAMPAGO), n(10, Note.Suit.DINHEIRO)]
+	bill.hand = [n(10, Note.Suit.PIX), n(10, Note.Suit.DINHEIRO)]
 	bill.selected = [bill.hand[0], bill.hand[1]]
 	var r := bill.pay()
-	check(r["score"]["total"] == 11, "Relâmpago não pontua no Banco fora do ar (got %s)" % r["score"]["total"])
+	check(r["score"]["total"] == 11, "Pix não pontua no Banco fora do ar (got %s)" % r["score"]["total"])
 	check(bill.saldo == 11, "saldo só recebe o que pontua")
 
 	# Sem chefe: a mesma jogada vale Dobradinha = 44.
 	bill = BillRound.new(999999, Boss.NONE, rng)
-	bill.hand = [n(10, Note.Suit.RELAMPAGO), n(10, Note.Suit.DINHEIRO)]
+	bill.hand = [n(10, Note.Suit.PIX), n(10, Note.Suit.DINHEIRO)]
 	bill.selected = [bill.hand[0], bill.hand[1]]
 	check(bill.pay()["score"]["total"] == 44, "sem chefe a Dobradinha vale 44")
 
@@ -184,8 +187,9 @@ func _test_bosses() -> void:
 	bill.hand = [n(10), n(10, Note.Suit.DEBITO)]
 	bill.selected = [bill.hand[0], bill.hand[1]]
 	r = bill.pay()
-	check(r["score"]["tax"] == 12, "imposto de 27,5%% sobre 44 = 12 (got %s)" % r["score"]["tax"])
-	check(bill.saldo == 32, "saldo com imposto = 32 (got %s)" % bill.saldo)
+	var leao: int = 44 * Balance.LEAO_PER_MILLE / 1000
+	check(r["score"]["tax"] == leao, "imposto sobre 44 = %d (got %s)" % [leao, r["score"]["tax"]])
+	check(bill.saldo == 44 - leao, "saldo com imposto = %d (got %s)" % [44 - leao, bill.saldo])
 
 	check(BillRound.new(1, "taxa_manutencao", rng).swap_cost() == 1, "troca custa R$1 na taxa de manutenção")
 	check(BillRound.new(1, "banco_fora_do_ar", rng).swap_cost() == 0, "troca é grátis no banco fora do ar")
@@ -208,8 +212,8 @@ func _test_run_state() -> void:
 
 	var run := RunState.new(rng)
 	check(run.wallet == Balance.START_WALLET, "carteira começa em R$4")
-	check(run.bill_title() == "Março · Boleto", "primeira conta é Março · Boleto (got %s)" % run.bill_title())
-	check(run.boss_id() == Boss.NONE, "boleto não tem chefe")
+	check(run.bill_title() == "Janeiro · Boleto", "primeira conta é Janeiro · Boleto (got %s)" % run.bill_title())
+	check(run.boss_id() == Boss.NONE, "boleto não tem chefe (got %s)" % run.boss_id())
 
 	# Pagar a primeira conta: carteira recebe recompensa + troco do comprovante.
 	run.bill.goal = 1
@@ -220,7 +224,7 @@ func _test_run_state() -> void:
 	check(run.receipt["reward"] == Balance.REWARD_BOLETO + 3 * Balance.REWARD_PER_UNUSED_DAY, "recompensa do boleto + 3 dias não usados")
 	check(run.next_bill() and run.state == RunState.SHOP, "depois do comprovante vem o Camelô")
 	check(run.leave_shop(), "sai do Camelô para a próxima conta")
-	check(run.bill_title() == "Março · Aluguel", "segunda conta é Aluguel")
+	check(run.bill_title() == "Janeiro · Aluguel", "segunda conta é Aluguel")
 
 	# Cheque especial: troca recusada se passar de -R$10.
 	var gate := RunState.new(rng)
@@ -239,26 +243,197 @@ func _test_run_state() -> void:
 		lost.pay()
 	check(lost.state == RunState.LOST, "perder uma conta encerra a partida")
 
-	# Partida inteira: 9 contas pagas (3 meses × 3). Chefes certos nas faturas.
+	# Partida inteira: 36 contas pagas (12 meses × 3). Um chefe por mês, na ordem da tabela.
 	var full := RunState.new(rng)
 	var bosses_seen: Array = []
-	for i in range(9):
+	for i in range(36):
 		if full.bill_key() == "fatura":
 			bosses_seen.append(full.boss_id())
 		full.bill.goal = 1
-		# Escolhe uma nota que pontua (no Banco fora do ar, Relâmpago não conta).
+		# Escolhe uma nota que pontua (no Banco fora do ar, Pix não conta).
 		for c in full.bill.hand:
 			if Boss.note_scores(full.boss_id(), c):
 				full.bill.toggle_select(c)
 				break
 		full.pay()
-		if i < 8:
+		if i < 35:
 			full.next_bill()
 			full.leave_shop()
-	check(full.state == RunState.WON, "pagar a última fatura vence a partida")
-	check(bosses_seen == ["banco_fora_do_ar", "taxa_manutencao", "janeiro_impostos"], "chefes das faturas na ordem (got %s)" % str(bosses_seen))
+	check(full.state == RunState.WON, "pagar a última fatura de Dezembro vence a partida")
+	check(bosses_seen == Balance.BOSS_BY_MONTH, "um chefe por mês, na ordem (got %s)" % str(bosses_seen))
 	check(full.max_saldo > 0, "saldo máximo do ano registrado")
 	check(not full.next_bill(), "não há próxima conta depois da última")
+
+
+## Chefes do ano de 12 meses: cada regra nova, com números conferidos à mão.
+func _test_chefes_novos() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 5
+
+	check(Balance.MONTHS.size() == 12 and Balance.BOSS_BY_MONTH.size() == 12, "12 meses e 12 chefes")
+	for id in Balance.BOSS_BY_MONTH:
+		check(Balance.BOSSES.has(id), "chefe %s tem nome e texto" % id)
+
+	# Férias na praia: mão de 6 cartas.
+	check(BillRound.new(999999, "ferias_praia", rng).hand.size() == 6, "Férias na praia: mão de 6 cartas")
+	check(BillRound.new(999999, Boss.NONE, rng).hand.size() == Balance.HAND_SIZE, "sem chefe: mão de 8 cartas")
+
+	# Dia dos Pais: a troca gasta um dia; a troca do último dia acaba a conta.
+	var pai := BillRound.new(999999, "dia_dos_pais", rng)
+	pai.toggle_select(pai.hand[0])
+	pai.swap()
+	check(pai.days_left == Balance.DAYS_PER_BILL - 1, "Dia dos Pais: troca gasta um dia")
+	var ultimo := BillRound.new(999999, "dia_dos_pais", rng)
+	ultimo.days_left = 1
+	ultimo.toggle_select(ultimo.hand[0])
+	ultimo.swap()
+	check(ultimo.state == BillRound.LOST, "Dia dos Pais: a troca do último dia perde a conta")
+
+	# Bandeira vermelha: Débito pontua 50% a mais. Dobradinha de 10 em Débito: (10 + 9 + 9) × 2 = 56.
+	var band := BillRound.new(999999, "bandeira_vermelha", rng)
+	band.hand = [n(10, Note.Suit.DEBITO), n(10, Note.Suit.DEBITO)]
+	band.selected = band.hand.duplicate()
+	var band_total: int = band.pay()["score"]["total"]
+	check(band_total == 56, "bandeira vermelha: Débito pontua 50%% a mais (got %d)" % band_total)
+
+	# Grosso: meta do boleto de Setembro dobra; recompensa também (base 3 + 3 dias, × 2 = 12).
+	var grosso := RunState.new(rng)
+	# Os chefes valem só na fatura (3ª conta do mês). Conta de teste: reward da fatura = 5 + 3 dias = 8.
+	grosso.month_index = 8
+	grosso.bill_index = 2
+	grosso._start_bill()
+	check(grosso.bill.goal == Balance.MONTHS[8]["fatura"] * 2, "Grosso: meta da fatura dobra (got %d)" % grosso.bill.goal)
+	grosso.bill.goal = 1
+	grosso.bill.toggle_select(grosso.bill.hand[0])
+	grosso.pay()
+	check(grosso.receipt["reward"] == 16, "Grosso: recompensa da fatura dobra (got %s)" % str(grosso.receipt["reward"]))
+
+	# Bolsa Família (Fevereiro, fatura): meta sobe 15%; +R$3 ao pagar (5 + 3 dias + 3 = 11).
+	var bolsa := RunState.new(rng)
+	bolsa.month_index = 1
+	bolsa.bill_index = 2
+	bolsa._start_bill()
+	var bolsa_goal: int = Balance.MONTHS[1]["fatura"] * 115 / 100
+	check(bolsa.bill.goal == bolsa_goal, "Bolsa Família: meta da fatura sobe 15%% (got %d)" % bolsa.bill.goal)
+	bolsa.bill.goal = 1
+	bolsa.bill.toggle_select(bolsa.bill.hand[0])
+	bolsa.pay()
+	check(bolsa.receipt["reward"] == 11, "Bolsa Família: +R$3 na fatura paga (got %s)" % str(bolsa.receipt["reward"]))
+
+	# 13º (Dezembro, fatura): meta sobe 25%; recompensa +R$3 (11 com a conta de teste).
+	var decimo := RunState.new(rng)
+	decimo.month_index = 11
+	decimo.bill_index = 2
+	decimo._start_bill()
+	var decimo_goal: int = Balance.MONTHS[11]["fatura"] * 125 / 100
+	check(decimo.bill.goal == decimo_goal, "13º: meta da fatura sobe 25%% (got %d)" % decimo.bill.goal)
+	decimo.bill.goal = 1
+	decimo.bill.toggle_select(decimo.bill.hand[0])
+	decimo.pay()
+	check(decimo.receipt["reward"] == 11, "13º: +R$3 na recompensa (got %s)" % str(decimo.receipt["reward"]))
+
+	# Boleto de Dezembro não tem chefe: meta normal, sem o 13º.
+	var sem_chefe := RunState.new(rng)
+	sem_chefe.month_index = 11
+	sem_chefe.bill_index = 0
+	sem_chefe._start_bill()
+	check(sem_chefe.bill.goal == Balance.MONTHS[11]["boleto"], "boleto de Dezembro: meta normal (got %d)" % sem_chefe.bill.goal)
+
+	# Julius (Novembro, fatura): meta cai 20% se não comprou nada no Camelô antes; sem queda se comprou.
+	var julius := RunState.new(rng)
+	julius.month_index = 10
+	julius.bill_index = 2
+	julius.bought_last_shop = false
+	julius._start_bill()
+	var julius_base: int = Balance.MONTHS[10]["fatura"]
+	check(julius.bill.goal == julius_base * 80 / 100, "Julius: sem compra, meta cai 20%% (got %d)" % julius.bill.goal)
+	julius.bought_last_shop = true
+	julius._start_bill()
+	check(julius.bill.goal == julius_base, "Julius: com compra, meta normal (got %d)" % julius.bill.goal)
+
+	# Curso do Primo Rico (Abril): matrícula paga uma vez; a cada 2 contas pagas, Valor +20%.
+	var curso := RunState.new(rng)
+	curso.month_index = 3
+	curso.bill_index = 2
+	var w0 := curso.wallet
+	curso._start_bill()
+	check(curso.wallet == w0 - Balance.CURSO_COST and curso.curso_matriculado, "Curso: matrícula cobra R$ %d" % Balance.CURSO_COST)
+	curso._start_bill()
+	check(curso.wallet == w0 - Balance.CURSO_COST, "Curso: matrícula cobrada só uma vez")
+	curso.curso_contas = 2
+	check(curso.valor_percent() == 20, "Curso: 2 contas dão +20%% de Valor (got %d)" % curso.valor_percent())
+	curso.curso_contas = 5
+	check(curso.valor_percent() == 40, "Curso: 5 contas dão +40%% (got %d)" % curso.valor_percent())
+	curso.curso_contas = 2
+	curso._start_bill()
+	check(curso.bill.valor_percent == 20, "Curso: a conta recebe o Valor extra")
+
+	# Urubu do Pix (Maio): no começo da conta, dobra a carteira ou perde R$5.
+	var urubu := RunState.new(rng)
+	urubu.month_index = 4
+	urubu.bill_index = 2
+	urubu.wallet = 10
+	urubu._start_bill()
+	check(urubu.wallet == 20 or urubu.wallet == 10 - Balance.URUBU_LOSS, "Urubu: dobra (20) ou perde R$5 (got %d)" % urubu.wallet)  # 10 → 20 ou 5
+	check(urubu.boss_note != "", "Urubu: o resultado aparece na tela")
+
+	# Boleto de Janeiro: sem chefe, meta normal.
+	var normal := RunState.new(rng)
+	normal.month_index = 0
+	normal.bill_index = 0
+	normal._start_bill()
+	check(normal.bill.goal == Balance.MONTHS[0]["boleto"], "mês sem regra de meta: meta normal")
+
+
+## Prévia da seleção: mesmo valor, Juros e total que o PAGAR dá (sem a sorte da Rifa).
+func _test_previa() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 11
+	var b := BillRound.new(999999, "bandeira_vermelha", rng, ["cashback"], 1, {"dobradinha": 1})
+	b.hand = [n(10, Note.Suit.DEBITO), n(10, Note.Suit.DEBITO), n(5)]
+	b.selected = [b.hand[0], b.hand[1]]
+	var prev: Dictionary = b.preview(b.selected)
+	var real: Dictionary = b.pay()["score"]
+	check(prev["total"] == real["total"], "prévia = total do PAGAR (%s x %s)" % [prev["total"], real["total"]])
+	check(prev["juros"] == real["juros"], "prévia mostra os mesmos Juros")
+	check(b.preview([]).is_empty(), "sem notas, sem prévia")
+	var so_sem_pontos: BillRound = BillRound.new(999999, "banco_fora_do_ar", rng)
+	so_sem_pontos.hand = [n(10, Note.Suit.PIX)]
+	check(so_sem_pontos.preview([so_sem_pontos.hand[0]]).is_empty(), "nota que não pontua não tem prévia")
+
+
+## Dois Carnês e Conta Conjunta: só pontuam depois do investimento; valores conferidos à mão.
+func _test_formacoes_liberadas() -> void:
+	var rng := RandomNumberGenerator.new()
+	rng.seed = 3
+	# Dois pares: 10, 10, 20, 20 (pontos 6+6+7+7 = 26).
+	var dois_pares := [n(10), n(10, Note.Suit.DEBITO), n(20), n(20, Note.Suit.CREDITO)]
+	check(HandEvaluator.evaluate(dois_pares)["kind"] == "dobradinha", "sem o Carnê, dois pares vale só a Dobradinha")
+	check(HandEvaluator.evaluate(dois_pares, ["dois_carnes"])["kind"] == "dois_carnes", "com o Carnê, dois pares é Dois Carnês")
+
+	# Trinca + par (10×3 e 20×2): pontos 6×3 + 7×2 = 32. Base 35 × Juros 3 = 105 → (35 + 32) × 3 = 201.
+	var full := [n(10), n(10, Note.Suit.DEBITO), n(10, Note.Suit.CREDITO), n(20), n(20, Note.Suit.DEBITO)]
+	check(HandEvaluator.evaluate(full)["kind"] == "bolada", "sem a Conta Conjunta, trinca + par é Bolada")
+	check(HandEvaluator.evaluate(full, ["conta_conjunta"])["kind"] == "conta_conjunta", "com a Conta Conjunta, trinca + par é Conta Conjunta")
+	var cc := Scorer.score(HandEvaluator.evaluate(full, ["conta_conjunta"]))
+	check(cc["total"] == 201, "Conta Conjunta sem nível = (35 + 32) × 3 = 201 (got %s)" % cc["total"])
+
+	# Partida: o nível do investimento libera a formação e soma Valor e Juros.
+	var b := BillRound.new(999999, Boss.NONE, rng, [], 0, {"dois_carnes": 1})
+	check(b.unlocked() == ["dois_carnes"], "nível 1 do Carnê libera Dois Carnês")
+	b.hand = dois_pares.duplicate()
+	b.selected = b.hand.duplicate()
+	var total: int = b.pay()["score"]["total"]
+	# (15 base + 26 pontos + 10 do nível) × (2 + 1 do nível) = 153.
+	check(total == 153, "Dois Carnês com nível 1 = (15 + 26 + 10) × 3 = 153 (got %s)" % total)
+	var sem := BillRound.new(999999, Boss.NONE, rng)
+	sem.hand = dois_pares.duplicate()
+	sem.selected = sem.hand.duplicate()
+	check(sem.pay()["score"]["kind"] == "dobradinha", "sem investimento a mesma mão pontua como Dobradinha")
+
+	# Investimentos novos aparecem na ordem do Camelô e sobem o nível certo.
+	check(Balance.INVESTMENT_ORDER.has("carne") and Balance.INVESTMENT_ORDER.has("conta_conjunta") and Balance.INVESTMENT_ORDER.has("fundo"), "três investimentos novos no Camelô")
+	check(Investments.level_effect("bolada", 1)["value"] == 10, "Fundo de Investimento: +10 de Valor na Bolada")
 
 
 func _test_assets() -> void:
@@ -282,13 +457,43 @@ func _test_schemes() -> void:
 	rng.seed = 5
 	var t200 := [n(200)]  # Trocado de 200: (5 + 11) × 1 = 16
 
-	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["agiota"]})["total"] == 96, "Agiota +5 Juros: 16 × 6 = 96")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["agiota"]})["total"] == 64, "Agiota +3 Juros: 16 × 4 = 64")
 	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["cunhado"], "cunhado_bonus": 3})["total"] == 64, "Cunhado acumulado +3: 16 × 4 = 64")
 	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["piramide", "cunhado"]})["total"] == 32, "Pirâmide +1 por outro esquema: 16 × 2 = 32")
-	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["agiota", "piramide"]})["total"] == 112, "Agiota + Pirâmide: 16 × 7 = 112")
-	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["vaquinha"], "hand_points": 10})["total"] == 26, "Vaquinha soma 10 ao Valor: (16 + 10) = 26")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["agiota", "piramide"]})["total"] == 80, "Agiota + Pirâmide: 16 × 5 = 80")
+	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["vaquinha"], "hand_points": 10})["total"] == 21, "Vaquinha soma metade (5) dos 10 pontos ao Valor: 16 + 5 = 21")
 	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["rifa"], "rifa": true})["total"] == 80, "Rifa sorteada ×5: 16 × 5 = 80")
 	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["rifa"], "rifa": false})["total"] == 16, "Rifa não sorteada não muda")
+	# Esquemas novos (personagens brasileiros): efeitos puros.
+	var d10 := Note.new(10, Note.Suit.DINHEIRO)
+	var d20 := Note.new(20, Note.Suit.DINHEIRO)
+	var deb := Note.new(10, Note.Suit.DEBITO)
+	var deb2 := Note.new(20, Note.Suit.DEBITO)
+	check(SchemeRules.score_effect("vendedor_consorcio", {"scoring": [d10, d20, deb]})["value"] == 6, "Vendedor de Consórcio: +3 por nota de Dinheiro que pontua (2 notas = 6)")
+	check(SchemeRules.score_effect("tia_do_pix", {"scoring": [deb, deb2]})["add"] == 2, "Tia do Pix: +1 de Juros por nota de Débito (2 notas = 2)")
+	check(SchemeRules.score_effect("tia_do_pix", {"scoring": [d10]})["add"] == 0, "Tia do Pix: sem nota de Débito não soma")
+	check(SchemeRules.score_effect("pastor", {})["value"] == Balance.PASTOR_VALUE, "Pastor: Valor fixo por jogada")
+	check(SchemeRules.score_effect("influenciador", {"played": 3})["add"] == 3, "Influenciador: 3 notas ativam +3 de Juros")
+	check(SchemeRules.score_effect("influenciador", {"played": 2})["add"] == 0, "Influenciador: 2 notas não ativam")
+	check(SchemeRules.parcelas_per_bill(["vendedor_consorcio", "pastor", "consignado"]) == 1, "Parcela fixa: só o Vendedor de Consórcio cobra (1)")
+	check(SchemeRules.score_effect("consignado", {})["add"] == Balance.CONSIGNADO_JUROS, "Consignado: +1 de Juros por jogada")
+	check(SchemeRules.dizimo_charge(["pastor"], 100) == 5, "Pastor cobra 5% da carteira")
+	check(SchemeRules.dizimo_charge(["agiota"], 100) == 0, "Sem Pastor não há dízimo")
+	check(SchemeRules.parcelas_per_bill(["agiota"]) == 0, "Esquema sem parcela não cobra")
+	check(SchemeRules.score_effect("nubank", {"scoring": [Note.new(10, Note.Suit.CREDITO), Note.new(20, Note.Suit.CREDITO), d10]})["value"] == 6, "Nubank: +3 por nota de Crédito que pontua (2 notas = 6)")
+	check(SchemeRules.score_effect("nubank", {"scoring": [d10]})["value"] == 0, "Nubank: sem nota de Crédito não soma")
+	check(Investments.reward_bonus({"duolingo": 2}) == 4, "Duolingo: +R$ 2 de recompensa por nível (2 níveis = 4)")
+	check(Investments.reward_bonus({}) == 0, "Sem Duolingo não há recompensa extra")
+	check(Investments.level_effect("duolingo", 3)["value"] == 0, "Duolingo não muda a pontuação de formação alguma")
+	for id in Balance.SCHEME_ORDER:
+		check(Balance.RARITY_ORDER.has(Balance.SCHEMES[id]["rarity"]), "Esquema %s tem raridade válida" % id)
+	for id in Balance.INVESTMENT_ORDER:
+		check(Balance.RARITY_ORDER.has(Balance.INVESTMENTS[id]["rarity"]), "Investimento %s tem raridade válida" % id)
+	var kinds := {}
+	for id in Balance.INVESTMENT_ORDER:
+		var k: String = Balance.INVESTMENTS[id]["transaction"]
+		check(not kinds.has(k), "Investimento %s não divide formação com outro" % id)
+		kinds[k] = true
 	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["coach"], "played": 5})["total"] == 32, "Coach com 5 notas ×2: 32")
 	check(Scorer.score(HandEvaluator.evaluate(t200), {"schemes": ["coach"], "played": 1})["total"] == 0, "Coach com menos de 5 perde 1 de Juros: 0")
 
@@ -302,12 +507,12 @@ func _test_schemes() -> void:
 	cash_bill.selected = [cash_bill.hand[0], cash_bill.hand[1]]
 	check(cash_bill.pay()["cash"] == 2, "Cashback devolve R$1 por nota de Crédito que pontua")
 
-	# Relâmpago Errado: a primeira nota de Relâmpago jogada é copiada para o baralho (uma vez por conta).
+	# Pix Errado: a primeira nota de Pix jogada é copiada para o baralho (uma vez por conta).
 	# Baralho controlado: conta as notas em baralho, descarte e mão (não muda com as compras).
 	var copy_on := _rel_bill(["relampago_errado"], rng)
 	var before := _count_rel10(copy_on)
 	copy_on.pay()
-	check(_count_rel10(copy_on) - before == 1, "Relâmpago Errado adiciona 1 cópia ao baralho")
+	check(_count_rel10(copy_on) - before == 1, "Pix Errado adiciona 1 cópia ao baralho")
 
 	var copy_off := _rel_bill([], rng)
 	before = _count_rel10(copy_off)
@@ -317,7 +522,7 @@ func _test_schemes() -> void:
 	# Cunhado: cada Escadinha jogada soma 1 ao acumulado da partida.
 	var cun := RunState.new(rng)
 	cun.schemes = ["cunhado"]
-	cun.bill.hand = [n(1, Note.Suit.DINHEIRO), n(2, Note.Suit.DEBITO), n(5, Note.Suit.CREDITO), n(10, Note.Suit.RELAMPAGO), n(20, Note.Suit.DINHEIRO)]
+	cun.bill.hand = [n(1, Note.Suit.DINHEIRO), n(2, Note.Suit.DEBITO), n(5, Note.Suit.CREDITO), n(10, Note.Suit.PIX), n(20, Note.Suit.DINHEIRO)]
 	cun.bill.selected = cun.bill.hand.duplicate()
 	cun.pay()
 	check(cun.cunhado_bonus == 1, "Cunhado acumula +1 após uma Escadinha")
@@ -325,7 +530,7 @@ func _test_schemes() -> void:
 	# Golpe do WhatsApp (fatura de Janeiro): 1 esquema some da conta, não da partida.
 	var golpe := RunState.new(rng)
 	golpe.schemes = ["agiota", "cunhado"]
-	golpe.month_index = 2
+	golpe.month_index = 0  # Janeiro
 	golpe.bill_index = 2
 	golpe._start_bill()
 	check(golpe.bill.schemes.size() == 1 and golpe.schemes.size() == 2, "Golpe do WhatsApp desativa 1 esquema só nesta conta")
@@ -364,17 +569,17 @@ func _rel_bill(p_schemes: Array, rng: RandomNumberGenerator) -> BillRound:
 	var bill := BillRound.new(999999, Boss.NONE, rng, p_schemes)
 	bill.deck.draw_pile = [n(1, Note.Suit.DEBITO), n(2, Note.Suit.CREDITO), n(5, Note.Suit.DINHEIRO)]
 	bill.deck.discard_pile = []
-	bill.hand = [n(10, Note.Suit.RELAMPAGO), n(20, Note.Suit.DEBITO)]
+	bill.hand = [n(10, Note.Suit.PIX), n(20, Note.Suit.DEBITO)]
 	bill.selected = [bill.hand[0]]
 	return bill
 
 
-## Quantas notas R$10 Relâmpago existem na conta (baralho + descarte + mão).
+## Quantas notas R$10 Pix existem na conta (baralho + descarte + mão).
 func _count_rel10(bill: BillRound) -> int:
 	var total := 0
 	for pile in [bill.deck.draw_pile, bill.deck.discard_pile, bill.hand]:
 		for c in pile:
-			if c.value == 10 and c.suit == Note.Suit.RELAMPAGO:
+			if c.value == 10 and c.suit == Note.Suit.PIX:
 				total += 1
 	return total
 
@@ -413,11 +618,11 @@ func _test_investments() -> void:
 	check(Scorer.score(HandEvaluator.evaluate(pair), {"levels": {"dobradinha": 1}})["total"] == 96, "Poupança nível 1: (10+12+10) × 3 = 96")
 	check(Scorer.score(HandEvaluator.evaluate(pair), {"levels": {"escadinha": 1}})["total"] == 44, "nível de outra transação não muda a Dobradinha")
 
-	var esc := [n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.RELAMPAGO)]  # Escadinha: (30+23) × 4 = 212
-	check(Scorer.score(HandEvaluator.evaluate(esc), {"levels": {"escadinha": 1}})["total"] == 365, "Tesouro nível 1: (30+23+20) × 5 = 365")
+	var esc := [n(1), n(2, Note.Suit.DEBITO), n(5), n(10, Note.Suit.CREDITO), n(20, Note.Suit.PIX)]  # Escadinha: (25+23) × 3 = 144
+	check(Scorer.score(HandEvaluator.evaluate(esc), {"levels": {"escadinha": 1}})["total"] == 340, "Tesouro nível 1: (25+23+20) × 5 = 340")
 
 	var flush := [n(1, Note.Suit.DEBITO), n(2, Note.Suit.DEBITO), n(5, Note.Suit.DEBITO), n(10, Note.Suit.DEBITO), n(20, Note.Suit.DEBITO)]
-	check(Scorer.score(HandEvaluator.evaluate(flush), {"levels": {"tudo_no_relampago": 1}})["total"] == 498, "Cripto nível 1: (35+23+25) × 6 = 498")
+	check(Scorer.score(HandEvaluator.evaluate(flush), {"levels": {"tudo_no_pix": 1}})["total"] == 686, "Cripto nível 1: (35+23+40) × 7 = 686")
 
 	check(Investments.level_effect("nenhuma", 3) == {"value": 0, "juros": 0}, "transação sem investimento não ganha nada")
 
@@ -436,6 +641,7 @@ func _test_investments() -> void:
 	shop.shop_offer = ["poupanca"]
 	shop.wallet = 20
 	var r := shop.buy(0)
-	check(r["ok"] and shop.levels.get("dobradinha", 0) == 1 and shop.wallet == 17, "comprar Poupança sobe Dobradinha e cobra R$ 3")
-	check(shop.shop_offer.is_empty(), "investimento comprado sai da oferta")
+	check(r["ok"] and shop.levels.get("dobradinha", 0) == 1 and shop.wallet == 14, "comprar Poupança sobe Dobradinha e cobra R$ 6")
+	check(shop.shop_offer[0] == "", "investimento comprado deixa o espaço vazio (as outras ofertas não se mexem)")
+	check(not shop.buy(0)["ok"], "espaço vazio não pode ser comprado de novo")
 

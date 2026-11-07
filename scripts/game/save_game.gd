@@ -4,7 +4,7 @@ extends RefCounted
 ## Se o arquivo estiver corrompido ou faltar algo, load() devolve null e o jogo segue sem carregar.
 
 const PATH := "user://partida.json"
-const VERSION := 1
+const VERSION := 2  # 2: ano de 12 meses e chefes novos (saves antigos são descartados)
 
 
 static func exists() -> bool:

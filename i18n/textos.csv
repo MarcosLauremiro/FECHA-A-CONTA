@@ -1,0 +1,272 @@
+pt,en,es
+"Saldo no vermelho? Relaxa, o Boletro não tem prazo de validade.","Overdrawn? Relax, Boletro has no expiry date.","¿Saldo en rojo? Tranquilo, el Boletro no tiene fecha de caducidad."
+Juros é só um jeito carinhoso de dizer: pague mais.,Interest is just a loving way of saying: pay more.,Los intereses son solo una forma cariñosa de decir: paga más.
+O cheque especial é um amigo que sempre empresta… e cobra juros.,Overdraft is a friend who always lends… and charges interest.,El descubierto es un amigo que siempre presta… y cobra intereses.
+Aqui você não paga contas. Você negocia com o sistema.,Here you don't pay bills. You negotiate with the system.,Aquí no pagas facturas. Negocias con el sistema.
+Cartão aprovado! (provisoriamente),Card approved! (provisionally),¡Tarjeta aprobada! (provisionalmente)
+"Toda conta paga é uma pequena vitória. Toda fatura nova, nem tanto.","Every paid bill is a small victory. Every new invoice, not so much.","Cada factura pagada es una pequeña victoria. Cada factura nueva, no tanto."
+O caixa nunca fecha. Só você fecha a conta.,The register never closes. Only you close the account.,La caja nunca cierra. Solo tú cierras la cuenta.
+O Leão da Receita não tem coração. Não tente argumentar.,The Tax Lion has no heart. Don't try to argue.,El León de Hacienda no tiene corazón. No intentes discutir.
+"Não é golpe, é um investimento que ainda não deu certo.","It's not a scam, it's an investment that hasn't worked out yet.","No es una estafa, es una inversión que todavía no salió bien."
+CLIQUE EM QUALQUER LUGAR PARA INICIAR O SERVIÇO,CLICK ANYWHERE TO START SERVICE,HAZ CLIC EN CUALQUIER LUGAR PARA INICIAR EL SERVICIO
+CONTINUAR,CONTINUE,CONTINUAR
+NOVO JOGO,NEW GAME,NUEVA PARTIDA
+COMO JOGAR,HOW TO PLAY,CÓMO JUGAR
+Como jogar,How to play,Cómo jugar
+CRÉDITOS,CREDITS,CRÉDITOS
+Créditos,Credits,Créditos
+COLEÇÃO,COLLECTION,COLECCIÓN
+Coleção,Collection,Colección
+CONQUISTAS,ACHIEVEMENTS,LOGROS
+Conquistas,Achievements,Logros
+SAIR,QUIT,SALIR
+%s: em breve.,%s: coming soon.,%s: próximamente.
+OPÇÕES,OPTIONS,OPCIONES
+AGUARDE… PROCESSANDO,PLEASE WAIT… PROCESSING,ESPERE… PROCESANDO
+SALDO  %s,BALANCE  %s,SALDO  %s
+DIAS  %s,DAYS  %s,DÍAS  %s
+TROCAS  %s,SWAPS  %s,CAMBIOS  %s
+JANEIRO,JANUARY,ENERO
+BOLSA\nFAMÍLIA,BOLSA\nFAMILY,BOLSA\nFAMILIA
+BANCO FORA\nDO AR,BANK\nOFFLINE,BANCO\nCAÍDO
+CURSO DO\nPRIMO RICO,RICH COUSIN\nCOURSE,CURSO DEL\nPRIMO RICO
+URUBU\nDO PIX,PIX\nVULTURE,BUITRE\nDEL PIX
+TAXA DE\nMANUTENÇÃO,MAINTENANCE\nFEE,CUOTA DE\nMANTENIMIENTO
+FÉRIAS NA\nPRAIA,BEACH\nVACATION,VACACIONES EN\nLA PLAYA
+DIA DOS\nPAIS,FATHER'S\nDAY,DÍA DEL\nPADRE
+ENTRAR O\nGROSSO,GOING\nBIG,IR A LO\nGRANDE
+BANDEIRA\nVERMELHA,RED\nFLAG,BANDERA\nROJA
+JULIUS,JULIUS,JULIUS
+13º\nSALÁRIO,13TH\nSALARY,13.º\nPAGA EXTRA
+a nota de maior valor,the highest-value note,la nota de mayor valor
+2 notas de mesmo valor,2 notes of the same value,2 notas del mismo valor
+3 notas de mesmo valor,3 notes of the same value,3 notas del mismo valor
+4 notas de mesmo valor,4 notes of the same value,4 notas del mismo valor
+5 notas em sequência,5 notes in sequence,5 notas en secuencia
+5 notas do mesmo naipe,5 notes of the same payment type,5 notas del mismo tipo de pago
+O OBJETIVO,THE GOAL,EL OBJETIVO
+"Cada conta tem uma meta de saldo. Você tem 4 dias e 3 trocas para bater a meta. Bateu: a conta está paga. Não bateu até o fim dos dias: a partida acaba. O ano tem 12 meses, e cada mês tem 3 contas: boleto, aluguel e fatura.","Each bill has a balance goal. You have 4 days and 3 swaps to hit it. Hit it: the bill is paid. Miss it by the last day: the game ends. The year has 12 months, and each month has 3 bills: utility, rent and credit card.","Cada cuenta tiene una meta de saldo. Tienes 4 días y 3 cambios para alcanzarla. La alcanzas: la cuenta queda pagada. No la alcanzas al final de los días: la partida termina. El año tiene 12 meses, y cada mes tiene 3 cuentas: servicio, alquiler y tarjeta."
+SUAS NOTAS,YOUR NOTES,TUS BILLETES
+"Você recebe 8 notas. Escolha de 1 a 5 e aperte PAGAR para jogar, ou TROCAR para trocar as selecionadas por outras (gasta uma troca). A forma de pagamento aparece no selo de cada nota.","You receive 8 notes. Choose 1 to 5 and press PAY to play, or SWAP to exchange the selected ones for others (uses a swap). The payment type shows on each note's stamp.","Recibes 8 billetes. Elige de 1 a 5 y pulsa PAGAR para jugar, o CAMBIAR para cambiar los seleccionados por otros (gasta un cambio). El tipo de pago aparece en el sello de cada billete."
+AS FORMAÇÕES,THE COMBINATIONS,LAS JUGADAS
+O jogo reconhece a formação pelas notas escolhidas. Cada uma tem um Valor base e Juros. Dois Carnês e Conta Conjunta só aparecem depois de comprar o Carnê e a Conta Conjunta no Camelô.,The game recognizes the combination from the notes you choose. Each has a base Value and Interest. Two Payment Books and Joint Account only appear after you buy the Installment Book and Joint Account at the Street Market.,El juego reconoce la jugada por los billetes elegidos. Cada una tiene un Valor base e Intereses. Dos Libretas y Cuenta Conjunta solo aparecen después de comprar la Libreta de Pagos y la Cuenta Conjunta en el Mercadillo.
+COMO SE PONTUA,HOW SCORING WORKS,CÓMO SE PUNTÚA
+"Pontos = (Valor base + Valor das notas + Valor dos esquemas e investimentos) × Juros. Ao selecionar as notas, a mesa mostra o Valor e os Juros da jogada antes de pagar.","Points = (base Value + note Value + scheme and investment Value) × Interest. When you select notes, the table shows the play's Value and Interest before you pay.","Puntos = (Valor base + Valor de los billetes + Valor de esquemas e inversiones) × Intereses. Al seleccionar billetes, la mesa muestra el Valor y los Intereses de la jugada antes de pagar."
+DIAS E TROCO,DAYS AND CHANGE,DÍAS Y CAMBIO
+"PAGAR gasta 1 dia. Com a meta batida, a sobra vira troco: R$ 1 a cada 25% acima da meta, até R$ 5. Cada dia que sobrou na conta também paga R$ 1. Cada conta começa com 4 dias e 3 trocas novos.","PAY uses up 1 day. Once you hit the goal, the surplus becomes change: R$ 1 for every 25% above the goal, up to R$ 5. Each day left over also pays R$ 1. Each bill starts with 4 days and 3 swaps.","PAGAR gasta 1 día. Al alcanzar la meta, el sobrante se vuelve cambio: R$ 1 por cada 25% por encima de la meta, hasta R$ 5. Cada día sobrante también paga R$ 1. Cada cuenta empieza con 4 días y 3 cambios."
+O CAMELÔ,THE STREET MARKET,EL MERCADILLO
+"Entre as contas, o Camelô vende 2 esquemas e 1 investimento. Esquemas mudam a pontuação de todas as jogadas (no máximo 5 ao mesmo tempo). Investimentos sobem o Valor e os Juros de uma formação. PECHINCHAR troca a oferta por R$ 2. Vender devolve metade do preço. A carteira pode ficar até −R$ 10 (cheque especial), e a dívida cresce 25% a cada conta.","Between bills, the Street Market sells 2 schemes and 1 investment. Schemes change the score of every play (5 at most at a time). Investments raise a combination's Value and Interest. HAGGLE swaps the offer for R$ 2. Selling returns half the price. Your wallet can go down to −R$ 10 (overdraft), and debt grows 25% per bill.","Entre cuentas, el Mercadillo vende 2 esquemas y 1 inversión. Los esquemas cambian la puntuación de todas las jugadas (máximo 5 a la vez). Las inversiones suben el Valor y los Intereses de una jugada. REGATEAR cambia la oferta por R$ 2. Vender devuelve la mitad del precio. La billetera puede bajar hasta −R$ 10 (descubierto), y la deuda crece un 25% por cuenta."
+OS CHEFES,THE BOSSES,LOS JEFES
+"Cada mês tem um chefe. Ele vale só na fatura, que é a 3ª conta do mês. O carimbo no canto mostra o nome dele, e o texto aparece na tela do terminal. Leia antes de jogar a fatura.","Each month has a boss. It only applies to the invoice, the 3rd bill of the month. The stamp in the corner shows its name, and the text appears on the terminal screen. Read it before playing the invoice.","Cada mes tiene un jefe. Solo vale en la factura, que es la 3.ª cuenta del mes. El sello de la esquina muestra su nombre, y el texto aparece en la pantalla del terminal. Léelo antes de jugar la factura."
+Dinheiro · Pix · Débito · Crédito,Cash · Instant Transfer · Debit · Credit,Efectivo · Transferencia · Débito · Crédito
+Dobradinha: (10 base + 6 + 6 pontos) × 2 de Juros = 44,Double Up: (10 base + 6 + 6 points) × 2 Interest = 44,Doble: (10 base + 6 + 6 puntos) × 2 de Intereses = 44
+ANTERIOR,PREVIOUS,ANTERIOR
+CONCLUIR,FINISH,TERMINAR
+PRÓXIMO,NEXT,SIGUIENTE
+FECHAR,CLOSE,CERRAR
+Formação,Combination,Jugada
+Combinação,Pattern,Combinación
+Valor base,Base value,Valor base
+Juros,Interest,Intereses
+PAUSA,PAUSED,PAUSA
+SALVAR PARTIDA,SAVE GAME,GUARDAR PARTIDA
+RECOMEÇAR,RESTART,REINICIAR
+VOLTAR AO MENU,BACK TO MENU,VOLVER AL MENÚ
+JOGAR DE NOVO,PLAY AGAIN,JUGAR DE NUEVO
+IR AO CAMELÔ,GO TO THE STREET MARKET,IR AL MERCADILLO
+META,GOAL,META
+VALOR,VALUE,VALOR
+"Organiza a mão por valor, do menor para o maior.","Sorts the hand by value, lowest to highest.","Ordena la mano por valor, de menor a mayor."
+FORMA,TYPE,TIPO
+Agrupa a mão por forma de pagamento (selo).,Groups the hand by payment type (stamp).,Agrupa la mano por tipo de pago (sello).
+TROCAR,SWAP,CAMBIAR
+Troca as notas selecionadas por outras. Gasta uma troca.,Swaps the selected notes for others. Uses one swap.,Cambia las notas seleccionadas por otras. Gasta un cambio.
+PAGAR,PAY,PAGAR
+Paga a conta com as notas selecionadas.,Pays the bill with the selected notes.,Paga la cuenta con las notas seleccionadas.
+COMPROVANTE,RECEIPT,COMPROBANTE
+VENDER,SELL,VENDER
+PECHINCHAR,HAGGLE,REGATEAR
+SEGUIR,NEXT,SEGUIR
+VENDER R$ %d,SELL R$ %d,VENDER R$ %d
+PECHINCHAR R$ %d,HAGGLE R$ %d,REGATEAR R$ %d
+COMPRAR R$ %d,BUY R$ %d,COMPRAR R$ %d
+ATÉ R$ %d,UP TO R$ %d,HASTA R$ %d
+nenhum investimento ainda,no investments yet,todavía no hay inversiones
+"Sem dinheiro, nem no cheque especial","No money, not even overdraft","Sin dinero, ni con descubierto"
+Você já tem %d esquemas. Venda um antes,You already have %d schemes. Sell one first,Ya tienes %d esquemas. Vende uno antes
+INSIRA SUAS NOTAS,INSERT YOUR NOTES,INSERTA TUS BILLETES
+Partida terminada não pode ser salva.,A finished game can't be saved.,Una partida terminada no se puede guardar.
+Partida salva.,Game saved.,Partida guardada.
+Não consegui salvar. Tente de novo.,Couldn't save. Try again.,No pude guardar. Inténtalo de nuevo.
+TEM CERTEZA?,ARE YOU SURE?,¿ESTÁS SEGURO?
+O progresso não salvo se perde.,Unsaved progress will be lost.,El progreso no guardado se perderá.
+Níveis: ,Levels: ,Niveles:
+CONTAS EM DIA   ·   Saldo máximo R$ %d,BILLS PAID   ·   Max balance R$ %d,CUENTAS AL DÍA   ·   Saldo máximo R$ %d
+COMPROVANTE FINAL,FINAL RECEIPT,COMPROBANTE FINAL
+NOME NEGATIVADO,BLACKLISTED,EN LA LISTA NEGRA
+CONTA PAGA,BILL PAID,CUENTA PAGADA
+CHEFE: %s. %s,BOSS: %s. %s,JEFE: %s. %s
+    Valor +%d%%.,    Value +%d%%.,    Valor +%d%%.
+Mão organizada por forma de pagamento,Hand sorted by payment type,Mano ordenada por tipo de pago
+Mão organizada por valor,Hand sorted by value,Mano ordenada por valor
+Mão na ordem normal,Hand in normal order,Mano en orden normal
+CONTAS EM DIA,BILLS PAID,CUENTAS AL DÍA
+Contas pagas,Bills paid,Cuentas pagadas
+Saldo máximo,Max balance,Saldo máximo
+CARTEIRA,WALLET,BILLETERA
+Saldo da conta,Account balance,Saldo de la cuenta
+Meta,Goal,Meta
+Dias sobrando,Days left,Días sobrantes
+Carteira antes,Wallet before,Billetera antes
+Juros da dívida,Debt interest,Intereses de la deuda
+Recompensa,Reward,Recompensa
+Troco,Change,Cambio
+Agiota (10%),Loan Shark (10%),Prestamista (10%)
+Parcelas dos esquemas,Scheme installments,Cuotas de los esquemas
+Nenhuma nota pontua nesta jogada,No note scores on this play,Ninguna nota puntúa en esta jugada
+Escolha de 1 a 5 notas,Choose 1 to 5 notes,Elige de 1 a 5 billetes
+Sem trocas sobrando,No swaps left,No quedan cambios
+Sem dinheiro nem no cheque especial,"No money, not even overdraft",Sin dinero ni descubierto
+Esta conta já acabou,This bill is already over,Esta cuenta ya terminó
+Matrícula paga: -R$ %d.,Enrollment paid: -R$ %d.,Matrícula pagada: -R$ %d.
+Urubu: a carteira dobrou!,Vulture: the wallet doubled!,Buitre: ¡la billetera se duplicó!
+Urubu: não tinha o que dobrar.,Vulture: nothing to double.,Buitre: no había nada que duplicar.
+"Urubu: golpe, perdeu R$ %d.","Vulture: scam, lost R$ %d.","Buitre: estafa, perdiste R$ %d."
+Leão da Receita leva 15% de cada jogada. Cada troca custa R$ 1. Golpe do WhatsApp: 1 esquema seu fica desativado nesta conta.,The Tax Lion takes 15% of each play. Each swap costs R$ 1. WhatsApp scam: 1 of your schemes is disabled this bill.,El León de Hacienda se lleva el 15% de cada jugada. Cada cambio cuesta R$ 1. Estafa de WhatsApp: 1 de tus esquemas queda desactivado en esta cuenta.
+Bolsa Família,Bolsa Família,Bolsa Família
+"+R$ 3 ao pagar esta fatura, mas a meta sobe 15%.","+R$ 3 when you pay this invoice, but the goal goes up 15%.","+R$ 3 al pagar esta factura, pero la meta sube un 15%."
+Banco fora do ar,Bank offline,Banco caído
+Notas de Pix não pontuam.,Instant transfers don't score.,Las transferencias no puntúan.
+Curso do Primo Rico,Rich Cousin's Course,Curso del Primo Rico
+"Matrícula de R$ 6. A cada 2 contas pagas depois da matrícula, o Valor sobe 20%.","R$ 6 enrollment. Every 2 bills paid after enrolling, the Value goes up 20%.","Matrícula de R$ 6. Cada 2 cuentas pagadas después de matricularte, el Valor sube un 20%."
+Urubu do Pix,Pix Vulture,Buitre del Pix
+"No começo da fatura, 1 em 2: a carteira dobra. Se não, perde R$ 5.","At the start of the invoice, 1 in 2: your wallet doubles. Otherwise, you lose R$ 5.","Al empezar la factura, 1 de cada 2: la billetera se duplica. Si no, pierdes R$ 5."
+Taxa de manutenção,Maintenance fee,Cuota de mantenimiento
+Cada troca custa R$ 1.,Each swap costs R$ 1.,Cada cambio cuesta R$ 1.
+Férias na praia,Beach vacation,Vacaciones en la playa
+"A mão tem 6 cartas, em vez de 8.",Your hand has 6 cards instead of 8.,"La mano tiene 6 cartas, en vez de 8."
+Dia dos Pais,Father's Day,Día del Padre
+Cada troca consome um dia.,Each swap uses up a day.,Cada cambio consume un día.
+Entrar o Grosso,Going big,Ir a lo grande
+"As contas custam o dobro, e a recompensa também dobra.","Bills cost double, and the reward doubles too.","Las cuentas cuestan el doble, y la recompensa también."
+Bandeira vermelha,Red flag,Bandera roja
+Cada dia usado custa R$ 1 de energia. Notas de Débito pontuam 50% a mais.,Each day used costs R$ 1 of power. Debit notes score 50% more.,Cada día usado cuesta R$ 1 de luz. Las notas de Débito puntúan un 50% más.
+Julius,Julius,Julius
+"Se você não comprou nada no Camelô antes da conta, a meta cai 20%.","If you didn't buy anything at the Street Market before the bill, the goal drops 20%.","Si no compraste nada en el Mercadillo antes de la cuenta, la meta baja un 20%."
+13º salário,13th salary,Paga extra
+"A recompensa sobe R$ 3, mas as metas sobem 25%.","The reward goes up R$ 3, but goals go up 25%.","La recompensa sube R$ 3, pero las metas suben un 25%."
+IPVA + IPTU + Material escolar,Car tax + property tax + school supplies,Impuestos de vehículo y casa + útiles escolares
+Comum,Common,Común
+Incomum,Uncommon,Poco común
+Rara,Rare,Rara
+Lendária,Legendary,Legendaria
+Dinheiro,Cash,Efectivo
+Pix,Instant Transfer,Transferencia
+Débito,Debit,Débito
+Crédito,Credit,Crédito
+Trocado,Loose change,Suelto
+Dobradinha,Double Up,Doble
+Bolada,Triple,Trío
+Escadinha,Straight,Escalera
+Tudo no Pix,All Instant Transfers,Todo en Transferencia
+Cofrinho,Piggy Bank,Alcancía
+Dois Carnês,Two Payment Books,Dos Libretas
+Conta Conjunta,Joint Account,Cuenta Conjunta
+Janeiro,January,Enero
+Fevereiro,February,Febrero
+Março,March,Marzo
+Abril,April,Abril
+Maio,May,Mayo
+Junho,June,Junio
+Julho,July,Julio
+Agosto,August,Agosto
+Setembro,September,Septiembre
+Outubro,October,Octubre
+Novembro,November,Noviembre
+Dezembro,December,Diciembre
+Boleto,Utility bill,Servicio
+Aluguel,Rent,Alquiler
+Fatura,Credit card bill,Tarjeta
+Agiota,Loan Shark,Prestamista
+EMPRESTO DINHEIRO NA HORA,I LEND MONEY RIGHT NOW,PRESTO DINERO AL MOMENTO
++3 de Juros. Cobra 10% da carteira a cada conta paga.,+3 Interest. Takes 10% of your wallet on every bill paid.,+3 de Intereses. Cobra el 10% de la billetera en cada cuenta pagada.
+Cashback,Cashback,Cashback
+SEU DINHEIRO DE VOLTA*,YOUR MONEY BACK*,TU DINERO DE VUELTA*
+Cada nota de Crédito que pontua devolve R$ 1 na carteira.,Each scoring Credit note returns R$ 1 to your wallet.,Cada nota de Crédito que puntúa devuelve R$ 1 a la billetera.
+Pix Errado,Wrong Transfer,Transferencia Equivocada
+"FIZ UM PIX ERRADO, DEVOLVE PFV","I SENT A WRONG TRANSFER, PLEASE RETURN IT","MANDÉ MAL UNA TRANSFERENCIA, DEVUÉLVEMELA"
+A primeira nota de Pix jogada em cada conta é duplicada no baralho.,The first Instant Transfer note played on each bill is duplicated in the deck.,La primera nota de Transferencia jugada en cada cuenta se duplica en el mazo.
+Vendedor de Consórcio,Consortium Salesman,Vendedor de Consorcio
+SUA CARTA SAI NA 60ª PARCELA,YOUR LETTER COMES UP AT INSTALLMENT 60,TU CARTA SALE EN LA CUOTA 60
++3 de Valor por nota de Dinheiro que pontua. Cada conta paga custa R$ 1 de parcela.,+3 Value per scoring Cash note. Each bill paid costs R$ 1 in installments.,+3 de Valor por nota de Efectivo que puntúa. Cada cuenta pagada cuesta R$ 1 de cuota.
+Tia do Pix,Pix Auntie,Tía del Pix
+MANDA A CHAVE QUE EU PAGO,SEND THE KEY AND I'LL PAY,MANDA LA CLAVE Y TE PAGO
++1 de Juros por nota de Débito que pontua.,+1 Interest per scoring Debit note.,+1 de Intereses por nota de Débito que puntúa.
+Cunhado Investidor,Investor Brother-in-Law,Cuñado Inversor
+GANHE 30% AO MÊS SEM RISCO,"30% A MONTH, NO RISK","30% AL MES, SIN RIESGO"
+"Cada Escadinha jogada dá +1 de Juros a ele, para sempre.","Each Straight played gives him +1 Interest, forever.","Cada Escalera jugada le da +1 de Intereses, para siempre."
+Rifa do Bairro,Neighborhood Raffle,Rifa del Barrio
+RIFA DE 1 PORCO — R$ 2 O NÚMERO,PIG RAFFLE — R$ 2 A NUMBER,RIFA DE UN CERDO — R$ 2 EL NÚMERO
+1 em 4 de multiplicar o Juros por 5.,1 in 4 chance to multiply Interest by 5.,1 de cada 4: multiplica el Interés por 5.
+Vaquinha,Crowdfunding,Colecta
+AJUDE O JUNINHO A PAGAR O ALUGUEL,HELP LITTLE JUNINHO PAY THE RENT,AYUDA A JUNINHO A PAGAR EL ALQUILER
+Soma metade dos pontos das notas que ficaram na mão ao Valor.,Adds half the points of the notes left in hand to Value.,Suma la mitad de los puntos de las notas que quedan en la mano al Valor.
+Bicheiro do Bairro,Neighborhood Numbers Runner,Banquero del Barrio
+JOGO DO BICHO: SAIU O VEADO,ANIMAL GAME: THE DEER CAME UP,JUEGO DEL BICHO: SALIÓ EL CIERVO
+1 em 3 de cada jogada render R$ 6 na carteira.,1 in 3 chance each play pays R$ 6 to your wallet.,1 de cada 3 jugadas paga R$ 6 a la billetera.
+Pastor da Prosperidade,Prosperity Preacher,Pastor de la Prosperidad
+"DEUS É FIEL, PAGUE O DÍZIMO","GOD IS FAITHFUL, PAY YOUR TITHE","DIOS ES FIEL, PAGA EL DIEZMO"
++8 de Valor em cada jogada. Cada conta paga 5% da carteira de dízimo.,+8 Value on every play. Each bill paid takes a 5% wallet tithe.,+8 de Valor en cada jugada. Cada cuenta pagada cobra un diezmo del 5% de la billetera.
+Pirâmide,Pyramid Scheme,Pirámide
+INDIQUE 3 AMIGOS E FIQUE RICO,REFER 3 FRIENDS AND GET RICH,INVITA A 3 AMIGOS Y HAZTE RICO
++1 de Juros por outro esquema ativo. 1 em 6 de colapsar a cada mês.,+1 Interest per other active scheme. 1 in 6 chance to collapse each month.,+1 de Intereses por cada otro esquema activo. 1 de cada 6 de colapsar cada mes.
+Coach Financeiro,Financial Coach,Coach Financiero
+MENTALIDADE MILIONÁRIA EM 7 DIAS,MILLIONAIRE MINDSET IN 7 DAYS,MENTALIDAD MILLONARIA EN 7 DÍAS
+"×2 de Juros se jogar exatamente 5 notas. Se jogar menos, perde 1 de Juros.",×2 Interest if you play exactly 5 notes. Playing fewer loses 1 Interest.,"×2 de Intereses si juegas exactamente 5 notas. Si juegas menos, pierdes 1 de Intereses."
+Influenciador de Finanças,Finance Influencer,Influencer de Finanzas
+SEGUE QUE EU TE ENSINO A FICAR RICO,FOLLOW ME AND I'LL TEACH YOU TO GET RICH,SÍGUEME Y TE ENSEÑO A HACERTE RICO
++3 de Juros em jogadas com 3 ou mais notas.,+3 Interest on plays with 3 or more notes.,+3 de Intereses en jugadas con 3 o más notas.
+Consignado,Payroll Loan,Préstamo de Nómina
+"DINHEIRO NA HORA, SEM CONSULTA AO SERASA","CASH NOW, NO CREDIT CHECK","DINERO AL INSTANTE, SIN CONSULTA DE CRÉDITO"
++1 de Juros em cada jogada. A dívida do cheque especial não cresce.,+1 Interest on every play. Overdraft debt doesn't grow.,+1 de Intereses en cada jugada. La deuda del descubierto no crece.
+Poupança,Savings Account,Ahorros
+"Dobradinha: +10 de Valor e +1 de Juros por nível. A caderneta do seu Zé, rendendo pouco e sempre.",Double Up: +10 Value and +1 Interest per level. Grandpa Zé's savings book: small but steady.,"Doble: +10 de Valor y +1 de Intereses por nivel. La libreta del abuelo Zé: poco, pero siempre."
+Consórcio,Consortium,Consorcio
+Trocado: +8 de Valor e +1 de Juros por nível. A carta contemplada chega na 60ª parcela.,Loose change: +8 Value and +1 Interest per level. Your winning letter arrives at installment 60.,Suelto: +8 de Valor y +1 de Intereses por nivel. Tu carta premiada llega en la cuota 60.
+Tesouro Direto,Treasury Bonds,Bonos del Tesoro
+"Escadinha: +20 de Valor e +2 de Juros por nível. Título do governo, o tio sempre fala dele no churrasco.",Straight: +20 Value and +2 Interest per level. A government bond your uncle always brings up at barbecues.,Escalera: +20 de Valor y +2 de Intereses por nivel. Bono del gobierno del que tu tío siempre habla en las parrilladas.
+Previdência Privada,Private Pension,Plan de Pensiones
+Cofrinho: +30 de Valor e +2 de Juros por nível. Só resgata quando você já não precisa.,Piggy Bank: +30 Value and +2 Interest per level. Only cashes out when you no longer need it.,Alcancía: +30 de Valor y +2 de Intereses por nivel. Solo se cobra cuando ya no lo necesitas.
+Carnê,Installment Book,Libreta de Pagos
+"Libera Dois Carnês (2 pares, 4 notas). Cada nível: +10 de Valor e +1 de Juros.","Unlocks Two Payment Books (2 pairs, 4 notes). Each level: +10 Value and +1 Interest.","Desbloquea Dos Libretas (2 pares, 4 notas). Cada nivel: +10 de Valor y +1 de Intereses."
+Fundo de Investimento,Investment Fund,Fondo de Inversión
+"Bolada (3 iguais): +10 de Valor e +1 de Juros por nível. Gestor cobra taxa, mas o rendimento aparece.","Triple (3 of a kind): +10 Value and +1 Interest per level. The manager charges a fee, but the returns show up.","Trío (3 iguales): +10 de Valor y +1 de Intereses por nivel. El gestor cobra comisión, pero el rendimiento aparece."
+"Libera Conta Conjunta (trinca + par, 5 notas). Cada nível: +10 de Valor e +1 de Juros.","Unlocks Joint Account (trips + pair, 5 notes). Each level: +10 Value and +1 Interest.","Desbloquea Cuenta Conjunta (trío + par, 5 notas). Cada nivel: +10 de Valor y +1 de Intereses."
+Cripto,Crypto,Cripto
+Tudo no Pix: +40 de Valor e +3 de Juros por nível. Às vezes cai um nível em vez de subir.,All Instant Transfers: +40 Value and +3 Interest per level. Sometimes drops a level instead of rising.,Todo en Transferencia: +40 de Valor y +3 de Intereses por nivel. A veces baja un nivel en vez de subir.
+   Valor +%d%%.,   Value +%d%%.,   Valor +%d%%.
+   · LEÃO -%d,   · TAX LION -%d,   · LEÓN -%d
+%s   · TOTAL +%d,%s   · TOTAL +%d,%s   · TOTAL +%d
+   (Leão da Receita: -%d),   (Tax Lion: -%d),   (León de Hacienda: -%d)
+%s   · VALOR %d   · JUROS x%d,%s   · VALUE %d   · INTEREST x%d,%s   · VALOR %d   · INTERESES x%d
+   · CARTAZ x%d,   · POSTER x%d,   · CARTEL x%d
+   ·   LEÃO -%d,   ·   TAX LION -%d,   ·   LEÓN -%d
+   ·   CARTAZ x%d,   ·   POSTER x%d,   ·   CARTEL x%d
+%s   ·   TOTAL +%d,%s   ·   TOTAL +%d,%s   ·   TOTAL +%d
+%s   ·   VALOR %d   ·   JUROS x%d,%s   ·   VALUE %d   ·   INTEREST x%d,%s   ·   VALOR %d   ·   INTERESES x%d
+Sem limite,Unlimited,Sin límite
+Idioma,Language,Idioma
+Música,Music,Música
+Efeitos sonoros,Sound effects,Efectos de sonido
+Tela cheia,Fullscreen,Pantalla completa
+Sincronizar (VSync),Sync (VSync),Sincronizar (VSync)
+Limite de FPS,Frame rate limit,Límite de FPS
+Tremor da tela,Screen shake,Temblor de pantalla
+PADRÕES,DEFAULTS,PREDETERMINADO
+VOLTAR,BACK,VOLVER
+O idioma muda ao fechar as opções.,The language changes when you close the options.,El idioma cambia al cerrar las opciones.
+Nubank,Nubank,Nubank
+A ROXINHA QUE MELHORA SEU CRÉDITO,THE PURPLE CARD THAT BOOSTS YOUR CREDIT,LA TARJETA MORADA QUE MEJORA TU CRÉDITO
++3 de Valor por nota de Crédito que pontua.,+3 Value per scoring Credit note.,+3 de Valor por nota de Crédito que puntúa.
+Duolingo,Duolingo,Duolingo
+"Curso de inglês: cada nível dá +R$ 2 de recompensa em toda conta paga. Os ganhos sobem, a coruja cobra o streak.","English course: each level gives +R$ 2 reward on every bill paid. Your earnings go up, the owl charges your streak.","Curso de inglés: cada nivel da +R$ 2 de recompensa en cada cuenta pagada. Tus ganancias suben, el búho cobra tu racha."
