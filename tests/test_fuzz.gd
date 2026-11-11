@@ -143,13 +143,17 @@ func _shop_step(run: RunState, rng: RandomNumberGenerator) -> void:
 			_check_refusal(run.buy(rng.randi_range(0, run.shop_offer.size() - 1)), "buy")
 		elif roll < 0.6 and not run.schemes.is_empty():
 			_check_refusal(run.sell(rng.randi_range(0, run.schemes.size() - 1)), "sell")
-		elif roll < 0.8:
+		elif roll < 0.7:
 			_check_refusal(run.haggle(), "haggle")
+		elif not run.contact_offer.is_empty():
+			_check_refusal(run.buy_contact(run.contact_offer[rng.randi_range(0, run.contact_offer.size() - 1)]), "buy_contact")
+		if run.state == RunState.LOST:
+			return  # o cheque especial zerou no Camelô: a partida acabou
 	if not run.leave_shop():
 		_fail("leave_shop recusado no Camelô")
 
 
-## Cartas da conta: 32 do baralho (mais 1 se o Pix Errado copiou uma), sem repetir nenhuma.
+## Cartas da conta: 40 do baralho (mais 1 se o Pix Errado copiou uma), sem repetir nenhuma.
 func _check_bill_pieces(run: RunState, when: String) -> void:
 	var seen := {}
 	var total := 0
@@ -159,8 +163,8 @@ func _check_bill_pieces(run: RunState, when: String) -> void:
 			if seen.has(note):
 				_fail("nota repetida (%s) em %s" % [when, run.bill_title()])
 			seen[note] = true
-	if total != 32 and total != 33:
-		_fail("%d cartas na conta (%s), esperado 32 ou 33" % [total, when])
+	if total != 40 and total != 41:
+		_fail("%d cartas na conta (%s), esperado 40 ou 41" % [total, when])
 
 
 func _check_run(run: RunState, seed_value: int) -> void:
@@ -189,5 +193,5 @@ func _check_run(run: RunState, seed_value: int) -> void:
 		_check_bill_pieces(run, "em jogo")
 	if run.state == RunState.WON and run.bill.saldo < run.bill.goal:
 		_fail("venceu com saldo abaixo da meta (%s)" % tag)
-	if run.state == RunState.LOST and run.bill.days_left != 0:
+	if run.state == RunState.LOST and run.end_reason != "cheque" and run.bill.days_left != 0:
 		_fail("perdeu com dias sobrando (%s)" % tag)

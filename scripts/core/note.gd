@@ -13,7 +13,7 @@ func _init(p_value: int = 1, p_suit: int = Suit.DINHEIRO) -> void:
 	suit = p_suit
 
 
-## Posição do valor na sequência 1-2-5-10-20-50-100-200 (0 a 7).
+## Posição do valor na sequência 1-2-5-10-20-50-100-200-500-1000 (0 a 9).
 func rank() -> int:
 	return Balance.VALUES.find(value)
 

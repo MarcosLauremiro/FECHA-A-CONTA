@@ -14,12 +14,13 @@ static func score_effect(id: String, fx: Dictionary) -> Dictionary:
 		"agiota":
 			eff["add"] = Balance.AGIOTA_JUROS
 		"cunhado":
-			eff["add"] = int(fx.get("cunhado_bonus", 0))
+			eff["add"] = int(fx.get("cunhado_bonus", 0)) / Balance.CUNHADO_STEP
 		"piramide":
 			# +1 para cada outro esquema ativo.
 			eff["add"] = fx["schemes"].size() - 1
 		"coach":
-			if int(fx.get("played", 0)) == Balance.MAX_PLAYED:
+			# Só vale quando a formação usa as 5 notas (não adianta completar com nota que não pontua).
+			if int(fx.get("formed", 0)) == Balance.MAX_PLAYED:
 				eff["mult"] = Balance.COACH_MULT
 			else:
 				eff["add"] = -1
