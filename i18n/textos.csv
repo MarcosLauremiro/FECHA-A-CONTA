@@ -45,17 +45,19 @@ a nota de maior valor,the highest-value note,la nota de mayor valor
 5 notas em sequência,5 notes in sequence,5 notas en secuencia
 5 notas do mesmo naipe,5 notes of the same payment type,5 notas del mismo tipo de pago
 O OBJETIVO,THE GOAL,EL OBJETIVO
-"Cada conta tem uma meta de saldo. Você tem 4 dias e 3 trocas para bater a meta. Bateu: a conta está paga. Não bateu até o fim dos dias: a partida acaba. O ano tem 12 meses, e cada mês tem 3 contas: boleto, aluguel e fatura.","Each bill has a balance goal. You have 4 days and 3 swaps to hit it. Hit it: the bill is paid. Miss it by the last day: the game ends. The year has 12 months, and each month has 3 bills: utility, rent and credit card.","Cada cuenta tiene una meta de saldo. Tienes 4 días y 3 cambios para alcanzarla. La alcanzas: la cuenta queda pagada. No la alcanzas al final de los días: la partida termina. El año tiene 12 meses, y cada mes tiene 3 cuentas: servicio, alquiler y tarjeta."
+"Cada conta tem uma meta de saldo. Você tem 4 dias e 3 trocas para bater a meta. Bateu: a conta está paga. Não bateu até o fim dos dias: a partida acaba. A partida tem 6 meses, e cada mês tem 3 contas: boleto, aluguel e fatura. Pagou os 6 meses: dá para continuar no modo infinito.","Each bill has a balance goal. You have 4 days and 3 swaps to hit it. Hit it: the bill is paid. Miss it by the last day: the game ends. A run lasts 6 months, and each month has 3 bills: utility, rent and credit card. Pay all 6 months and you can keep going in endless mode.","Cada cuenta tiene una meta de saldo. Tienes 4 días y 3 cambios para alcanzarla. La alcanzas: la cuenta queda pagada. No la alcanzas al final de los días: la partida termina. La partida dura 6 meses, y cada mes tiene 3 cuentas: servicio, alquiler y tarjeta. Si pagas los 6 meses, puedes seguir en el modo infinito."
+"CONTINUAR ∞","CONTINUE ∞","CONTINUAR ∞"
+"TODOS OS CHEFES DERROTADOS","ALL BOSSES DEFEATED","TODOS LOS JEFES DERROTADOS"
 SUAS NOTAS,YOUR NOTES,TUS BILLETES
 "Você recebe 8 notas. Escolha de 1 a 5 e aperte PAGAR para jogar, ou TROCAR para trocar as selecionadas por outras (gasta uma troca). A forma de pagamento aparece no selo de cada nota.","You receive 8 notes. Choose 1 to 5 and press PAY to play, or SWAP to exchange the selected ones for others (uses a swap). The payment type shows on each note's stamp.","Recibes 8 billetes. Elige de 1 a 5 y pulsa PAGAR para jugar, o CAMBIAR para cambiar los seleccionados por otros (gasta un cambio). El tipo de pago aparece en el sello de cada billete."
 AS FORMAÇÕES,THE COMBINATIONS,LAS JUGADAS
-O jogo reconhece a formação pelas notas escolhidas. Cada uma tem um Valor base e Juros. Dois Carnês e Conta Conjunta só aparecem depois de comprar o Carnê e a Conta Conjunta no Camelô.,The game recognizes the combination from the notes you choose. Each has a base Value and Interest. Two Payment Books and Joint Account only appear after you buy the Installment Book and Joint Account at the Street Market.,El juego reconoce la jugada por los billetes elegidos. Cada una tiene un Valor base e Intereses. Dos Libretas y Cuenta Conjunta solo aparecen después de comprar la Libreta de Pagos y la Cuenta Conjunta en el Mercadillo.
+O jogo reconhece a formação pelas notas escolhidas. Cada uma tem um Valor base e Juros. Dois Carnês e Conta Conjunta só aparecem depois de comprar o Carnê e a Conta Conjunta na Banca.,The game recognizes the combination from the notes you choose. Each has a base Value and Interest. Two Payment Books and Joint Account only appear after you buy the Installment Book and Joint Account at the Newsstand.,El juego reconoce la jugada por los billetes elegidos. Cada una tiene un Valor base e Intereses. Dos Libretas y Cuenta Conjunta solo aparecen después de comprar la Libreta de Pagos y la Cuenta Conjunta en el Quiosco.
 COMO SE PONTUA,HOW SCORING WORKS,CÓMO SE PUNTÚA
 "Pontos = (Valor base + Valor das notas + Valor dos esquemas e investimentos) × Juros. Ao selecionar as notas, a mesa mostra o Valor e os Juros da jogada antes de pagar.","Points = (base Value + note Value + scheme and investment Value) × Interest. When you select notes, the table shows the play's Value and Interest before you pay.","Puntos = (Valor base + Valor de los billetes + Valor de esquemas e inversiones) × Intereses. Al seleccionar billetes, la mesa muestra el Valor y los Intereses de la jugada antes de pagar."
 DIAS E TROCO,DAYS AND CHANGE,DÍAS Y CAMBIO
 "PAGAR gasta 1 dia. Com a meta batida, a sobra vira troco: R$ 1 a cada 25% acima da meta, até R$ 5. Cada dia que sobrou na conta também paga R$ 1. Cada conta começa com 4 dias e 3 trocas novos.","PAY uses up 1 day. Once you hit the goal, the surplus becomes change: R$ 1 for every 25% above the goal, up to R$ 5. Each day left over also pays R$ 1. Each bill starts with 4 days and 3 swaps.","PAGAR gasta 1 día. Al alcanzar la meta, el sobrante se vuelve cambio: R$ 1 por cada 25% por encima de la meta, hasta R$ 5. Cada día sobrante también paga R$ 1. Cada cuenta empieza con 4 días y 3 cambios."
-O CAMELÔ,THE STREET MARKET,EL MERCADILLO
-"Entre as contas, o Camelô vende 2 esquemas e 1 investimento. Esquemas mudam a pontuação de todas as jogadas (no máximo 5 ao mesmo tempo). Investimentos sobem o Valor e os Juros de uma formação. PECHINCHAR troca a oferta por R$ 2. Vender devolve metade do preço. A carteira pode ficar até −R$ 10 (cheque especial), e a dívida cresce 25% a cada conta.","Between bills, the Street Market sells 2 schemes and 1 investment. Schemes change the score of every play (5 at most at a time). Investments raise a combination's Value and Interest. HAGGLE swaps the offer for R$ 2. Selling returns half the price. Your wallet can go down to −R$ 10 (overdraft), and debt grows 25% per bill.","Entre cuentas, el Mercadillo vende 2 esquemas y 1 inversión. Los esquemas cambian la puntuación de todas las jugadas (máximo 5 a la vez). Las inversiones suben el Valor y los Intereses de una jugada. REGATEAR cambia la oferta por R$ 2. Vender devuelve la mitad del precio. La billetera puede bajar hasta −R$ 10 (descubierto), y la deuda crece un 25% por cuenta."
+A BANCA,THE NEWSSTAND,EL QUIOSCO
+"Entre as contas, a Banca vende 2 esquemas e 1 investimento. Esquemas mudam a pontuação de todas as jogadas (no máximo 5 ao mesmo tempo). Investimentos sobem o Valor e os Juros de uma formação. PECHINCHAR troca a oferta por R$ 2. Vender devolve metade do preço. O cheque especial tem R$ 10 por partida: cada R$ usado vira R$ 3 de dívida e o limite diminui. Gastar tudo acaba a partida.","Between bills, the Newsstand sells 2 schemes and 1 investment. Schemes change the score of every play (up to 5 at once). Investments raise the Value and Interest of a formation. HAGGLE swaps the offer for R$ 2. Selling refunds half the price. The overdraft gives R$ 10 per run: every R$ used becomes R$ 3 of debt and the limit goes down. Spend it all and the run ends.","Entre cuentas, el Quiosco vende 2 esquemas y 1 inversión. Los esquemas cambian la puntuación de cada jugada (hasta 5 a la vez). Las inversiones suben el Valor y el Interés de una fórmula. REGATEAR cambia la oferta por R$ 2. Vender devuelve la mitad del precio. El descubierto da R$ 10 por partida: cada R$ usado se vuelve R$ 3 de deuda y el límite baja. Si lo gastas todo, la partida termina."
 OS CHEFES,THE BOSSES,LOS JEFES
 "Cada mês tem um chefe. Ele vale só na fatura, que é a 3ª conta do mês. O carimbo no canto mostra o nome dele, e o texto aparece na tela do terminal. Leia antes de jogar a fatura.","Each month has a boss. It only applies to the invoice, the 3rd bill of the month. The stamp in the corner shows its name, and the text appears on the terminal screen. Read it before playing the invoice.","Cada mes tiene un jefe. Solo vale en la factura, que es la 3.ª cuenta del mes. El sello de la esquina muestra su nombre, y el texto aparece en la pantalla del terminal. Léelo antes de jugar la factura."
 Dinheiro · Pix · Débito · Crédito,Cash · Instant Transfer · Debit · Credit,Efectivo · Transferencia · Débito · Crédito
@@ -73,7 +75,7 @@ SALVAR PARTIDA,SAVE GAME,GUARDAR PARTIDA
 RECOMEÇAR,RESTART,REINICIAR
 VOLTAR AO MENU,BACK TO MENU,VOLVER AL MENÚ
 JOGAR DE NOVO,PLAY AGAIN,JUGAR DE NUEVO
-IR AO CAMELÔ,GO TO THE STREET MARKET,IR AL MERCADILLO
+IR PARA A BANCA,GO TO THE NEWSSTAND,IR AL QUIOSCO
 META,GOAL,META
 VALOR,VALUE,VALOR
 "Organiza a mão por valor, do menor para o maior.","Sorts the hand by value, lowest to highest.","Ordena la mano por valor, de menor a mayor."
@@ -138,7 +140,7 @@ Bolsa Família,Bolsa Família,Bolsa Família
 Banco fora do ar,Bank offline,Banco caído
 Notas de Pix não pontuam.,Instant transfers don't score.,Las transferencias no puntúan.
 Curso do Primo Rico,Rich Cousin's Course,Curso del Primo Rico
-"Matrícula de R$ 6. A cada 2 contas pagas depois da matrícula, o Valor sobe 20%.","R$ 6 enrollment. Every 2 bills paid after enrolling, the Value goes up 20%.","Matrícula de R$ 6. Cada 2 cuentas pagadas después de matricularte, el Valor sube un 20%."
+"Matrícula de R$ 6. A cada 2 contas pagas depois da matrícula, o Valor sobe 10%.","R$ 6 enrollment. Every 2 bills paid after enrolling, the Value goes up 10%.","Matrícula de R$ 6. Cada 2 cuentas pagadas después de matricularte, el Valor sube un 10%."
 Urubu do Pix,Pix Vulture,Buitre del Pix
 "No começo da fatura, 1 em 2: a carteira dobra. Se não, perde R$ 5.","At the start of the invoice, 1 in 2: your wallet doubles. Otherwise, you lose R$ 5.","Al empezar la factura, 1 de cada 2: la billetera se duplica. Si no, pierdes R$ 5."
 Taxa de manutenção,Maintenance fee,Cuota de mantenimiento
@@ -152,7 +154,7 @@ Entrar o Grosso,Going big,Ir a lo grande
 Bandeira vermelha,Red flag,Bandera roja
 Cada dia usado custa R$ 1 de energia. Notas de Débito pontuam 50% a mais.,Each day used costs R$ 1 of power. Debit notes score 50% more.,Cada día usado cuesta R$ 1 de luz. Las notas de Débito puntúan un 50% más.
 Julius,Julius,Julius
-"Se você não comprou nada no Camelô antes da conta, a meta cai 20%.","If you didn't buy anything at the Street Market before the bill, the goal drops 20%.","Si no compraste nada en el Mercadillo antes de la cuenta, la meta baja un 20%."
+"Se você não comprou nada na Banca antes da conta, a meta cai 20%.","If you didn't buy anything at the Newsstand before the bill, the goal drops 20%.","Si no compraste nada en el Quiosco antes de la cuenta, la meta baja un 20%."
 13º salário,13th salary,Paga extra
 "A recompensa sobe R$ 3, mas as metas sobem 25%.","The reward goes up R$ 3, but goals go up 25%.","La recompensa sube R$ 3, pero las metas suben un 25%."
 IPVA + IPTU + Material escolar,Car tax + property tax + school supplies,Impuestos de vehículo y casa + útiles escolares
@@ -198,13 +200,13 @@ Pix Errado,Wrong Transfer,Transferencia Equivocada
 A primeira nota de Pix jogada em cada conta é duplicada no baralho.,The first Instant Transfer note played on each bill is duplicated in the deck.,La primera nota de Transferencia jugada en cada cuenta se duplica en el mazo.
 Vendedor de Consórcio,Consortium Salesman,Vendedor de Consorcio
 SUA CARTA SAI NA 60ª PARCELA,YOUR LETTER COMES UP AT INSTALLMENT 60,TU CARTA SALE EN LA CUOTA 60
-+3 de Valor por nota de Dinheiro que pontua. Cada conta paga custa R$ 1 de parcela.,+3 Value per scoring Cash note. Each bill paid costs R$ 1 in installments.,+3 de Valor por nota de Efectivo que puntúa. Cada cuenta pagada cuesta R$ 1 de cuota.
++5 de Valor por nota de Dinheiro que pontua. Cada conta paga custa R$ 1 de parcela.,+5 Value per scoring Cash note. Each bill paid costs R$ 1 in installments.,+5 de Valor por nota de Efectivo que puntúa. Cada cuenta pagada cuesta R$ 1 de cuota.
 Tia do Pix,Pix Auntie,Tía del Pix
 MANDA A CHAVE QUE EU PAGO,SEND THE KEY AND I'LL PAY,MANDA LA CLAVE Y TE PAGO
 +1 de Juros por nota de Débito que pontua.,+1 Interest per scoring Debit note.,+1 de Intereses por nota de Débito que puntúa.
 Cunhado Investidor,Investor Brother-in-Law,Cuñado Inversor
 GANHE 30% AO MÊS SEM RISCO,"30% A MONTH, NO RISK","30% AL MES, SIN RIESGO"
-"Cada Escadinha jogada dá +1 de Juros a ele, para sempre.","Each Straight played gives him +1 Interest, forever.","Cada Escalera jugada le da +1 de Intereses, para siempre."
+"A cada 2 Escadinhas jogadas, ele ganha +1 de Juros, para sempre.","Every 2 Straights played give him +1 Interest, forever.","Cada 2 Escaleras jugadas le dan +1 de Intereses, para siempre."
 Rifa do Bairro,Neighborhood Raffle,Rifa del Barrio
 RIFA DE 1 PORCO — R$ 2 O NÚMERO,PIG RAFFLE — R$ 2 A NUMBER,RIFA DE UN CERDO — R$ 2 EL NÚMERO
 1 em 4 de multiplicar o Juros por 5.,1 in 4 chance to multiply Interest by 5.,1 de cada 4: multiplica el Interés por 5.
@@ -222,10 +224,10 @@ INDIQUE 3 AMIGOS E FIQUE RICO,REFER 3 FRIENDS AND GET RICH,INVITA A 3 AMIGOS Y H
 +1 de Juros por outro esquema ativo. 1 em 6 de colapsar a cada mês.,+1 Interest per other active scheme. 1 in 6 chance to collapse each month.,+1 de Intereses por cada otro esquema activo. 1 de cada 6 de colapsar cada mes.
 Coach Financeiro,Financial Coach,Coach Financiero
 MENTALIDADE MILIONÁRIA EM 7 DIAS,MILLIONAIRE MINDSET IN 7 DAYS,MENTALIDAD MILLONARIA EN 7 DÍAS
-"×2 de Juros se jogar exatamente 5 notas. Se jogar menos, perde 1 de Juros.",×2 Interest if you play exactly 5 notes. Playing fewer loses 1 Interest.,"×2 de Intereses si juegas exactamente 5 notas. Si juegas menos, pierdes 1 de Intereses."
+"×2 de Juros se as 5 notas jogadas pontuarem. Senão, perde 1 de Juros.",×2 Interest if all 5 notes played score. Otherwise loses 1 Interest.,"×2 de Intereses si las 5 notas jugadas puntúan. Si no, pierdes 1 de Intereses."
 Influenciador de Finanças,Finance Influencer,Influencer de Finanzas
 SEGUE QUE EU TE ENSINO A FICAR RICO,FOLLOW ME AND I'LL TEACH YOU TO GET RICH,SÍGUEME Y TE ENSEÑO A HACERTE RICO
-+3 de Juros em jogadas com 3 ou mais notas.,+3 Interest on plays with 3 or more notes.,+3 de Intereses en jugadas con 3 o más notas.
++2 de Juros em jogadas com 3 ou mais notas.,+2 Interest on plays with 3 or more notes.,+2 de Intereses en jugadas con 3 o más notas.
 Consignado,Payroll Loan,Préstamo de Nómina
 "DINHEIRO NA HORA, SEM CONSULTA AO SERASA","CASH NOW, NO CREDIT CHECK","DINERO AL INSTANTE, SIN CONSULTA DE CRÉDITO"
 +1 de Juros em cada jogada. A dívida do cheque especial não cresce.,+1 Interest on every play. Overdraft debt doesn't grow.,+1 de Intereses en cada jugada. La deuda del descubierto no crece.
@@ -270,3 +272,73 @@ A ROXINHA QUE MELHORA SEU CRÉDITO,THE PURPLE CARD THAT BOOSTS YOUR CREDIT,LA TA
 +3 de Valor por nota de Crédito que pontua.,+3 Value per scoring Credit note.,+3 de Valor por nota de Crédito que puntúa.
 Duolingo,Duolingo,Duolingo
 "Curso de inglês: cada nível dá +R$ 2 de recompensa em toda conta paga. Os ganhos sobem, a coruja cobra o streak.","English course: each level gives +R$ 2 reward on every bill paid. Your earnings go up, the owl charges your streak.","Curso de inglés: cada nivel da +R$ 2 de recompensa en cada cuenta pagada. Tus ganancias suben, el búho cobra tu racha."
+"CARTAS NA MÃO: %d","CARDS IN HAND: %d","CARTAS EN LA MANO: %d"
+"CHEQUE ESPECIAL: R$ %d   ·   juros %dx","OVERDRAFT: R$ %d   ·   interest %dx","DESCUBIERTO: R$ %d   ·   interés %dx"
+"CHEQUE ESPECIAL: ∞   ·   juros %dx","OVERDRAFT: ∞   ·   interest %dx","DESCUBIERTO: ∞   ·   interés %dx"
+"CONTATOS: nenhum ainda","CONTACTS: none yet","CONTACTOS: ninguno todavía"
+"CONTATOS: ","CONTACTS: ","CONTACTOS: "
+"MÃO","HAND","MANO"
+"ATÉ ∞","UP TO ∞","HASTA ∞"
+"CHEQUE ESPECIAL ESGOTADO","OVERDRAFT USED UP","DESCUBIERTO AGOTADO"
+"Gerente do Banco","Bank Manager","Gerente del Banco"
+"Gerente","Manager","Gerente"
+"Cheque Sem Fundo","No-Limit Overdraft","Descubierto Sin Límite"
+"Sem Fundo","No Limit","Sin Límite"
+"Os juros do cheque especial caem de 3x para 2x.","Overdraft interest drops from 3x to 2x.","El interés del descubierto baja de 3x a 2x."
+"Juros do cheque especial de 2x e sem limite: o limite vira ∞. Mas cada R$ 4 de dívida sobe a meta em 1%.","Overdraft interest of 2x and no limit: the limit becomes ∞. But every R$ 4 of debt raises the goal by 1%.","Interés del descubierto de 2x y sin límite: el límite pasa a ser ∞. Pero cada R$ 4 de deuda sube la meta un 1%."
+"BARALHO","DECK","MAZO"
+"NA CONTA: %d cartas","IN THIS BILL: %d cards","EN ESTA CUENTA: %d cartas"
+"NA CONTA: %d restantes · %d usadas","IN THIS BILL: %d left · %d used","EN ESTA CUENTA: %d restantes · %d usadas"
+"INVESTIMENTOS","INVESTMENTS","INVERSIONES"
+"Maquininha quebrada","Broken card machine","Datáfono roto"
+"Notas de Débito não pontuam.","Debit notes don't score.","Los billetes de Débito no puntúan."
+"Cartão clonado","Cloned card","Tarjeta clonada"
+"Notas de Crédito não pontuam.","Credit notes don't score.","Los billetes de Crédito no puntúan."
+"Caixa sem troco","No change at the till","Caja sin cambio"
+"Notas de Dinheiro não pontuam.","Cash notes don't score.","Los billetes de Efectivo no puntúan."
+"Troco em bala","Change paid in candy","Cambio en caramelos"
+"Notas de R$ 1, 2 e 5 não pontuam.","R$ 1, 2 and 5 notes don't score.","Los billetes de R$ 1, 2 y 5 no puntúan."
+"Nota falsa","Fake note","Billete falso"
+"Notas de R$ 200, 500 e 1000 não pontuam.","R$ 200, 500 and 1000 notes don't score.","Los billetes de R$ 200, 500 y 1000 no puntúan."
+"Fila da lotérica","Lottery shop queue","Cola de la lotería"
+"Uma troca a menos nesta conta.","One fewer swap this bill.","Un cambio menos en esta cuenta."
+"Boleto vencido","Overdue bill","Boleto vencido"
+"A primeira jogada vale metade (multa).","The first play is worth half (late fee).","La primera jugada vale la mitad (multa)."
+"Dia das Mães","Mother's Day","Día de la Madre"
+"A recompensa desta conta cai pela metade: foi no presente.","This bill's reward is halved: it went on the gift.","La recompensa de esta cuenta baja a la mitad: se fue en el regalo."
+"Feriadão","Long weekend","Puente festivo"
+"3 dias, em vez de 4.","3 days instead of 4.","3 días, en lugar de 4."
+"Inflação","Inflation","Inflación"
+"Cada jogada sobe a meta em %d%%.","Each play raises the goal by %d%%.","Cada jugada sube la meta un %d%%."
+"Reajuste do aluguel","Rent increase","Aumento del alquiler"
+"A meta sobe %d%%, sem nada em troca.","The goal rises %d%%, with nothing in return.","La meta sube un %d%%, sin nada a cambio."
+"Apagão","Blackout","Apagón"
+"A prévia da jogada fica apagada: você paga sem ver quanto vale.","The play preview goes dark: you pay without seeing what it's worth.","La vista previa de la jugada se apaga: pagas sin ver cuánto vale."
+"Carnaval","Carnival","Carnaval"
+"Depois de cada jogada, a mão inteira é descartada e comprada de novo.","After each play, the whole hand is discarded and drawn again.","Después de cada jugada, toda la mano se descarta y se roba de nuevo."
+"Serasa","Credit bureau","Buró de crédito"
+"Se a carteira estiver negativa, a meta sobe %d%%.","If your wallet is negative, the goal rises %d%%.","Si la cartera está en negativo, la meta sube un %d%%."
+"Golpe do falso gerente","Fake manager scam","Estafa del falso gerente"
+"No começo da conta, some %d%% da carteira.","At the start of the bill, %d%% of your wallet vanishes.","Al empezar la cuenta, desaparece el %d%% de la cartera."
+"Black Friday","Black Friday","Black Friday"
+"A meta sobe 20%, mas a próxima Banca vende tudo pela metade.","The goal rises 20%, but the next Newsstand sells everything at half price.","La meta sube un 20%, pero el próximo Quiosco vende todo a mitad de precio."
+"Fatura parcelada","Bill in installments","Factura a plazos"
+"Cada jogada conta no máximo %d%% da meta.","Each play counts for at most %d%% of the goal.","Cada jugada cuenta como máximo el %d%% de la meta."
+"Malha fina","Tax audit","Inspección fiscal"
+"A formação que você mais jogou na partida não pontua.","The combination you've played most this run doesn't score.","La jugada que más usaste en la partida no puntúa."
+"Rotina","Routine","Rutina"
+"Cada formação só pode ser jogada uma vez nesta conta.","Each combination can only be played once this bill.","Cada jugada solo se puede usar una vez en esta cuenta."
+"Sogra em casa","Mother-in-law visiting","La suegra en casa"
+"Só pontua jogada com 5 notas.","Only plays with 5 notes score.","Solo puntúan las jugadas con 5 billetes."
+"Tigrinho","Little Tiger slots","Tragamonedas del Tigrito"
+"Cada jogada: 1 em 2 de dobrar. Senão, vale metade.","Each play: 1 in 2 to double. Otherwise it's worth half.","Cada jugada: 1 de 2 de duplicar. Si no, vale la mitad."
+"Wi-Fi caiu","Wi-Fi is down","Se cayó el Wi-Fi"
+"Os esquemas não funcionam nas %d primeiras jogadas.","Schemes don't work on the first %d plays.","Los esquemas no funcionan en las primeras %d jugadas."
+"Plano Collor","Collor Plan","Plan Collor"
+"No começo da conta, %d%% da carteira é confiscada.","At the start of the bill, %d%% of your wallet is seized.","Al empezar la cuenta, se confisca el %d%% de la cartera."
+"Copa do Mundo","World Cup","Copa del Mundo"
+"2 dias e 1 troca: ninguém trabalha em dia de jogo.","2 days and 1 swap: nobody works on match day.","2 días y 1 cambio: nadie trabaja el día del partido."
+"Sumiu da carteira: R$ %d.","Gone from your wallet: R$ %d.","Desapareció de la cartera: R$ %d."
+"Na malha fina: %s.","Under audit: %s.","En inspección: %s."
+"APAGÃO: sem prévia da jogada","BLACKOUT: no play preview","APAGÓN: sin vista previa"
+"CHEFE DO MÊS: %s","BOSS OF THE MONTH: %s","JEFE DEL MES: %s"

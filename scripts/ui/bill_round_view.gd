@@ -49,6 +49,19 @@ const SCREEN := Rect2(316, 102, 649, 383)
 const HAND_POS := Vector2(40, 500)
 const HAND_AREA := Vector2(1000, 192)
 const HAND_SEPARATION := 4          # 8 cartas cabem nos 1000 px
+# Painel do baralho (segurar TAB, ou o botão BARALHO no canto inferior direito): cédulas por forma de pagamento.
+const STATUS_POS := Vector2(290, 120)
+const STATUS_SIZE := Vector2(700, 480)
+const STATUS_BUTTON := Rect2(1096, 640, 156, 48)
+const STATUS_ROW_Y := 100.0
+const STATUS_ROW_H := 32.0
+const STATUS_CELL := Vector2(126, 28)
+const STATUS_COL_X := 130.0
+const STATUS_COL_STEP := 140.0
+const STATUS_SUIT_COLORS := [Color("A8D5A2"), Color("7FD1C4"), Color("9CC4E8"), Color("C9A8E8")]  # Dinheiro, Pix, Débito, Crédito
+const STATUS_EMPTY := Color("E4DCC6")
+const CONTACT_BUTTON_SIZE := Vector2(160, 50)
+const CONTACT_BUTTON_POS := Vector2(95, 448)  # painel da esquerda, embaixo do investimento (só um contato por vez)
 
 # Faixa de esquemas dentro da tela: 5 espaços já desenhados na arte (posição em coordenadas da tela).
 const STRIP_POS := Vector2(39, 92)
@@ -142,32 +155,41 @@ const CALC_HOVER := [1]  # hover: imagem fixa (quadro 1), sem piscar
 const CALC_CLICK := [4, 5, 6, 7]
 # Tutorial (tela "Como jogar"): páginas passo a passo. "example" escolhe o desenho de apoio.
 const TUTORIAL_PAGES := [
-	{"title": "O OBJETIVO", "body": "Cada conta tem uma meta de saldo. Você tem 4 dias e 3 trocas para bater a meta. Bateu: a conta está paga. Não bateu até o fim dos dias: a partida acaba. O ano tem 12 meses, e cada mês tem 3 contas: boleto, aluguel e fatura."},
+	{"title": "O OBJETIVO", "body": "Cada conta tem uma meta de saldo. Você tem 4 dias e 3 trocas para bater a meta. Bateu: a conta está paga. Não bateu até o fim dos dias: a partida acaba. A partida tem 6 meses, e cada mês tem 3 contas: boleto, aluguel e fatura. Pagou os 6 meses: dá para continuar no modo infinito."},
 	{"title": "SUAS NOTAS", "body": "Você recebe 8 notas. Escolha de 1 a 5 e aperte PAGAR para jogar, ou TROCAR para trocar as selecionadas por outras (gasta uma troca). A forma de pagamento aparece no selo de cada nota.", "example": "suits"},
-	{"title": "AS FORMAÇÕES", "body": "O jogo reconhece a formação pelas notas escolhidas. Cada uma tem um Valor base e Juros. Dois Carnês e Conta Conjunta só aparecem depois de comprar o Carnê e a Conta Conjunta no Camelô.", "example": "table"},
+	{"title": "AS FORMAÇÕES", "body": "O jogo reconhece a formação pelas notas escolhidas. Cada uma tem um Valor base e Juros. Dois Carnês e Conta Conjunta só aparecem depois de comprar o Carnê e a Conta Conjunta na Banca.", "example": "table"},
 	{"title": "COMO SE PONTUA", "body": "Pontos = (Valor base + Valor das notas + Valor dos esquemas e investimentos) × Juros. Ao selecionar as notas, a mesa mostra o Valor e os Juros da jogada antes de pagar.", "example": "formula"},
 	{"title": "DIAS E TROCO", "body": "PAGAR gasta 1 dia. Com a meta batida, a sobra vira troco: R$ 1 a cada 25% acima da meta, até R$ 5. Cada dia que sobrou na conta também paga R$ 1. Cada conta começa com 4 dias e 3 trocas novos."},
-	{"title": "O CAMELÔ", "body": "Entre as contas, o Camelô vende 2 esquemas e 1 investimento. Esquemas mudam a pontuação de todas as jogadas (no máximo 5 ao mesmo tempo). Investimentos sobem o Valor e os Juros de uma formação. PECHINCHAR troca a oferta por R$ 2. Vender devolve metade do preço. A carteira pode ficar até −R$ 10 (cheque especial), e a dívida cresce 25% a cada conta."},
+	{"title": "A BANCA", "body": "Entre as contas, a Banca vende 2 esquemas e 1 investimento. Esquemas mudam a pontuação de todas as jogadas (no máximo 5 ao mesmo tempo). Investimentos sobem o Valor e os Juros de uma formação. PECHINCHAR troca a oferta por R$ 2. Vender devolve metade do preço. O cheque especial tem R$ 10 por partida: cada R$ usado vira R$ 3 de dívida e o limite diminui. Gastar tudo acaba a partida."},
 	{"title": "OS CHEFES", "body": "Cada mês tem um chefe. Ele vale só na fatura, que é a 3ª conta do mês. O carimbo no canto mostra o nome dele, e o texto aparece na tela do terminal. Leia antes de jogar a fatura."},
 ]
 const TEX_END_OK :="res://art/telas/fim_contas_em_dia.png"
 const TEX_END_BAD := "res://art/telas/fim_negativado.png"
 const TEX_RECEIPT := "res://art/comprovante/comprovante_termico.png"
-const TEX_SHOP_BG := "res://art/camelo/camelo_fundo.png"
-const TEX_SIGNS := [                               # placa de cada oferta (1, 2, 3), com as correntes no topo
-	"res://art/camelo/placa_1.png",
-	"res://art/camelo/placa_2.png",
-	"res://art/camelo/placa_3.png",
+# Banca do Zé (art/banca): o fundo e o balcão são camadas separadas, e o Seu Zé fica entre as duas.
+const TEX_SHOP_BG := "res://art/banca/banca_fundo.png"
+const TEX_SHOP_FRONT := "res://art/banca/banca_frente.png"
+const TEX_ZE := "res://art/banca/seu_ze.png"        # folha com 20 quadros de 128x144, lado a lado
+const ZE_FRAMES := 20
+const ZE_SCALE := 2.0
+const ZE_POS := Vector2(640, 352)                  # centro do quadro: a cintura some atrás do balcão (y = 450)
+# Duração de cada quadro, em segundos (igual ao seu_ze.aseprite).
+const ZE_DURATIONS := [0.34, 0.34, 0.34, 0.34, 0.11, 0.34, 0.13, 0.13, 0.13, 0.13, 0.13, 0.13, 0.09, 0.09, 0.42, 0.30, 0.13, 0.13, 0.13, 0.13]
+const ZE_IDLE := [0, 5]                            # parado: fica em laço
+const ZE_ACTIONS := [[6, 11], [12, 15], [16, 19]]  # acenar, joinha, rir: uma delas de tempos em tempos
+const ZE_WAIT := [4.0, 9.0]                        # segundos parado entre uma animação e outra
+# Lugar de cada oferta na banca: centro do cartaz ou ícone, e y do botão de compra.
+# 0 e 1: esquemas, na prateleira do meio, um de cada lado do Seu Zé. 2: investimento, no painel da esquerda.
+const OFFER_SPOTS := [
+	{"c": Vector2(410, 351), "buy_y": 432.0},
+	{"c": Vector2(870, 351), "buy_y": 432.0},
+	{"c": Vector2(175, 338), "buy_y": 404.0},
 ]
-# Ganchos do trilho no fundo (camelo_fundo.png): dois por placa, x das pontas.
-const SIGN_HOOKS := [[253.0, 406.0], [562.0, 718.0], [876.0, 1029.0]]
-const SIGN_CHAIN_LEFT := 35.0         # x da corrente esquerda dentro da placa (220 px de largura)
-const SIGN_SIZE := Vector2(220, 300)
-const SIGN_TOP_Y := 225.0             # topo da placa: as correntes começam na ponta dos ganchos
-const SIGN_CENTER_Y := 375.0          # centro vertical da placa (225 + 300 / 2)
+# Painel da direita (caderneta): investimentos comprados, abertos pelo botão INVESTIMENTOS.
+const LEVELS_RECT := Rect2(1028, 262, 154, 326)
+const LEVELS_BUTTON := Rect2(1066, 658, 190, 50)
 const SCHEME_SIZE := Vector2(110, 150)  # cartaz de esquema na loja
 const ICON_SIZE := Vector2(120, 120)    # ícone de investimento na loja (não muda)
-const BUY_Y := 480.0                    # botão de compra: y (dentro da placa)
 const BUY_H := 32.0
 const BUY_FONT := 16
 const BUY_MIN_W := 100.0                # largura mínima; cresce com o texto
@@ -209,6 +231,7 @@ var _pay_key: Button
 var _swap_key: Button
 var _restart_button: Button
 var _next_button: Button
+var _endless_button: Button
 var _end_stamp: TextureRect
 var _receipt: NinePatchRect
 var _receipt_clip: Control          # janela da impressora: o papel aparece de cima para baixo
@@ -222,10 +245,25 @@ var _shop_cheque: Label
 var _shop_message: Label
 var _shop_levels_row: VBoxContainer  # investimentos com nível: canto inferior direito, um sobre o outro
 var _shop_offers: Array = []   # [{"card", "icon", "buy"}] por oferta
+var _levels_button: Button
+var _shop_boss: Label          # aviso do chefe do mês na Banca
+var _levels_open := false     # caderneta de investimentos aberta (botão INVESTIMENTOS)
+var _ze: Sprite2D
+var _ze_range: Array = ZE_IDLE
+var _ze_frame_time := 0.0
+var _ze_wait := 5.0
 var _selected_offer := -1      # oferta escolhida no Camelô (-1 = nenhuma)
 var _shop_owned: Array = []    # [{"thumb", "sell"}] por esquema que você tem
 var _haggle_button: Button
 var _leave_button: Button
+var _contact_buttons: Dictionary = {}  # id do contato -> Button (ao lado do SEGUIR; só aparece no mês)
+
+# Painel do baralho (TAB ou botão BARALHO).
+var _status_panel: Control
+var _status_title: Label
+var _status_cells: Array = []  # {"cell", "used"} por (cédula, forma): índice = linha * 4 + forma
+var _tab_held := false       # TAB apertado: o painel aparece enquanto segura
+var _panel_pinned := false   # aberto pelo botão MÃO: fica até o FECHAR
 
 var _title_screen: TitleScreen  # tela inicial (atração + menu do caixa)
 var _sfx: Sfx                  # sons e música (ver scripts/ui/sfx.gd)
@@ -260,6 +298,17 @@ func _unhandled_input(event: InputEvent) -> void:
 	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
 		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
+
+
+## TAB: enquanto segura, mostra o painel da mão. Usa _input (antes do foco dos botões, que usa o próprio Tab).
+func _input(event: InputEvent) -> void:
+	if not (event is InputEventKey) or event.echo or event.keycode != KEY_TAB:
+		return
+	if run == null or _title_screen.visible or _howto.visible or _menu_root.visible or _busy:
+		return
+	_tab_held = event.pressed
+	_sync_status_panel()
+	get_viewport().set_input_as_handled()
 
 
 func _build_ui() -> void:
@@ -367,7 +416,9 @@ func _build_game(root: Control) -> void:
 
 	_restart_button = _button(root, tr("JOGAR DE NOVO"), Rect2(540, 528, 200, 56), _start_run)
 	# Embaixo do comprovante impresso: centro do comprovante = RECEIPT_POS.x + 120.
-	_next_button = _button(root, tr("IR AO CAMELÔ"), Rect2(RECEIPT_POS.x + 120 - 120, 664, 240, 52), _on_next_pressed)
+	_next_button = _button(root, tr("IR PARA A BANCA"), Rect2(RECEIPT_POS.x + 120 - 120, 664, 240, 52), _on_next_pressed)
+	# Venceu os 6 meses: ao lado do JOGAR DE NOVO, segue no modo infinito.
+	_endless_button = _button(root, tr("CONTINUAR ∞"), Rect2(RECEIPT_POS.x + 250, 664, 200, 52), _on_endless_pressed)
 
 	# Carimbo de fim: por cima dos esquemas, no centro da tela.
 	_end_stamp = _texture_rect(TEX_END_OK, Rect2(520, 236, 240, 120), root)
@@ -381,6 +432,107 @@ func _build_game(root: Control) -> void:
 
 	# Impressora de cima por último: o comprovante sai de baixo dela.
 	_texture_rect(TEX_MESA_IMPRESSORA, Rect2(Vector2.ZERO, Vector2(1280, 720)), root)
+
+	_build_status_panel(root)
+
+
+## Painel do baralho: aparece com TAB (enquanto segura) ou pelo botão BARALHO (até o FECHAR).
+## Mostra as cédulas que ainda estão na conta (mão + compra), por forma de pagamento e por valor.
+func _build_status_panel(root: Control) -> void:
+	_status_panel = Panel.new()
+	_status_panel.position = STATUS_POS
+	_status_panel.size = STATUS_SIZE
+	var paper := StyleBoxFlat.new()
+	paper.bg_color = RECEIPT_PAPER
+	paper.border_color = INK
+	paper.set_border_width_all(3)
+	paper.set_corner_radius_all(6)
+	_status_panel.add_theme_stylebox_override("panel", paper)
+	_status_panel.visible = false
+	root.add_child(_status_panel)
+
+	_status_title = _label(_status_panel, Rect2(20, 14, 660, 44), 34, INK, HORIZONTAL_ALIGNMENT_CENTER)
+	_status_title.add_theme_font_override("font", _font(FONT_TITLE))
+
+	# Cabeçalho: uma coluna por forma de pagamento (nomes de Balance.SUIT_NAMES, na ordem do Note.Suit).
+	for s in range(Balance.SUIT_NAMES.size()):
+		var head := _label(_status_panel, Rect2(STATUS_COL_X + s * STATUS_COL_STEP, 62, STATUS_CELL.x, 30), 22, INK, HORIZONTAL_ALIGNMENT_CENTER)
+		head.text = tr(Balance.SUIT_NAMES[s])
+
+	# Uma linha por cédula; cada célula mostra quantas dessa cédula e forma restam.
+	for v in range(Balance.VALUES.size()):
+		var row_y := STATUS_ROW_Y + v * STATUS_ROW_H
+		var value := _label(_status_panel, Rect2(14, row_y, 104, STATUS_CELL.y), 22, INK, HORIZONTAL_ALIGNMENT_RIGHT)
+		value.text = "R$ %d" % Balance.VALUES[v]
+		for s in range(Balance.SUIT_NAMES.size()):
+			var cell := _label(_status_panel, Rect2(STATUS_COL_X + s * STATUS_COL_STEP, row_y, STATUS_CELL.x, STATUS_CELL.y), 22, INK, HORIZONTAL_ALIGNMENT_CENTER)
+			# Canto direito da célula: quantas dessa cédula já foram usadas (jogadas ou trocadas).
+			var used := _label(cell, Rect2(STATUS_CELL.x - 44, 0, 40, STATUS_CELL.y), 16, INK, HORIZONTAL_ALIGNMENT_RIGHT)
+			_status_cells.append({"cell": cell, "used": used})
+
+	# _button começa escondido: aqui ele aparece (o painel é que decide quando mostrar).
+	var close := _button(_status_panel, tr("FECHAR"), Rect2(STATUS_SIZE.x / 2.0 - 100, 436, 200, 36), _on_status_close)
+	close.visible = true
+
+	var open := _button(root, tr("BARALHO"), STATUS_BUTTON, _on_status_button)
+	open.visible = true
+
+
+## Mostra ou esconde o painel conforme TAB e o botão BARALHO. Na loja, nunca aparece.
+func _sync_status_panel() -> void:
+	var show := run != null and _game_root.visible and run.state != RunState.SHOP and (_tab_held or _panel_pinned)
+	_status_panel.visible = show
+	if show:
+		_refresh_status_panel()
+
+
+func _refresh_status_panel() -> void:
+	var remaining: Array = run.bill.hand + run.bill.deck.draw_pile
+	var used: Array = run.bill.deck.discard_pile
+	_status_title.text = tr("NA CONTA: %d restantes · %d usadas") % [remaining.size(), used.size()]
+	var left := _count_by_cell(remaining)
+	var spent := _count_by_cell(used)
+	for v in range(Balance.VALUES.size()):
+		for s in range(Balance.SUIT_NAMES.size()):
+			var key := "%d-%d" % [Balance.VALUES[v], s]
+			var rem: int = left.get(key, 0)
+			var usd: int = spent.get(key, 0)
+			var entry: Dictionary = _status_cells[v * Balance.SUIT_NAMES.size() + s]
+			var cell: Label = entry["cell"]
+			cell.text = "×%d" % rem if rem > 0 else "–"
+			cell.add_theme_color_override("font_color", INK if rem > 0 else DIM)
+			cell.add_theme_stylebox_override("normal", _status_cell_box(STATUS_SUIT_COLORS[s] if rem > 0 else STATUS_EMPTY))
+			(entry["used"] as Label).text = "+%d" % usd if usd > 0 else ""
+
+
+## Conta notas por "valor-forma" (chave da grade do baralho).
+func _count_by_cell(notes: Array) -> Dictionary:
+	var counts := {}
+	for n in notes:
+		var key := "%d-%d" % [n.value, n.suit]
+		counts[key] = int(counts.get(key, 0)) + 1
+	return counts
+
+
+## Fundo colorido de uma célula do baralho (cor da forma de pagamento; vazio = papel claro).
+func _status_cell_box(color: Color) -> StyleBoxFlat:
+	var box := StyleBoxFlat.new()
+	box.bg_color = color
+	box.border_color = INK
+	box.set_border_width_all(1)
+	box.set_corner_radius_all(4)
+	return box
+
+
+func _on_status_button() -> void:
+	_panel_pinned = true
+	_sync_status_panel()
+
+
+func _on_status_close() -> void:
+	_panel_pinned = false
+	_tab_held = false
+	_sync_status_panel()
 
 
 ## Calculadora: display com a carteira, teclas por cima dos botões e mini impressora com a meta.
@@ -501,6 +653,15 @@ func _build_receipt(root: Control) -> void:
 
 func _build_shop(root: Control) -> void:
 	_texture_rect(TEX_SHOP_BG, Rect2(Vector2.ZERO, Vector2(1280, 720)), root)
+	# Seu Zé atrás do balcão: desenhado depois do fundo e antes da camada do balcão.
+	_ze = Sprite2D.new()
+	_ze.texture = _tex(TEX_ZE)
+	_ze.hframes = ZE_FRAMES
+	_ze.texture_filter = CanvasItem.TEXTURE_FILTER_NEAREST
+	_ze.scale = Vector2.ONE * ZE_SCALE
+	_ze.position = ZE_POS
+	root.add_child(_ze)
+	_texture_rect(TEX_SHOP_FRONT, Rect2(Vector2.ZERO, Vector2(1280, 720)), root)
 
 	# Embaixo à esquerda: a carteira (arte art/camelo/carteira.png). O dinheiro e o cheque especial
 	# são escritos sobre os dois papéis, girados no mesmo ângulo deles.
@@ -515,34 +676,38 @@ func _build_shop(root: Control) -> void:
 	_shop_cheque = _wallet_label(WALLET_CHEQUE_CENTER, WALLET_CHEQUE_ANGLE, 17)
 	wallet_box.add_child(_shop_cheque)
 
-	_shop_message = _shop_label(Rect2(32, 146, 1216, 24), 22, false)
+	_shop_message = _shop_label(Rect2(280, 576, 720, 26), 20, false)
+	_shop_message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	_shop_message.add_theme_color_override("font_color", INK)  # sobre o vidro claro do balcão
 	root.add_child(_shop_message)
 
-	# Investimentos com nível: no canto inferior direito; cada um fica sobre o anterior, de baixo para cima.
+	# Investimentos comprados: na caderneta da direita, só quando o botão INVESTIMENTOS abre.
 	_shop_levels_row = VBoxContainer.new()
-	_shop_levels_row.position = Vector2(960, 470)
-	_shop_levels_row.size = Vector2(290, 220)
-	_shop_levels_row.alignment = BoxContainer.ALIGNMENT_END
+	_shop_levels_row.position = LEVELS_RECT.position
+	_shop_levels_row.size = LEVELS_RECT.size
 	_shop_levels_row.add_theme_constant_override("separation", 6)
 	_shop_levels_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_shop_levels_row.visible = false
 	root.add_child(_shop_levels_row)
+	_levels_button = _button(root, tr("INVESTIMENTOS"), LEVELS_BUTTON, _on_levels_button)
+	_levels_button.add_theme_font_size_override("font_size", 18)
+	_levels_button.visible = true
 
 	# Ofertas: esquemas (cartaz) e investimentos (ícone), cada uma com preço e compra.
 	for i in range(Balance.SHOP_OFFERS + Balance.SHOP_INVESTMENT_OFFERS):
-		# Placa pendurada nos dois ganchos; fica atrás da oferta (criada antes do cartaz).
-		var sign_left: float = SIGN_HOOKS[i][0] - SIGN_CHAIN_LEFT
-		var center_x := sign_left + SIGN_SIZE.x / 2.0
-		_texture_rect(TEX_SIGNS[i], Rect2(sign_left, SIGN_TOP_Y, SIGN_SIZE.x, SIGN_SIZE.y), root)
-		# Cartaz (esquema) e ícone (investimento) centralizados no centro da placa.
-		var card := _texture_rect("", Rect2(center_x - SCHEME_SIZE.x / 2.0, SIGN_CENTER_Y - SCHEME_SIZE.y / 2.0, SCHEME_SIZE.x, SCHEME_SIZE.y), root)
+		# Cartaz (esquema) e ícone (investimento) centralizados no lugar da oferta.
+		var spot: Dictionary = OFFER_SPOTS[i]
+		var center: Vector2 = spot["c"]
+		var center_x := center.x
+		var card := _texture_rect("", Rect2(center - SCHEME_SIZE / 2.0, SCHEME_SIZE), root)
 		card.mouse_filter = Control.MOUSE_FILTER_STOP
-		var icon := _texture_rect("", Rect2(center_x - ICON_SIZE.x / 2.0, SIGN_CENTER_Y - ICON_SIZE.y / 2.0, ICON_SIZE.x, ICON_SIZE.y), root)
+		var icon := _texture_rect("", Rect2(center - ICON_SIZE / 2.0, ICON_SIZE), root)
 		icon.mouse_filter = Control.MOUSE_FILTER_STOP
 		# Investimento sem arte ainda: o nome aparece no lugar do desenho.
 		var icon_name := _shop_label(Rect2(0, 0, ICON_SIZE.x, ICON_SIZE.y), 22, true)
 		icon_name.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		icon_name.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-		icon_name.add_theme_color_override("font_color", Color("F4EDD9"))  # giz branco sobre a lousa
+		icon_name.add_theme_color_override("font_color", INK)  # sobre o painel claro da esquerda
 		icon.add_child(icon_name)
 		icon.visible = false
 		# Clicar no cartaz ou no ícone escolhe a oferta (ela dá um zoom suave).
@@ -552,25 +717,42 @@ func _build_shop(root: Control) -> void:
 		icon.gui_input.connect(_on_offer_gui_input.bind(i))
 		# Botão pequeno, logo abaixo do cartaz: mostra só o preço; com a oferta escolhida, COMPRAR R$ X.
 		# A largura acompanha o texto (ver _fit_buy_button).
-		var buy := _button(root, "R$ 0", Rect2(center_x - 60.0, BUY_Y, 120, BUY_H), _on_offer_button.bind(i))
+		var buy := _button(root, "R$ 0", Rect2(center_x - 60.0, spot["buy_y"], 120, BUY_H), _on_offer_button.bind(i))
 		buy.add_theme_font_size_override("font_size", BUY_FONT)
-		_shop_offers.append({"card": card, "icon": icon, "icon_name": icon_name, "buy": buy, "cx": center_x})
+		_shop_offers.append({"card": card, "icon": icon, "icon_name": icon_name, "buy": buy, "cx": center_x, "buy_y": spot["buy_y"]})
 
 	# Esquemas que você já tem: em cima, na faixa do topo; vender pela metade do preço.
 	for i in range(Balance.MAX_SCHEMES):
 		var x := OWNED_X + i * (OWNED_SIZE.x + OWNED_GAP)
-		var thumb := _texture_rect("", Rect2(x, 22, OWNED_SIZE.x, OWNED_SIZE.y), root)
+		var thumb := _texture_rect("", Rect2(x, 8, OWNED_SIZE.x, OWNED_SIZE.y), root)
 		thumb.mouse_filter = Control.MOUSE_FILTER_STOP
 		thumb.visible = false
-		var sell := _button(root, tr("VENDER"), Rect2(x + OWNED_SIZE.x / 2.0 - OWNED_SELL_W / 2.0, 124, OWNED_SELL_W, 20), _on_sell_pressed.bind(i))
+		var sell := _button(root, tr("VENDER"), Rect2(x + OWNED_SIZE.x / 2.0 - OWNED_SELL_W / 2.0, 110, OWNED_SELL_W, 20), _on_sell_pressed.bind(i))
 		sell.add_theme_font_size_override("font_size", 16)
 		_shop_owned.append({"thumb": thumb, "sell": sell})
 
 	# Par centralizado na tela (centro em x = 640): PECHINCHAR 240 px + 16 px de vão + SEGUIR 180 px.
-	_haggle_button = _button(root, tr("PECHINCHAR"), Rect2(422, 596, 240, 54), _on_haggle_pressed)
-	_leave_button = _button(root, tr("SEGUIR"), Rect2(678, 596, 180, 54), _on_leave_shop_pressed)
+	_haggle_button = _button(root, tr("PECHINCHAR"), Rect2(422, 658, 240, 54), _on_haggle_pressed)
+	_leave_button = _button(root, tr("SEGUIR"), Rect2(678, 658, 180, 54), _on_leave_shop_pressed)
 	_leave_button.visible = true
 	_haggle_button.visible = true
+	# Aviso do chefe do mês, na calçada, à direita do SEGUIR. Some depois da fatura (o próximo ainda não saiu).
+	_shop_boss = _shop_label(Rect2(868, 656, 190, 58), 14, false)
+	_shop_boss.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_shop_boss.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
+	_shop_boss.add_theme_color_override("font_color", INK)
+	_shop_boss.mouse_filter = Control.MOUSE_FILTER_STOP
+	root.add_child(_shop_boss)
+
+	# Contatos: no painel da esquerda, embaixo do investimento, só no mês (depois do boleto).
+	# Só um aparece por vez, então todos usam o mesmo lugar. Mostram o nome curto e o preço.
+	for i in range(Balance.CONTACT_ORDER.size()):
+		var id: String = Balance.CONTACT_ORDER[i]
+		var btn := _button(root, "", Rect2(CONTACT_BUTTON_POS, CONTACT_BUTTON_SIZE), _on_contact_pressed.bind(id))
+		btn.add_theme_font_size_override("font_size", 16)
+		btn.tooltip_text = _contact_tip(id)
+		btn.visible = false
+		_contact_buttons[id] = btn
 
 
 ## Cartaz do esquema. Sem arte ainda, o nome aparece num papel no lugar do desenho.
@@ -598,6 +780,34 @@ func _set_scheme_art(tr: TextureRect, id: String, font_size: int = 18) -> void:
 	lbl.visible = tr.texture == null
 
 
+## Botões dos contatos: aparecem só se estão à venda neste mês. Sem dinheiro, ficam apagados.
+func _refresh_contacts() -> void:
+	for id in _contact_buttons:
+		var btn: Button = _contact_buttons[id]
+		var offered: bool = run.contact_offer.has(id)
+		btn.visible = offered
+		if not offered:
+			continue
+		var price := run.price_of(id)
+		btn.text = "%s\nR$ %d" % [tr(Balance.CONTACTS[id]["short"]).to_upper(), price]
+		btn.disabled = not run.can_spend(price)
+
+
+## Texto da dica do contato: nome e o que ele faz.
+func _contact_tip(id: String) -> String:
+	var info: Dictionary = Balance.CONTACTS[id]
+	return "%s\n%s" % [tr(info["name"]), tr(info["desc"])]
+
+
+func _on_contact_pressed(id: String) -> void:
+	if _busy:
+		return
+	var result := run.buy_contact(id)
+	_sfx.play("fita" if result["ok"] else "erro")
+	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
+	_refresh()
+
+
 ## Dica da oferta: nome, raridade e descrição.
 func _offer_tip(id: String) -> String:
 	var info: Dictionary = Balance.INVESTMENTS[id] if Investments.is_investment(id) else Balance.SCHEMES[id]
@@ -621,8 +831,15 @@ func _refresh_shop() -> void:
 	_selected_offer = -1  # qualquer ação do Camelô (comprar, vender, pechinchar) limpa a escolha
 	_shop_wallet.text = "R$ %d" % run.wallet
 	_shop_wallet.add_theme_color_override("font_color", WARN if run.wallet < 0 else INK)
-	_shop_cheque.text = tr("ATÉ R$ %d") % -Balance.OVERDRAFT_LIMIT
+	# Cheque especial: mostra o que resta do limite (∞ com o Cheque Sem Fundo).
+	_shop_cheque.text = tr("ATÉ ∞") if run.overdraft_unlimited() else tr("ATÉ R$ %d") % run.overdraft_left
 	_refresh_shop_levels()
+	_refresh_contacts()
+	var warn_boss: bool = run.bill_key() != "fatura" and run.month_boss != Boss.NONE
+	_shop_boss.visible = warn_boss
+	if warn_boss:
+		_shop_boss.text = tr("CHEFE DO MÊS: %s") % tr(Balance.BOSSES[run.month_boss]["name"])
+		_shop_boss.tooltip_text = _boss_rule(run.month_boss)
 
 	for i in range(_shop_offers.size()):
 		var o: Dictionary = _shop_offers[i]
@@ -648,7 +865,7 @@ func _refresh_shop() -> void:
 			o["card"].tooltip_text = _offer_tip(id)
 		var price := run.price_of(id)
 		var full := not is_inv and run.schemes.size() >= Balance.MAX_SCHEMES
-		o["buy"].disabled = full or run.wallet - price < Balance.OVERDRAFT_LIMIT
+		o["buy"].disabled = full or not run.can_spend(price)
 	_update_offer_visuals()
 
 	for i in range(_shop_owned.size()):
@@ -664,7 +881,7 @@ func _refresh_shop() -> void:
 			s["sell"].text = tr("VENDER R$ %d") % (int(info["price"]) / 2)
 
 	_haggle_button.text = tr("PECHINCHAR R$ %d") % Balance.HAGGLE_COST
-	_haggle_button.disabled = run.wallet - Balance.HAGGLE_COST < Balance.OVERDRAFT_LIMIT
+	_haggle_button.disabled = not run.can_spend(Balance.HAGGLE_COST)
 
 
 ## Texto escrito sobre um papel da carteira: caixa centrada no papel e girada no ângulo dele.
@@ -715,10 +932,48 @@ func _refresh_shop_levels() -> void:
 		var lvl: int = run.levels.get(kind, 0)
 		if lvl <= 0:
 			continue
-		var chip := _chip(18, BUTTON_PAPER_DOWN)
-		chip.size_flags_horizontal = Control.SIZE_SHRINK_END
+		var chip := _chip(14, BUTTON_PAPER_DOWN)
 		_chip_label(chip).text = "%s x%d" % [tr(Balance.TRANSACTIONS[kind]["name"]).to_upper(), lvl]
+		_chip_label(chip).autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		_shop_levels_row.add_child(chip)
+	# Caderneta vazia: uma linha no lugar da lista.
+	if _shop_levels_row.get_child_count() == 0:
+		var none := _shop_label(Rect2(0, 0, LEVELS_RECT.size.x, 60), 16, false)
+		none.text = tr("nenhum investimento ainda")
+		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+		none.add_theme_color_override("font_color", INK)
+		_shop_levels_row.add_child(none)
+	_shop_levels_row.visible = _levels_open
+
+
+## Botão INVESTIMENTOS: abre e fecha a lista na caderneta da direita.
+func _on_levels_button() -> void:
+	_levels_open = not _levels_open
+	_sfx.play("bipe_tecla")
+	_shop_levels_row.visible = _levels_open
+
+
+## Seu Zé: fica parado em laço e, de tempos em tempos, acena, faz joinha ou ri.
+func _process(delta: float) -> void:
+	if _ze == null or not _shop_root.visible:
+		return
+	if _ze_range == ZE_IDLE:
+		_ze_wait -= delta
+	_ze_frame_time += delta
+	if _ze_frame_time < float(ZE_DURATIONS[_ze.frame]):
+		return
+	_ze_frame_time = 0.0
+	if _ze.frame < int(_ze_range[1]):
+		_ze.frame += 1
+		return
+	# Fim do trecho: volta ao laço parado, ou começa uma animação quando a espera acaba.
+	if _ze_range == ZE_IDLE and _ze_wait <= 0.0:
+		_ze_range = ZE_ACTIONS[randi_range(0, ZE_ACTIONS.size() - 1)]
+	else:
+		if _ze_range != ZE_IDLE:
+			_ze_wait = randf_range(ZE_WAIT[0], ZE_WAIT[1])
+		_ze_range = ZE_IDLE
+	_ze.frame = int(_ze_range[0])
 
 
 ## Níveis atuais dos investimentos, em nomes de transação (ex.: "Dobradinha 1 · Escadinha 0").
@@ -794,7 +1049,7 @@ func _fit_buy_button(o: Dictionary) -> void:
 	var text_w := font.get_string_size(btn.text, HORIZONTAL_ALIGNMENT_LEFT, -1, BUY_FONT).x
 	var w := maxf(BUY_MIN_W, text_w + BUY_PAD)
 	btn.size = Vector2(w, BUY_H)
-	btn.position = Vector2(float(o["cx"]) - w / 2.0, BUY_Y)
+	btn.position = Vector2(float(o["cx"]) - w / 2.0, float(o["buy_y"]))
 
 
 ## Animação de zoom com retorno elástico; cancela a animação anterior do mesmo item.
@@ -975,6 +1230,7 @@ func _refresh() -> void:
 	else:
 		_update_status()
 		_rebuild_hand()
+	_sync_status_panel()
 
 
 ## Textos, saldo, teclas, faixa e carimbos. Não mexe na mão (para a animação de seleção não ser interrompida).
@@ -1017,6 +1273,7 @@ func _update_status() -> void:
 	_restart_button.position = Vector2(RECEIPT_POS.x + 120 - 120, 664) if won else Vector2(540, 528)
 	_restart_button.size = Vector2(240, 52) if won else Vector2(200, 56)
 	_next_button.visible = paid
+	_endless_button.visible = run.can_continue()
 	_receipt_clip.visible = paid or won
 	_header.visible = not (paid or won)
 	_bill_label.visible = not (paid or won)
@@ -1042,16 +1299,24 @@ func _update_status() -> void:
 		_receipt_title.text = tr("COMPROVANTE FINAL")
 		_fill_receipt(_final_receipt_lines())
 	elif run.state == RunState.LOST:
-		_message.text = tr("NOME NEGATIVADO")
+		_message.text = tr("CHEQUE ESPECIAL ESGOTADO") if run.end_reason == "cheque" else tr("NOME NEGATIVADO")
 	elif paid:
 		_message.text = tr("CONTA PAGA")
 		_receipt_title.text = tr("COMPROVANTE")
 		_fill_receipt(_receipt_lines())
 
 
+## Regra do chefe, já com o número do nível deste mês (dificuldade adaptativa).
+func _boss_rule(boss_id: String) -> String:
+	var text := tr(Balance.BOSSES[boss_id]["text"])
+	if Balance.BOSS_SCALE.has(boss_id):
+		return text % Boss.level_value(boss_id, run.boss_level())
+	return text
+
+
 ## Linha do chefe na tela: nome, regra, e o resultado do chefe nesta conta (Urubu, matrícula, Valor do Curso).
 func _boss_line(boss_id: String) -> String:
-	var line := tr("CHEFE: %s. %s") % [tr(Balance.BOSSES[boss_id]["name"]), tr(Balance.BOSSES[boss_id]["text"])]
+	var line := tr("CHEFE: %s. %s") % [tr(Balance.BOSSES[boss_id]["name"]), _boss_rule(boss_id)]
 	if run.boss_note != "":
 		line += "   " + run.boss_note
 	if run.valor_percent() > 0:
@@ -1236,11 +1501,12 @@ func _lift(btn: BaseButton, selected: bool) -> void:
 ## Comprovante final (pagou a última fatura de Janeiro): CONTAS EM DIA e o saldo máximo do ano.
 ## Linhas do comprovante final. Cada linha: [texto à esquerda, valor à direita, estilo].
 func _final_receipt_lines() -> Array:
-	var total := Balance.MONTHS.size() * Balance.BILL_KEYS.size()
+	var months: int = Balance.TOTAL_MONTHS if run.endless else Balance.RUN_MONTHS
+	var total := months * Balance.BILL_KEYS.size()
 	return [
-		[tr("CONTAS EM DIA"), "", "titulo"],
+		[tr("TODOS OS CHEFES DERROTADOS") if run.endless else tr("CONTAS EM DIA"), "", "titulo"],
 		["", "", "tracejado"],
-		[tr("Contas pagas"), "%d de %d" % [total, total], ""],
+		[tr("Contas pagas"), "%d de %d" % [run.bills_paid(), total], ""],
 		[tr("Saldo máximo"), "R$ %d" % run.max_saldo, ""],
 		["", "", "tracejado"],
 		[tr("CARTEIRA"), "R$ %d" % run.wallet, "total"],
@@ -1342,6 +1608,8 @@ func _on_card_pressed(note: Note) -> void:
 func _formation_text() -> String:
 	if run.bill.selected.is_empty():
 		return tr("INSIRA SUAS NOTAS")
+	if Boss.hides_preview(run.bill.boss):
+		return tr("APAGÃO: sem prévia da jogada")
 	var score: Dictionary = run.bill.preview(run.bill.selected)
 	if score.is_empty():
 		return tr("Nenhuma nota pontua nesta jogada")
@@ -1585,9 +1853,16 @@ func _on_swap_pressed() -> void:
 
 func _on_next_pressed() -> void:
 	run.next_bill()
-	_sfx.play("feirante")
 	_message.text = ""
 	_refresh()
+
+
+## Modo infinito: a partida vencida segue do Camelô, até perder ou derrotar todos os chefes.
+func _on_endless_pressed() -> void:
+	if not run.continue_endless():
+		return
+	_end_stamp_played = false
+	_on_next_pressed()
 
 
 func _refusal_text(reason: String) -> String:

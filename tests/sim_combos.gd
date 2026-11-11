@@ -39,7 +39,7 @@ func _run(title: String, unlocked: Array) -> void:
 	print("  pontos médios da melhor jogada: %.1f" % (float(points_sum) / HANDS))
 
 
-## Compra HAND_SIZE notas de um baralho completo (32 notas), embaralhado com o RNG da simulação.
+## Compra HAND_SIZE notas de um baralho completo (40 notas), embaralhado com o RNG da simulação.
 func _deal(rng: RandomNumberGenerator) -> Array:
 	var deck: Array = []
 	for suit in Note.Suit.values():

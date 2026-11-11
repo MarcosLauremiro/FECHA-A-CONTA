@@ -22,6 +22,11 @@ var levels: Dictionary = {}   # níveis dos investimentos, {transação: nível}
 var valor_percent: int = 0    # Valor extra em % (Curso do Primo Rico, vem da partida)
 var hand_size: int = Balance.HAND_SIZE  # cartas na mão (Férias na praia tem menos)
 
+var boss_level: int = 0       # nível do chefe (dificuldade adaptativa; vem da partida)
+var blocked_kinds: Array = [] # formações que não pontuam nesta conta (Malha fina; vem da partida)
+var plays: int = 0            # jogadas feitas nesta conta
+var used_kinds: Array = []    # formações já jogadas nesta conta (Rotina)
+
 var _rng: RandomNumberGenerator
 var _pix_used := false  # Pix Errado só duplica uma vez por conta
 
@@ -34,6 +39,8 @@ func _init(p_goal: int, p_boss: String = Boss.NONE, rng: RandomNumberGenerator =
 	levels = p_levels.duplicate()
 	valor_percent = p_valor_percent
 	hand_size = Boss.hand_size(p_boss)
+	days_left = Boss.days(p_boss)
+	swaps_left = Boss.swaps(p_boss)
 	_rng = rng
 	deck = Deck.new(rng)
 	_refill()
@@ -62,15 +69,17 @@ func pay() -> Dictionary:
 		return refusal
 
 	var played := selected.duplicate()
-	var scoring: Array = []
-	for n in played:
-		if Boss.note_scores(boss, n):
-			scoring.append(n)
+	var scoring := _scoring_notes(played)
 
-	var score := Scorer.score(HandEvaluator.evaluate(scoring, unlocked()), _score_fx(played, scoring, _roll_rifa()))
+	var score := Scorer.score(_evaluate(played, scoring), _score_fx(played, scoring, _roll_rifa()))
+	var roll := _rand_int(2) if Boss.rolls_play(boss) else -1
+	score["total"] = Boss.adjust_total(boss, boss_level, score["total"], plays, goal, roll)
 	var tax := Boss.play_tax(boss, score["total"])
 	score["tax"] = tax
 	saldo += score["total"] - tax
+	plays += 1
+	if score["kind"] != "none" and not used_kinds.has(score["kind"]):
+		used_kinds.append(score["kind"])
 
 	var cash := SchemeRules.cash_from_scoring(schemes, scoring)
 	# Bicheiro: 1 em BICHEIRO_ODDS de a jogada render o prêmio na carteira.
@@ -80,6 +89,10 @@ func pay() -> Dictionary:
 
 	_leave_hand(played)
 	deck.discard(played)
+	# Carnaval: o resto da mão também vai embora, e a mão é comprada de novo.
+	if Boss.redraws_hand(boss):
+		deck.discard(hand.duplicate())
+		hand.clear()
 	days_left -= 1
 	_refill()
 
@@ -87,6 +100,9 @@ func pay() -> Dictionary:
 		state = WON
 	elif days_left == 0:
 		state = LOST
+	else:
+		# Inflação: a meta sobe depois de cada jogada que não paga a conta.
+		goal += goal * Boss.goal_growth_percent(boss, boss_level) / 100
 
 	return {"ok": true, "reason": "", "score": score, "state": state, "cash": cash}
 
@@ -95,15 +111,37 @@ func pay() -> Dictionary:
 ## Usa as mesmas regras do PAGAR, sem a sorte da Rifa (que só sai ao pagar).
 ## Devolve o Dictionary do Scorer (com "tax"), ou {} se nenhuma nota pontua.
 func preview(played: Array) -> Dictionary:
+	var scoring := _scoring_notes(played)
+	if scoring.is_empty():
+		return {}
+	var score := Scorer.score(_evaluate(played, scoring), _score_fx(played, scoring, false))
+	score["total"] = Boss.adjust_total(boss, boss_level, score["total"], plays, goal)
+	score["tax"] = Boss.play_tax(boss, score["total"])
+	return score
+
+
+## Notas da jogada que o chefe deixa pontuar.
+func _scoring_notes(played: Array) -> Array:
 	var scoring: Array = []
 	for n in played:
 		if Boss.note_scores(boss, n):
 			scoring.append(n)
-	if scoring.is_empty():
-		return {}
-	var score := Scorer.score(HandEvaluator.evaluate(scoring, unlocked()), _score_fx(played, scoring, false))
-	score["tax"] = Boss.play_tax(boss, score["total"])
-	return score
+	return scoring
+
+
+## Formação da jogada. Vira "nenhuma" quando o chefe não deixa:
+## Sogra em casa (menos de 5 notas), Malha fina (formação bloqueada) e Rotina (formação repetida).
+func _evaluate(played: Array, scoring: Array) -> Dictionary:
+	var none := {"kind": "none", "cards": []}
+	if Boss.needs_full_play(boss) and played.size() != Balance.MAX_PLAYED:
+		return none
+	var evaluation := HandEvaluator.evaluate(scoring, unlocked())
+	var kind: String = evaluation["kind"]
+	if blocked_kinds.has(kind):
+		return none
+	if Boss.one_kind_each(boss) and used_kinds.has(kind):
+		return none
+	return evaluation
 
 
 ## Formações liberadas pelos investimentos da partida (nível acima de zero).
@@ -118,7 +156,7 @@ func unlocked() -> Array:
 ## Entradas do Scorer para uma jogada. `rifa` vem de quem chama (sorteio só no PAGAR).
 func _score_fx(played: Array, scoring: Array, rifa: bool) -> Dictionary:
 	return {
-		"schemes": schemes,
+		"schemes": [] if Boss.schemes_off(boss, boss_level, plays) else schemes,
 		"played": played.size(),
 		"scoring": scoring,
 		"hand_points": _hand_points_left(played),
@@ -229,6 +267,10 @@ func to_dict() -> Dictionary:
 		"levels": levels,
 		"valor_percent": valor_percent,
 		"pix_used": _pix_used,
+		"boss_level": boss_level,
+		"blocked_kinds": blocked_kinds,
+		"plays": plays,
+		"used_kinds": used_kinds,
 		"deck": deck.to_dict(),
 		"hand": Note.list_to_data(hand),
 		"selected": selected_idx,
@@ -251,6 +293,10 @@ static func from_dict(d: Dictionary) -> BillRound:
 	b.saldo = int(d["saldo"])
 	b.state = String(d["state"])
 	b._pix_used = bool(d.get("pix_used", false))
+	b.boss_level = int(d.get("boss_level", 0))
+	b.blocked_kinds = d.get("blocked_kinds", [])
+	b.plays = int(d.get("plays", 0))
+	b.used_kinds = d.get("used_kinds", [])
 	return b
 
 

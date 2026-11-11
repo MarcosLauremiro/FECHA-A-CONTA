@@ -87,11 +87,15 @@ Ordem de resolução (importa para a animação e para os esquemas): base da tra
 
 ### Metas e dinheiro
 
-Metas das 12 contas de cada mês: ver a seção "Ano de 12 meses, um chefe por mês" (em `scripts/balance.gd`, MONTHS). Janeiro vai de R$ 210 (boleto) a R$ 425 (fatura), e Dezembro de R$ 3.565 a R$ 7.125.
+Metas das contas (3 por mês) vêm da curva de dificuldade (ver "Curva de dificuldade" abaixo). Começam em R$ 180 (boleto de janeiro) e crescem 24% a cada conta.
 
 - Recompensa por conta paga: Boleto R$ 3, Aluguel R$ 4, Fatura R$ 5, + R$ 1 por dia não usado.
 - **Troco vira grana:** R$ 1 a cada 25% acima da meta, no máximo R$ 5.
-- **Cheque especial:** no Camelô, a carteira pode ir até −R$ 10. A cada conta paga, a dívida cresce 25% (arredonda para cima). Com dívida, a recompensa paga a dívida primeiro.
+- **Cheque especial:** R$ 10 por partida, sem renovar. Cada R$ que passa da carteira vira dívida de 3x e diminui o limite. Gastar o último R$ acaba a partida ("CHEQUE ESPECIAL ESGOTADO"). A cada conta paga, a dívida cresce 25% (arredonda para cima). Com dívida, a recompensa paga a dívida primeiro.
+- **Contatos (cartas de uso único):** a cada mês, na loja depois do boleto, aparece um contato por vez, sorteado entre os que faltam, ao lado do SEGUIR. Não ocupam espaço de esquema.
+  - **Gerente do Banco** (R$ 15): juros do cheque caem de 3x para 2x.
+  - **Cheque Sem Fundo** (R$ 30): juros de 2x e cheque sem limite (o limite vira ∞). Em troca, a dívida pesa: cada R$ 4 de dívida sobe a meta da conta em 1% (`SEM_FUNDO_DEBT_STEP`). Sem essa regra o contato quebrava o jogo: pechinchando e comprando sem parar, o bot vencia 100% das partidas.
+- **Painel do baralho:** segurar TAB mostra a grade de cédulas por forma de pagamento e valor. A cor e o número grande são as cédulas que restam (mão e compra); o número pequeno no canto (+n) são as já usadas (jogadas ou trocadas). O botão BARALHO, no canto inferior direito, abre o mesmo painel até o FECHAR.
 - Carteira inicial: R$ 4. Máximo de 5 esquemas ativos.
 - Os valores de meta são chute inicial; ajustar no playtest da hora 17.
 
@@ -108,17 +112,17 @@ Raridade: Comum, Incomum, Rara, Lendária (ver "Raridade dos itens"). Personagen
 | Agiota | Comum | +3 de Juros; cobra 10% da carteira a cada conta paga | R$ 8 | EMPRESTO DINHEIRO NA HORA |
 | Cashback | Comum | Notas de Crédito que pontuam devolvem R$ 1 | R$ 8 | SEU DINHEIRO DE VOLTA\* |
 | Pix Errado | Comum | A primeira nota de Pix jogada em cada conta é duplicada no baralho | R$ 10 | FIZ UM PIX ERRADO, DEVOLVE PFV |
-| **Vendedor de Consórcio** | Comum | +3 de Valor por nota de Dinheiro que pontua; cada conta paga custa R$ 1 de parcela | R$ 8 | SUA CARTA SAI NA 60ª PARCELA |
+| **Vendedor de Consórcio** | Comum | +5 de Valor por nota de Dinheiro que pontua; cada conta paga custa R$ 1 de parcela | R$ 8 | SUA CARTA SAI NA 60ª PARCELA |
 | **Tia do Pix** | Comum | +1 de Juros por nota de Débito que pontua | R$ 8 | MANDA A CHAVE QUE EU PAGO |
-| Cunhado Investidor | Incomum | Cada Escadinha jogada dá +1 de Juros a ele, para sempre | R$ 10 | GANHE 30% AO MÊS SEM RISCO |
+| Cunhado Investidor | Incomum | A cada 2 Escadinhas jogadas, +1 de Juros, para sempre | R$ 10 | GANHE 30% AO MÊS SEM RISCO |
 | Rifa do Bairro | Incomum | 1 em 4 de multiplicar o Juros por 5 | R$ 10 | RIFA DE 1 PORCO — R$ 2 O NÚMERO |
 | Vaquinha | Incomum | Soma metade dos pontos das notas que ficaram na mão ao Valor | R$ 12 | AJUDE O JUNINHO A PAGAR O ALUGUEL |
 | **Bicheiro do Bairro** | Incomum | 1 em 3 de cada jogada render R$ 6 na carteira | R$ 12 | JOGO DO BICHO: SAIU O VEADO |
 | **Nubank** | Incomum | +3 de Valor por nota de Crédito que pontua | R$ 12 | A ROXINHA QUE MELHORA SEU CRÉDITO |
 | **Pastor da Prosperidade** | Rara | +8 de Valor em cada jogada; cada conta paga 5% da carteira de dízimo | R$ 14 | DEUS É FIEL, PAGUE O DÍZIMO |
 | Pirâmide | Rara | +1 de Juros por outro esquema ativo; 1 em 6 de colapsar a cada mês | R$ 14 | INDIQUE 3 AMIGOS E FIQUE RICO |
-| Coach Financeiro | Rara | ×2 de Juros se jogar exatamente 5 notas; se jogar menos, perde 1 de Juros | R$ 14 | MENTALIDADE MILIONÁRIA EM 7 DIAS |
-| **Influenciador de Finanças** | Rara | +3 de Juros em jogadas com 3 ou mais notas | R$ 16 | SEGUE QUE EU TE ENSINO A FICAR RICO |
+| Coach Financeiro | Rara | ×2 de Juros se as 5 notas jogadas pontuarem; senão, perde 1 de Juros | R$ 14 | MENTALIDADE MILIONÁRIA EM 7 DIAS |
+| **Influenciador de Finanças** | Rara | +2 de Juros em jogadas com 3 ou mais notas | R$ 16 | SEGUE QUE EU TE ENSINO A FICAR RICO |
 | **Consignado** | Lendária | +1 de Juros em cada jogada; a dívida do cheque especial não cresce | R$ 22 | DINHEIRO NA HORA, SEM CONSULTA AO SERASA |
 
 ### Camelô (loja entre contas)
@@ -202,7 +206,7 @@ Arte: os cartazes e ícones dos itens novos ainda não existem em `art/`. Enquan
 
 ### Chefes: as faturas
 
-Os 3 chefes da jam (Banco fora do ar, Taxa de manutenção e IPVA de janeiro) continuam no jogo, agora dentro do ano de 12 meses. Os 12 chefes, um por mês, e suas regras estão na seção "Ano de 12 meses, um chefe por mês", na parte de planejamento.
+Os 3 chefes da jam (Banco fora do ar, Taxa de manutenção e IPVA de janeiro) continuam no jogo, agora dentro do ano de 12 meses. Os 12 chefes, um por mês, e suas regras estão na seção "Partida de 6 meses, 36 chefes sorteados", na parte de planejamento.
 
 ## Interface e fluxo de telas
 
@@ -459,33 +463,81 @@ O maior risco é chegar na hora 18 sem a sequência de pontuação animada. Se a
 
 O jogo não é mais uma jam: é um jogo próprio, que será lançado. As seções acima descrevem a versão da jam e continuam valendo como referência do que já está pronto. Esta seção guarda o que vem depois.
 
-### Ano de 12 meses, um chefe por mês
+### Partida de 6 meses, 36 chefes sorteados
 
-A partida é um rogue-like de um ano só: começa em janeiro e termina em dezembro. Não há divisão em desafios. A dificuldade cresce mês a mês, e o jogador vai melhorando (esquemas, investimentos, Curso) para enfrentar os últimos meses.
+O ano tem 12 meses, mas uma partida dura 6 (`RUN_MONTHS`): começa em janeiro e é vencida ao pagar a fatura de junho. Quem vence pode continuar no modo infinito (botão CONTINUAR ∞ no comprovante final), até perder ou derrotar os 36 chefes (`TOTAL_MONTHS`, 3 anos de jogo; a partir do segundo ano o mês aparece com o número, ex.: "Janeiro 2").
 
-- A partida tem 12 meses × 3 contas (Boleto, Aluguel, Fatura) = 36 contas.
-- Cada mês tem **um chefe**, que aparece só na fatura (a 3ª conta do mês). Boleto e Aluguel são contas comuns. Eventos também são chefes: não existe evento separado.
-- O jogo salva a cada conta (save único, como hoje), então a partida pode ser retomada em sessões de qualquer tamanho.
-- Tamanho: não há limite fixo de tempo. A média esperada é de cerca de 30 minutos por trecho de partida, mas a regra é o ritmo do rogue-like, não um corte de tempo.
+- A partida tem 6 meses × 3 contas (Boleto, Aluguel, Fatura) = 18 contas.
+- Cada mês tem **um chefe**, que aparece só na fatura (a 3ª conta do mês). Boleto e Aluguel são contas comuns.
+- O chefe é sorteado quando o mês começa e não se repete na partida. A Banca mostra o chefe do mês (CHEFE DO MÊS) antes da fatura.
+- **Faixas de peso** (`BOSS_TIERS`): meses 1 e 2 sorteiam chefes leves, 3 e 4 médios, 5 e 6 pesados. No modo infinito vale qualquer faixa.
+- **Chefes com data** (`BOSS_FIXED_MONTH`) só caem no mês deles: Dia das Mães (maio), Dia dos Pais (agosto), Entrar o Grosso (setembro) e 13º salário (dezembro). Na partida de 6 meses, maio é sempre Dia das Mães.
+- **Dificuldade adaptativa** (`BOSS_SCALE`): o nível do chefe é o mês dividido por 2 (0 a 3). Sete chefes usam um número por nível, mostrado no texto da regra.
+- O jogo salva a cada conta (save único), então a partida pode ser retomada em sessões de qualquer tamanho.
 
-| Mês | Chefe | Regra |
+| Faixa | Chefe | Regra |
 | --- | --- | --- |
-| Janeiro | IPVA + IPTU + Material escolar | Leão da Receita leva 15% de cada jogada. Cada troca custa R$ 1. Golpe do WhatsApp: 1 esquema desativado em cada conta |
-| Fevereiro | Bolsa Família | +R$ 3 ao pagar a fatura, mas a meta da fatura sobe 15% |
-| Março | Banco fora do ar | Notas de Pix não pontuam |
-| Abril | Curso do Primo Rico | Matrícula de R$ 6, paga uma vez. A cada 2 contas pagas depois da matrícula, o Valor sobe 20% (acumula na partida) |
-| Maio | Urubu do Pix | No começo de cada conta, 1 em 2: a carteira dobra (se for positiva). Se não, perde R$ 5 |
-| Junho | Taxa de manutenção | Cada troca custa R$ 1 |
-| Julho | Férias na praia | A mão tem 6 cartas, em vez de 8 |
-| Agosto | Dia dos Pais | Cada troca consome um dia (a última troca acaba a conta) |
-| Setembro | Entrar o Grosso | As metas dobram e a recompensa dobra |
-| Outubro | Bandeira vermelha | Cada dia usado custa R$ 1 de energia. Notas de Débito pontuam 50% a mais |
-| Novembro | Julius | Se você não comprou nada no Camelô antes da conta, a meta cai 20% |
-| Dezembro | 13º salário | A recompensa sobe R$ 3, mas as metas sobem 25% |
+| Leve | Bolsa Família | +R$ 3 ao pagar a fatura, mas a meta sobe 15% |
+| Leve | Taxa de manutenção | Cada troca custa R$ 1 |
+| Leve | Julius | Se você não comprou nada na Banca antes da conta, a meta cai 20% |
+| Leve | Urubu do Pix | No começo da conta, 1 em 2: a carteira dobra. Se não, perde R$ 5 |
+| Leve | Curso do Primo Rico | Matrícula de R$ 6, uma vez. A cada 2 contas pagas depois, o Valor sobe 10% |
+| Leve | Maquininha quebrada | Notas de Débito não pontuam |
+| Leve | Cartão clonado | Notas de Crédito não pontuam |
+| Leve | Caixa sem troco | Notas de Dinheiro não pontuam |
+| Leve | Troco em bala | Notas de R$ 1, 2 e 5 não pontuam |
+| Leve | Nota falsa | Notas de R$ 200, 500 e 1000 não pontuam |
+| Leve | Fila da lotérica | Uma troca a menos |
+| Leve | Boleto vencido | A primeira jogada vale metade |
+| Leve | Dia das Mães (só em maio) | A recompensa da conta cai pela metade |
+| Médio | Banco fora do ar | Notas de Pix não pontuam |
+| Médio | Férias na praia | A mão tem 6 cartas, em vez de 8 |
+| Médio | Bandeira vermelha | Cada dia usado custa R$ 1. Notas de Débito pontuam 50% a mais |
+| Médio | 13º salário (só em dezembro) | A recompensa sobe R$ 3, mas a meta sobe 25% |
+| Médio | Feriadão | 3 dias, em vez de 4 |
+| Médio | Inflação | Cada jogada sobe a meta em 4 / 5 / 6 / 8% (por nível) |
+| Médio | Reajuste do aluguel | A meta sobe 20 / 30 / 35 / 45% |
+| Médio | Apagão | A prévia da jogada não aparece |
+| Médio | Carnaval | Depois de cada jogada, a mão inteira é descartada e comprada de novo |
+| Médio | Serasa | Com carteira negativa, a meta sobe 30 / 40 / 50 / 60% |
+| Médio | Golpe do falso gerente | No começo da conta, some 20 / 25 / 30 / 40% da carteira |
+| Médio | Black Friday | A meta sobe 20%, mas a próxima Banca vende tudo pela metade |
+| Pesado | IPVA + IPTU + Material escolar | Leão leva 15% de cada jogada. Cada troca custa R$ 1. Um esquema desativado na conta |
+| Pesado | Dia dos Pais (só em agosto) | Cada troca consome um dia |
+| Pesado | Entrar o Grosso (só em setembro) | A meta dobra e a recompensa dobra |
+| Pesado | Fatura parcelada | Cada jogada conta no máximo 50 / 45 / 40 / 35% da meta |
+| Pesado | Malha fina | A formação mais jogada na partida não pontua |
+| Pesado | Rotina | Cada formação só pode ser jogada uma vez na conta |
+| Pesado | Sogra em casa | Só pontua jogada com 5 notas |
+| Pesado | Tigrinho | Cada jogada: 1 em 2 de dobrar; senão, vale metade |
+| Pesado | Wi-Fi caiu | Os esquemas não funcionam nas 2 / 2 / 2 / 3 primeiras jogadas |
+| Pesado | Plano Collor | No começo da conta, 60 / 70 / 80 / 90% da carteira é confiscada |
+| Pesado | Copa do Mundo | 2 dias e 1 troca |
 
-Números da tabela de metas por mês estão em `scripts/balance.gd` (MONTHS). A curva atual vai de R$ 210 (boleto de janeiro) a R$ 7.125 (fatura de dezembro). Ela é ajustada pela bateria `tests/sim_esquemas.gd` (ver "Bateria de esquemas" abaixo).
+### Curva de dificuldade
 
-**Resultado da simulação (bot guloso, 300 partidas, chefe só na fatura):** 23% de vitórias, 21 contas pagas em média. As derrotas se concentram nas faturas de março, agosto e setembro. O bot aleatório perde na primeira conta, então serve só de piso.
+A meta de cada conta segue `D(n) = D0 · R^(n-1)` (em `scripts/balance.gd`, `goal_of`):
+
+- `D0` = 180: meta da primeira conta (boleto de janeiro).
+- `R` = 1,24: fator de crescimento por conta. A fatura de junho fica em R$ 6.980.
+- `n` = número da conta, de 1 (boleto de janeiro) a 18 (fatura de junho). No modo infinito a mesma curva continua até a 36 (fatura de dezembro).
+
+Ajuste feito pela bateria `tests/sim_balance.gd` (200 partidas por linha), com três perfis de jogador:
+
+- **novato**: erra 10% das jogadas e compra 60% do que pode pagar. Vence 0% (5 contas pagas em média).
+- **oráculo**: joga a melhor formação da mão, sem olhar os esquemas. Vence 0% (6 contas).
+- **esperto**: testa todos os conjuntos de 1 a 5 notas na prévia e joga o que mais rende; compra tudo que pode. Vence 12,5% (12 contas).
+
+Objetivo: quem joga pela primeira vez não fecha os 6 meses, e quem domina o jogo vence uma em cada oito partidas. A curva é sensível: com R = 1,20 o esperto vencia 31%, e com 1,26, menos de 1%.
+
+Com um esquema desde o começo, o esperto vence entre 8% e 27% (Agiota 27%, Cunhado 25%, Influenciador 23%; Pix Errado 8%, Coach 10%). Antes do ajuste, Coach (93%), Cunhado (81%) e Influenciador (80%) dominavam. Mudanças:
+
+- Coach: o ×2 só vale quando as 5 notas jogadas pontuam (antes bastava completar a jogada com notas quaisquer).
+- Cunhado: +1 de Juros a cada 2 Escadinhas (antes, a cada uma).
+- Influenciador: +2 de Juros (antes +3).
+- Vendedor de Consórcio: +5 de Valor por nota de Dinheiro (antes +3).
+
+Cheque especial e contatos: o bot que usa o cheque sempre que pode vence 0%, então o cheque é um recurso de emergência, não um plano. O Cheque Sem Fundo sem a regra da dívida vencia 100% (pechinchando sem parar); com a regra, o abuso cai para 4,5%. O bot não sabe usar o cheque com moderação, então o valor real dos contatos depende de teste com jogadores.
 
 ### Conquistas
 
@@ -555,7 +607,7 @@ Decisões do ajuste de balanceamento:
 
 ### Ideias de memes e referências (em aberto)
 
-Ideias que já viraram chefe (Julius, 13º salário, Entrar o Grosso) estão na seção "Ano de 12 meses, um chefe por mês". As outras seguem em aberto: ao escolher, cada uma vira uma regra nova ou um texto no jogo.
+Ideias que já viraram chefe (Julius, 13º salário, Entrar o Grosso) estão na seção "Partida de 6 meses, 36 chefes sorteados". As outras seguem em aberto: ao escolher, cada uma vira uma regra nova ou um texto no jogo.
 
 - **Nazaré Confusa:** chefe ou evento em que as notas da mão aparecem com o valor escondido até pagar ou trocar.
 - **Julius (Todo Mundo Odeia o Chris):** se o jogador sair do Camelô sem comprar nada, a próxima loja tem desconto.

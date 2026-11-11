@@ -51,8 +51,10 @@ static func score(evaluation: Dictionary, fx: Dictionary = {}) -> Dictionary:
 
 	# Esquemas: somas, depois multiplicações.
 	var schemes: Array = fx.get("schemes", [])
+	var scheme_fx := fx.duplicate()
+	scheme_fx["formed"] = cards.size()  # notas que entram na formação (Coach)
 	for id in schemes:
-		var eff := SchemeRules.score_effect(id, fx)
+		var eff := SchemeRules.score_effect(id, scheme_fx)
 		value_add += eff["value"]
 		juros_add += eff["add"]
 		mult *= eff["mult"]
