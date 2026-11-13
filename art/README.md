@@ -12,7 +12,7 @@ Status: `[ ]` pendente · `[x]` pronto e colocado na pasta.
 
 ## notas/ (A3, A4, A5): P1, até a hora 10
 
-Frentes das notas, 120×180. **Feitas como 32 cartas prontas** (8 valores × 4 formas), com a forma de pagamento já impressa, então não há selos separados. Os originais estão em `notas/frentes/*.aseprite` e os PNGs foram gerados a partir deles.
+Frentes das notas, 120×224. **Feitas como 32 cartas prontas** (8 valores × 4 formas), com a forma de pagamento já impressa, então não há selos separados. Os originais estão em `notas/frentes/*.aseprite` e os PNGs foram gerados a partir deles.
 
 Nomes: `frente_<valor>_<forma>.png`, com forma em `dinheiro`, `relampago`, `debito` ou `credito`.
 
@@ -25,7 +25,7 @@ Bichos: 1 sabiá, 2 tatu, 5 quati, 10 bicho-preguiça, 20 tamanduá, 50 capivara
 
 ~~Selos de forma de pagamento (A4)~~: não são necessários, a forma já está na carta.
 
-Verso, 120×180 (A5):
+Verso, 120×224 (A5):
 
 - [ ] `notas/verso/verso.png`
 
@@ -56,9 +56,9 @@ Contas impressas, 260×360.
 - [ ] `camelo/plaquinha_1.png`: plaquinha de preço, 80×50, cor 1 (A9)
 - [ ] `camelo/plaquinha_2.png`: plaquinha de preço, 80×50, cor 2 (A9)
 - [ ] `camelo/plaquinha_3.png`: plaquinha de preço, 80×50, cor 3 (A9)
-- [ ] `camelo/investimento_poupanca.png`: porquinho, 120×120 (A10)
-- [ ] `camelo/investimento_tesouro.png`: título carimbado, 120×120 (A10)
-- [ ] `camelo/investimento_cripto.png`: moeda de plástico, 120×120 (A10)
+- [x] `investimentos/poupanca.png`: porquinho, 120×120 (A10)
+- [x] `investimentos/tesouro.png`: título carimbado, 120×120 (A10)
+- [x] `investimentos/cripto.png`: moeda de plástico, 120×120 (A10)
 
 ## comprovante/ (A11): P2, até a hora 17
 

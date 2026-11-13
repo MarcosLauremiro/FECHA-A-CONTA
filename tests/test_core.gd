@@ -650,7 +650,7 @@ func _test_assets() -> void:
 		check(ResourceLoader.exists(path), "cédula existe: %s" % path)
 		if ResourceLoader.exists(path):
 			var tex: Texture2D = load(path)
-			check(tex.get_width() == 120 and tex.get_height() == 180, "cédula %s tem 120x180" % path)
+			check(tex.get_width() == 120 and tex.get_height() == 224, "cédula %s tem 120x224" % path)
 	for suit in Note.Suit.values():
 		var spath := n(1, suit).stamp_path()
 		check(ResourceLoader.exists(spath), "selo existe: %s" % spath)

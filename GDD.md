@@ -365,9 +365,9 @@ São 46 peças de arte, 14 sons e 1 música, em três entregas: P1 até a hora 1
 | --- | --- | --- | --- | --- | --- | --- |
 | A1 | Moldura do caixa eletrônico | Carcaça bege, fenda de cartão, boca da impressora, área da tela vazada | 1280×720 | 1 | P1 | Hora 6 |
 | A2 | Teclas laterais | Tecla com setinha, estados normal e pressionado | 64×48 | 2 | P1 | Hora 6 |
-| A3 | Frente das notas | Papel texturizado com bicho: R$ 1 sabiá (moeda), R$ 2 tatu, R$ 5 quati, R$ 10 bicho-preguiça, R$ 20 tamanduá, R$ 50 capivara, R$ 100 boto-cor-de-rosa, R$ 200 jacaré | 120×180 | 8 | P1 | Hora 10 |
+| A3 | Frente das notas | Papel texturizado com bicho: R$ 1 sabiá (moeda), R$ 2 tatu, R$ 5 quati, R$ 10 bicho-preguiça, R$ 20 tamanduá, R$ 50 capivara, R$ 100 boto-cor-de-rosa, R$ 200 jacaré | 120×224 | 8 | P1 | Hora 10 |
 | A4 | Selos de forma de pagamento | Carimbo para Dinheiro, Pix, Débito, Crédito | 40×40 | 4 | P1 | Hora 10 |
-| A5 | Verso da nota | Padrão de papel-moeda genérico | 120×180 | 1 | P1 | Hora 10 |
+| A5 | Verso da nota | Padrão de papel-moeda genérico | 120×224 | 1 | P1 | Hora 10 |
 | A6 | Cartazes de esquema | Lambe-lambe xerox, cores estouradas, telefone rasgado embaixo (textos na seção de conteúdo) | 200×280 | 8 | P1 | Hora 14 |
 | A7 | Contas impressas | Boleto, aluguel (recibo de imobiliária) e fatura de cartão genéricos | 260×360 | 3 | P1 | Hora 14 |
 | A8 | Fundo do Camelô | Banca de feira, lona azul, ganchos para pendurar itens | 1280×720 | 1 | P2 | Hora 17 |

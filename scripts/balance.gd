@@ -11,9 +11,8 @@ const VALUE_POINTS := {1: 2, 2: 3, 5: 5, 10: 6, 20: 7, 50: 8, 100: 10, 200: 11, 
 
 # Formas de pagamento ("naipes"). Índice = valor de Note.suit.
 const SUIT_NAMES: Array = ["Dinheiro", "Pix", "Débito", "Crédito"]
-# Chave usada nos nomes de arquivo das frentes (frente_<valor>_<chave>.png) e dos selos (selo_<chave>.png).
-# "relampago" é o nome da arte atual (selo com raio). O Pix ainda usa esse selo até ganhar arte nova.
-const SUIT_KEYS: Array = ["dinheiro", "relampago", "debito", "credito"]
+# Chave usada no nome de arquivo do selo de cada forma de pagamento (selo_<chave>.png).
+const SUIT_KEYS: Array = ["dinheiro", "pix", "debito", "credito"]
 
 # Transações: valor base e Juros base (multiplicador inicial).
 const TRANSACTIONS := {
@@ -242,7 +241,7 @@ const SHOP_OFFERS := 2
 const HAGGLE_COST := 2
 
 # Investimentos (GDD: "Investimentos"). Cada um sobe o nível de uma transação.
-# Cada id bate com art/camelo/investimento_<id>.png.
+# Cada id bate com art/investimentos/<id>.png.
 const INVESTMENT_ORDER: Array = ["poupanca", "consorcio", "tesouro", "previdencia", "carne", "fundo", "conta_conjunta", "cripto", "duolingo"]
 const INVESTMENTS := {
 	"poupanca": {"name": "Poupança", "rarity": "comum", "price": 6, "transaction": "dobradinha", "per_value": 10, "per_juros": 1, "desc": "Dobradinha: +10 de Valor e +1 de Juros por nível. A caderneta do seu Zé, rendendo pouco e sempre."},
