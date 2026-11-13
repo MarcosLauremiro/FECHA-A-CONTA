@@ -4,8 +4,8 @@ extends Control
 
 ## Quanto a cédula sobe quando selecionada (px).
 const LIFT := 24
-const CARD_SIZE := Vector2(120, 180)
-const STAMP_POS := Vector2(74, 128)   # canto inferior direito da cédula neutra (ajustar se ficar mal)
+const CARD_SIZE := Vector2(120, 224)
+const STAMP_POS := Vector2(40, 8)     # topo, no centro da cédula (120×224), entre os cantos de valor
 const STAMP_SIZE := Vector2(40, 40)
 const SORT_NORMAL := "normal"      # ordem em que as notas entraram na mão
 const SORT_SUIT := "forma"         # agrupada por forma de pagamento (selo)
@@ -46,9 +46,19 @@ const STAT_FORMAT := {
 # Janela da tela na mesa (tela_caixa_mesa.aseprite): canto e tamanho da abertura da moldura.
 const SCREEN := Rect2(316, 102, 649, 383)
 # Mão embaixo da tela, à esquerda da calculadora (que começa em x 1062).
-const HAND_POS := Vector2(40, 500)
-const HAND_AREA := Vector2(1000, 192)
-const HAND_SEPARATION := 4          # 8 cartas cabem nos 1000 px
+const HAND_POS := Vector2(40, 460)  # 224 de carta + LIFT: a borda de baixo fica dentro da tela (720)
+const HAND_AREA := Vector2(1000, 232)
+const SORT_TIME := 0.42            # tempo de cada carta indo para o novo lugar
+const SORT_STAGGER := 0.05          # atraso entre cartas: uma sai depois da outra
+const HAND_STEP := 84.0             # espaço de cada carta na mão: as cartas se sobrepõem, como no Balatro
+# Mão como baralho na mão: as cartas abrem em leque, com as pontas mais baixas.
+const HAND_SHADOW_OFFSET := Vector2(4, 6)   # sombra da carta: deslocada para baixo e para a direita
+const HAND_SHADOW_COLOR := Color(0.02, 0.05, 0.02, 0.35)
+const FAN_ANGLE := 2.6              # graus de inclinação entre cartas vizinhas
+const FAN_ARC := 0.8                # px que as cartas das pontas descem a mais
+# Balanço leve e discreto da mão em repouso (só rotação, para não brigar com a animação de subir).
+const SWAY_ANGLE := 0.012           # radianos (~0,7°)
+const SWAY_PERIOD := 3.2            # segundos por balanço
 # Painel do baralho (segurar TAB, ou o botão BARALHO no canto inferior direito): cédulas por forma de pagamento.
 const STATUS_POS := Vector2(290, 120)
 const STATUS_SIZE := Vector2(700, 480)
@@ -223,7 +233,7 @@ var _levels: Label
 var _message: Label
 var _strip_slots: Array = []   # [{"slot", "empty", "card"}] por espaço de esquema
 var _hand_area: Control
-var _hand_box: HBoxContainer
+var _hand_box: Control
 var _sort_key: Button              # tecla FORMA (ordem da mão: por forma de pagamento)
 var _sort_value_key: Button        # tecla VALOR (ordem da mão: por valor)
 var _sort_mode := SORT_NORMAL      # como a mão é exibida; não muda a regra
@@ -246,6 +256,7 @@ var _shop_message: Label
 var _shop_levels_row: VBoxContainer  # investimentos com nível: canto inferior direito, um sobre o outro
 var _shop_offers: Array = []   # [{"card", "icon", "buy"}] por oferta
 var _levels_button: Button
+var _sway_time := 0.0          # relógio do balanço da mão
 var _shop_boss: Label          # aviso do chefe do mês na Banca
 var _levels_open := false     # caderneta de investimentos aberta (botão INVESTIMENTOS)
 var _ze: Sprite2D
@@ -410,8 +421,9 @@ func _build_game(root: Control) -> void:
 	_hand_area.position = HAND_POS
 	_hand_area.size = HAND_AREA
 	root.add_child(_hand_area)
-	_hand_box = HBoxContainer.new()
-	_hand_box.add_theme_constant_override("separation", HAND_SEPARATION)
+	# Sem caixa automática: cada carta tem o seu espaço, e o conjunto fica centralizado na mão.
+	_hand_box = Control.new()
+	_hand_box.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
 	_hand_area.add_child(_hand_box)
 
 	_restart_button = _button(root, tr("JOGAR DE NOVO"), Rect2(540, 528, 200, 56), _start_run)
@@ -856,7 +868,7 @@ func _refresh_shop() -> void:
 		# Sem nome na tela: ao passar o mouse, só a descrição.
 		# Dica: nome (no cabeçalho da dica) e descrição. O nome não aparece na tela da loja.
 		if is_inv:
-			o["icon"].texture = _tex("res://art/camelo/investimento_%s.png" % id)
+			o["icon"].texture = _tex("res://art/investimentos/%s.png" % id)
 			o["icon_name"].text = tr(info["name"])
 			o["icon_name"].visible = o["icon"].texture == null
 			o["icon"].tooltip_text = _offer_tip(id)
@@ -953,8 +965,22 @@ func _on_levels_button() -> void:
 	_shop_levels_row.visible = _levels_open
 
 
+## Balanço leve da mão em repouso: só gira cada carta um pouco em torno da base do leque.
+func _sway_hand(delta: float) -> void:
+	_sway_time += delta
+	if _hand_area == null or not _hand_area.visible:
+		return
+	for note in _cards:
+		var btn: BaseButton = _cards[note]
+		if not is_instance_valid(btn) or not btn.has_meta("fan_rot"):
+			continue
+		var phase := TAU * _sway_time / SWAY_PERIOD + float(btn.get_meta("fan_phase"))
+		btn.rotation = float(btn.get_meta("fan_rot")) + sin(phase) * SWAY_ANGLE
+
+
 ## Seu Zé: fica parado em laço e, de tempos em tempos, acena, faz joinha ou ri.
 func _process(delta: float) -> void:
+	_sway_hand(delta)
 	if _ze == null or not _shop_root.visible:
 		return
 	if _ze_range == ZE_IDLE:
@@ -1346,9 +1372,13 @@ func _rebuild_hand() -> void:
 	_cards.clear()
 
 	var playing := run.state == RunState.PLAYING
-	for note in _hand_order():
+	var notes := _hand_order()
+	var x0 := (HAND_AREA.x - notes.size() * HAND_STEP) / 2.0
+	for i in range(notes.size()):
+		var note: Note = notes[i]
 		var wrap := Control.new()
-		wrap.custom_minimum_size = CARD_SIZE + Vector2(0, LIFT)
+		wrap.position = Vector2(x0 + i * HAND_STEP, 0)
+		wrap.size = Vector2(HAND_STEP, CARD_SIZE.y + LIFT)
 		var btn := _card_button(note)
 		btn.size = CARD_SIZE
 		btn.disabled = not playing
@@ -1356,7 +1386,20 @@ func _rebuild_hand() -> void:
 		wrap.add_child(btn)
 		_hand_box.add_child(wrap)
 		_cards[note] = btn
-		btn.position = _lifted_position(run.bill.selected.has(note))
+		# Pose de repouso no leque: gira em torno da base da carta, e as pontas descem.
+		var t := float(i) - (notes.size() - 1) / 2.0
+		var rest := t * deg_to_rad(FAN_ANGLE)
+		var dy := FAN_ARC * t * t
+		btn.pivot_offset = Vector2(CARD_SIZE.x / 2.0, CARD_SIZE.y)
+		btn.set_meta("fan_rot", rest)
+		btn.set_meta("fan_dy", dy)
+		btn.set_meta("fan_phase", float(i) * 0.9)  # cada carta balança fora de tempo com as vizinhas
+		btn.rotation = rest
+		btn.position = _lifted_position(run.bill.selected.has(note), dy)
+		# A carta selecionada e a que o mouse está em cima ficam na frente das vizinhas.
+		wrap.z_index = 1 if run.bill.selected.has(note) else 0
+		btn.mouse_entered.connect(func() -> void: wrap.z_index = 1)
+		btn.mouse_exited.connect(func() -> void: wrap.z_index = 1 if run.bill.selected.has(note) else 0)
 
 
 ## Ordem de exibição da mão. Só muda a tela: a regra (quais notas estão na mão) não muda.
@@ -1395,7 +1438,37 @@ func _set_sort_mode(mode: String) -> void:
 			_message.text = tr("Mão organizada por valor")
 		_:
 			_message.text = tr("Mão na ordem normal")
-	_rebuild_hand()
+	_arrange_hand()
+
+
+## Organiza a mão com movimento: cada carta desliza para o novo lugar, uma depois da outra.
+## As cartas já existem; só mudam de posição e de inclinação (a mão não é recriada).
+func _arrange_hand() -> void:
+	var notes := _hand_order()
+	var x0 := (HAND_AREA.x - notes.size() * HAND_STEP) / 2.0
+	var tween := create_tween().set_parallel(true)
+	_busy = true
+	for i in range(notes.size()):
+		var note: Note = notes[i]
+		if not _cards.has(note):
+			continue
+		var btn: BaseButton = _cards[note]
+		var wrap: Control = btn.get_parent()
+		var selected := run.bill.selected.has(note)
+		var t := float(i) - (notes.size() - 1) / 2.0
+		var rest := t * deg_to_rad(FAN_ANGLE)
+		var dy := FAN_ARC * t * t
+		var delay := i * SORT_STAGGER
+		var old_rot := float(btn.get_meta("fan_rot", rest))
+		btn.set_meta("fan_dy", dy)
+		btn.set_meta("fan_phase", float(i) * 0.9)
+		wrap.z_index = 1 if selected else 0
+		tween.tween_property(wrap, "position:x", x0 + i * HAND_STEP, SORT_TIME) 			.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_property(btn, "position:y", _lifted_position(selected, dy).y, SORT_TIME) 			.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+		tween.tween_method(func(v: float) -> void: btn.set_meta("fan_rot", v), old_rot, rest, SORT_TIME) 			.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
+	if notes.size() > 0:
+		await tween.finished
+	_busy = false
 
 
 ## Uma nota da mão: a frente em PNG. Se a arte ainda não existir, cai num botão de texto.
@@ -1404,6 +1477,17 @@ func _card_button(note: Note) -> BaseButton:
 	if ResourceLoader.exists(path):
 		var card := TextureButton.new()
 		var tex: Texture2D = load(path)
+		# Sombra da carta: filho com z_index -1, desenhado atrás da cédula, e gira junto com ela.
+		var shadow := Panel.new()
+		shadow.position = HAND_SHADOW_OFFSET
+		shadow.size = CARD_SIZE
+		shadow.z_index = -1
+		shadow.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		var shade := StyleBoxFlat.new()
+		shade.bg_color = HAND_SHADOW_COLOR
+		shade.set_corner_radius_all(6)
+		shadow.add_theme_stylebox_override("panel", shade)
+		card.add_child(shadow)
 		card.toggle_mode = true
 		card.ignore_texture_size = true
 		card.stretch_mode = TextureButton.STRETCH_SCALE
@@ -1431,10 +1515,6 @@ func _card_button(note: Note) -> BaseButton:
 
 ## Selo da forma de pagamento por cima da cédula neutra (sem bloquear o clique na carta).
 func _add_stamp(card: Control, note: Note) -> void:
-	# Pix: selo provisório desenhado em código (ainda sem arte); troque por selo_pix.png quando houver.
-	if note.suit == Note.Suit.PIX:
-		_add_pix_stamp(card)
-		return
 	var path := note.stamp_path()
 	if not ResourceLoader.exists(path):
 		return
@@ -1448,34 +1528,15 @@ func _add_stamp(card: Control, note: Note) -> void:
 	card.add_child(stamp)
 
 
-## Selo provisório do Pix: círculo verde-água com a palavra PIX (até existir a arte do selo).
-func _add_pix_stamp(card: Control) -> void:
-	var stamp := Panel.new()
-	stamp.position = STAMP_POS
-	stamp.size = STAMP_SIZE
-	stamp.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	var circle := StyleBoxFlat.new()
-	circle.bg_color = Color("1F8A7A")
-	circle.border_color = INK
-	circle.set_border_width_all(2)
-	circle.set_corner_radius_all(int(STAMP_SIZE.x / 2.0))
-	stamp.add_theme_stylebox_override("panel", circle)
-	card.add_child(stamp)
-	var word := Label.new()
-	word.text = "PIX"
-	word.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
-	word.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
-	word.vertical_alignment = VERTICAL_ALIGNMENT_CENTER
-	word.add_theme_font_override("font", _font(FONT_TITLE))
-	word.add_theme_font_size_override("font_size", 15)
-	word.add_theme_color_override("font_color", Color("F4EDD9"))
-	word.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	stamp.add_child(word)
-
-
 ## Posição da carta dentro do wrapper: selecionada fica no topo, as outras descem LIFT px.
-func _lifted_position(selected: bool) -> Vector2:
-	return Vector2(0, 0 if selected else LIFT)
+## `dy` é a curva do leque (as pontas descem mais).
+func _lifted_position(selected: bool, dy: float = 0.0) -> Vector2:
+	return Vector2(_card_x(), (0.0 if selected else float(LIFT)) + dy)
+
+
+## X da carta dentro do wrapper: centrada no espaço de HAND_STEP (a carta é mais larga que o espaço).
+func _card_x() -> float:
+	return (HAND_STEP - CARD_SIZE.x) / 2.0
 
 
 ## Moldura de uma carta: 0 = sem moldura, 1 = ao passar o mouse, 2 = selecionada.
@@ -1494,7 +1555,7 @@ func _set_card_frame(btn: BaseButton, mode: int) -> void:
 func _lift(btn: BaseButton, selected: bool) -> void:
 	btn.button_pressed = selected
 	var tween := create_tween()
-	tween.tween_property(btn, "position", _lifted_position(selected), LIFT_TIME) \
+	tween.tween_property(btn, "position", _lifted_position(selected, float(btn.get_meta("fan_dy", 0.0))), LIFT_TIME) \
 		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
 
 
@@ -1725,7 +1786,7 @@ func _raise_played(played: Array) -> void:
 		if not _cards.has(note):
 			continue
 		var btn: BaseButton = _cards[note]
-		tween.tween_property(btn, "position", Vector2(0, -PLAYED_RAISE), RAISE_TIME) \
+		tween.tween_property(btn, "position", Vector2(_card_x(), -PLAYED_RAISE), RAISE_TIME) \
 			.set_trans(Tween.TRANS_SINE).set_ease(Tween.EASE_IN_OUT)
 		raised += 1
 	if raised > 0:
@@ -1753,7 +1814,7 @@ func _impact_card(note: Note) -> void:
 	if note == null or not _cards.has(note):
 		return
 	var btn: BaseButton = _cards[note]
-	btn.pivot_offset = btn.size / 2.0
+	btn.pivot_offset = Vector2(btn.size.x / 2.0, btn.size.y)  # mesma base do leque (não pula ao girar)
 	var punch := create_tween()
 	punch.tween_property(btn, "scale", Vector2(1.18, 1.18), IMPACT_UP).set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 	punch.tween_property(btn, "scale", Vector2.ONE, IMPACT_DOWN).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
