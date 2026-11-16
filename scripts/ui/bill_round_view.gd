@@ -277,6 +277,7 @@ var _panel_pinned := false   # aberto pelo botão MÃO: fica até o FECHAR
 
 var _title_screen: TitleScreen  # tela inicial (atração + menu do caixa)
 var _sfx: Sfx                  # sons e música (ver scripts/ui/sfx.gd)
+var _demo_banner: Label        # aviso de fim da demo (só na versão demo)
 var _in_shop := false           # estava na Banca no último quadro (para tocar o jingle só na entrada)
 var _boss_stamp_key := ""      # última fatura com carimbo tocado
 var _end_stamp_played := false
@@ -300,6 +301,9 @@ var _cards: Dictionary = {}
 func _ready() -> void:
 	# Aviso de conquista: fica por cima da partida (z alto), no topo.
 	add_child(AchievementToast.new())
+	if Settings.after_reload == "game":
+		Settings.after_reload = ""
+		call_deferred("_on_continue_pressed")
 	# Abertura: logo BOLETRO por cima da tela inicial (some sozinha ou com clique).
 	add_child(IntroScreen.new())
 	_build_ui()
@@ -307,11 +311,26 @@ func _ready() -> void:
 
 ## Esc abre o menu de pausa. F11 alterna tela cheia e janela (útil no desenvolvimento).
 func _unhandled_input(event: InputEvent) -> void:
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
-		_toggle_menu()
-	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_F11:
+	if not (event is InputEventKey) or not event.pressed or event.echo:
+		return
+	if event.keycode == KEY_ESCAPE:
+		if _howto.visible:
+			_close_tutorial()
+		else:
+			_toggle_menu()
+	elif event.keycode == KEY_F11:
 		var fullscreen := DisplayServer.window_get_mode() == DisplayServer.WINDOW_MODE_FULLSCREEN
 		DisplayServer.window_set_mode(DisplayServer.WINDOW_MODE_WINDOWED if fullscreen else DisplayServer.WINDOW_MODE_FULLSCREEN)
+	elif event.keycode == KEY_ENTER or event.keycode == KEY_KP_ENTER:
+		# ENTER paga a conta, como o botão PAGAR (só durante a partida, sem tela por cima).
+		if _can_pay_with_enter():
+			_on_pay_pressed()
+			get_viewport().set_input_as_handled()
+
+
+## ENTER só paga quando a partida está em jogo e nenhuma tela ou menu está aberto.
+func _can_pay_with_enter() -> bool:
+	return run != null and run.state == RunState.PLAYING and _game_root.visible and not _title_screen.visible 		and not _howto.visible and not _menu_root.visible and not _busy
 
 
 ## TAB: enquanto segura, mostra o painel da mão. Usa _input (antes do foco dos botões, que usa o próprio Tab).
@@ -438,6 +457,9 @@ func _build_game(root: Control) -> void:
 	# Carimbo de fim: por cima dos esquemas, no centro da tela.
 	_end_stamp = _texture_rect(TEX_END_OK, Rect2(520, 236, 240, 120), root)
 	_end_stamp.visible = false
+	# Demo: ao fim dos 6 meses, avisa que acabou a demo (só aparece na demo).
+	_demo_banner = _label(root, Rect2(240, 100, 800, 110), 40, TERMINAL_TEXT, HORIZONTAL_ALIGNMENT_CENTER)
+	_demo_banner.visible = false
 
 	# Calculadora e mini impressora da arte; as teclas e os números ficam por cima.
 	_texture_rect(TEX_MESA_CALC, Rect2(Vector2.ZERO, Vector2(1280, 720)), root)
@@ -1340,6 +1362,8 @@ func _on_game_options_closed(language_changed: bool) -> void:
 	if playing and not SaveGame.write(run):
 		_menu_status.text = tr("Não consegui salvar. Tente de novo.")
 		return
+	# A cena recarrega com os textos novos e continua a partida salva, sem voltar ao título.
+	Settings.after_reload = "game" if playing else ""
 	get_tree().reload_current_scene()
 
 
@@ -1438,6 +1462,10 @@ func _update_status() -> void:
 	_stats.visible = not (paid or won)
 	_message.visible = not won
 	_end_stamp.visible = over and not won
+	_demo_banner.visible = won and Demo.is_demo()
+	if _demo_banner.visible:
+		_demo_banner.text = tr("FIM DA DEMO") + "
+" + tr("Obrigado por jogar! A versão completa continua com mais chefes e o modo infinito.")
 	# Carimbos: a fatura com chefe e o fim da partida batem uma vez cada.
 	var stamp_key := "%d-%d" % [run.month_index, run.bill_index]
 	if show_boss and _boss_stamp_key != stamp_key:

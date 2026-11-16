@@ -80,6 +80,9 @@ func _ready() -> void:
 	_add_art(TEX_MOLDURA, Rect2(0, 0, 1280, 720), self)
 	_add_glass()
 	_build_social()
+	if Settings.after_reload == "menu":
+		Settings.after_reload = ""
+		call_deferred("_slide_to_menu")
 
 	_phrase_timer = Timer.new()
 	_phrase_timer.wait_time = PHRASE_TIME
@@ -339,9 +342,10 @@ func _on_options() -> void:
 	OptionsScreen.open(self, _on_options_closed)
 
 
-## Se o idioma mudou, a cena inteira é recarregada para os textos saírem no novo idioma.
+## Se o idioma mudou, a cena recarrega já com os textos novos e volta direto ao menu.
 func _on_options_closed(language_changed: bool) -> void:
 	if language_changed:
+		Settings.after_reload = "menu"
 		get_tree().reload_current_scene()
 
 

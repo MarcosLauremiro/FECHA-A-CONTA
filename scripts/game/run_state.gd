@@ -104,7 +104,6 @@ func _draw_boss() -> void:
 	month_boss = pick
 	if pick != "":
 		bosses_done.append(pick)
-		Collection.unlock(Collection.KIND_BOSS, pick)
 
 
 ## Chefes que ainda não saíram, da faixa `tier` ("" = todas). `with_fixed` inclui os chefes com data.
@@ -141,7 +140,7 @@ func is_goal_bill() -> bool:
 
 ## Venceu a partida normal e ainda há chefes pela frente: pode seguir no modo infinito.
 func can_continue() -> bool:
-	return state == WON and not is_last_bill()
+	return state == WON and not is_last_bill() and not Demo.is_demo()
 
 
 ## Modo infinito: volta ao comprovante da conta paga e a partida segue, até perder ou acabar os chefes.
@@ -451,6 +450,9 @@ func _settle_paid_bill() -> void:
 
 func _start_bill() -> void:
 	var boss := boss_id()
+	# Chefe enfrentado: a conta com o chefe começou (na coleção conta o que foi jogado, não o sorteio).
+	if boss != Boss.NONE:
+		Collection.unlock(Collection.KIND_BOSS, boss)
 	var active := schemes.duplicate()
 	boss_note = ""
 	# Golpe do WhatsApp (IPVA de Janeiro): um esquema aleatório fica desativado em cada conta.

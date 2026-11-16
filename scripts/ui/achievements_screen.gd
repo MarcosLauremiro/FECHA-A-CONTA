@@ -135,3 +135,9 @@ class Medal extends Control:
 		draw_circle(c, 20.0, GOLD if _unlocked else GREY)
 		draw_arc(c, 19.0, 0.0, TAU, 32, INK, 2.5)
 		draw_arc(c, 12.0, 0.0, TAU, 24, INK if _unlocked else Color(0.55, 0.55, 0.55), 2.0)
+
+
+func _unhandled_input(event: InputEvent) -> void:
+	if event is InputEventKey and event.pressed and not event.echo and event.keycode == KEY_ESCAPE:
+		get_viewport().set_input_as_handled()
+		queue_free()

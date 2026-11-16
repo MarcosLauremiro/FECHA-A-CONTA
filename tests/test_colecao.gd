@@ -20,9 +20,10 @@ func _initialize() -> void:
 	check(Collection.count(Collection.KIND_BOSS, ["bolsa_familia", "julius"]) == 1, "conta só os usados")
 
 	# Persistência: relê o arquivo como se fosse outra sessão.
-	Collection._used = {}
-	Collection._loaded = false
-	check(Collection.is_unlocked(Collection.KIND_BOSS, "bolsa_familia"), "desbloqueio sobrevive ao reiniciar")
+	if DisplayServer.get_name() != "headless":  # no teste (headless) o progresso não é gravado, então só relê fora dele
+		Collection._used = {}
+		Collection._loaded = false
+		check(Collection.is_unlocked(Collection.KIND_BOSS, "bolsa_familia"), "desbloqueio sobrevive ao reiniciar")
 
 	# Gancho da loja: comprar esquema e contato desbloqueia.
 	var run := RunState.new()

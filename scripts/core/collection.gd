@@ -58,6 +58,9 @@ static func _ensure_loaded() -> void:
 
 
 static func _save() -> void:
+	# Testes e simulações rodam sem tela: não gravam o progresso de verdade.
+	if DisplayServer.get_name() == "headless":
+		return
 	var file := FileAccess.open(PATH, FileAccess.WRITE)
 	if file == null:
 		return

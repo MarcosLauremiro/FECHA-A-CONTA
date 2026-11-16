@@ -23,7 +23,8 @@ func _initialize() -> void:
 	# Persistência: relê o arquivo como se fosse outra sessão.
 	Achievements._done = {}
 	Achievements._loaded = false
-	check(Achievements.is_unlocked("primeira_conta"), "conquista sobrevive ao reiniciar")
+	if DisplayServer.get_name() != "headless":  # no teste (headless) o progresso não é gravado
+		check(Achievements.is_unlocked("primeira_conta"), "conquista sobrevive ao reiniciar")
 
 	# Gancho: comprar contato desbloqueia "na_manga".
 	var run := RunState.new()

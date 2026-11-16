@@ -17,7 +17,8 @@ func _init() -> void:
 func _register() -> void:
 	var file := FileAccess.open(CSV_PATH, FileAccess.READ)
 	if file == null:
-		push_error("Arquivo de textos não encontrado: %s" % CSV_PATH)
+		# Build exportado: o CSV cru não vai para o pacote, só os traduções importadas.
+		_register_imported()
 		return
 	var header := file.get_csv_line()
 	var by_code := {}
@@ -37,6 +38,16 @@ func _register() -> void:
 				by_code[i].add_message(source, row[i].replace("\\n", "\n"))
 	for i in by_code:
 		TranslationServer.add_translation(by_code[i])
+
+
+## Build exportado: usa as traduções já importadas (i18n/textos.<idioma>.translation).
+func _register_imported() -> void:
+	for code in ["en", "es"]:
+		var translation := ResourceLoader.load("res://i18n/textos.%s.translation" % code) as Translation
+		if translation == null:
+			push_error("Tradução não encontrada: %s" % code)
+			continue
+		TranslationServer.add_translation(translation)
 
 
 ## Troca o idioma da interface (vale para os tr() feitos a partir de agora).
