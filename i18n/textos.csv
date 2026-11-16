@@ -124,7 +124,7 @@ Juros da dívida,Debt interest,Intereses de la deuda
 Recompensa,Reward,Recompensa
 Troco,Change,Cambio
 Agiota (10%),Loan Shark (10%),Prestamista (10%)
-Parcelas dos esquemas,Scheme installments,Cuotas de los esquemas
+Parcelas,Installments,Cuotas
 Nenhuma nota pontua nesta jogada,No note scores on this play,Ninguna nota puntúa en esta jugada
 Escolha de 1 a 5 notas,Choose 1 to 5 notes,Elige de 1 a 5 billetes
 Sem trocas sobrando,No swaps left,No quedan cambios
@@ -342,3 +342,39 @@ Duolingo,Duolingo,Duolingo
 "Na malha fina: %s.","Under audit: %s.","En inspección: %s."
 "APAGÃO: sem prévia da jogada","BLACKOUT: no play preview","APAGÓN: sin vista previa"
 "CHEFE DO MÊS: %s","BOSS OF THE MONTH: %s","JEFE DEL MES: %s"
+"CHEQUE ESPECIAL","OVERDRAFT","DESCUBIERTO"
+"CONFIRMAR","CONFIRM","CONFIRMAR"
+"CANCELAR","CANCEL","CANCELAR"
+"Você está comprando %s por R$ %d.","You are buying %s for R$ %d.","Estás comprando %s por R$ %d."
+"Você está pechinchando por R$ %d.","You are haggling for R$ %d.","Estás regateando por R$ %d."
+"Você está trocando as notas escolhidas por R$ %d.","You are swapping the chosen notes for R$ %d.","Estás cambiando los billetes elegidos por R$ %d."
+"Seu dinheiro não é suficiente: faltam R$ %d para pagar isso.","Your money isn't enough: you're short R$ %d.","Tu dinero no alcanza: te faltan R$ %d."
+"Se confirmar, esse valor sai do cheque especial e a dívida fica em R$ %d, com juros de %dx sobre o que passa da carteira.","If you confirm, this comes from the overdraft and your debt becomes R$ %d, at %dx interest on what goes past your wallet.","Si confirmas, esto sale del descubierto y tu deuda queda en R$ %d, con interés de %dx sobre lo que pasa de la cartera."
+"Cheque especial: restam R$ %d depois disso.","Overdraft: R$ %d left after this.","Descubierto: quedan R$ %d después de esto."
+"Cheque especial: sem limite, com o contato Cheque Sem Fundo.","Overdraft: no limit, thanks to the Cheque Sem Fundo contact.","Descubierto: sin límite, por el contacto Cheque Sem Fundo."
+"Isso usa o cheque especial inteiro e a partida acaba.","This uses up the whole overdraft and ends the run.","Esto usa todo el descubierto y termina la partida."
+CHEFES,BOSSES,JEFES
+ESQUEMAS,SCHEMES,ESQUEMAS
+%d de %d desbloqueados,%d of %d unlocked,%d de %d desbloqueados
+Use cada item 1 vez no jogo para desbloquear.,Use each item once in the game to unlock it.,Usa cada ítem 1 vez en la partida para desbloquearlo.
+Desenvolvido por %s,Developed by %s,Desarrollado por %s
+Primeira conta,First bill,Primera cuenta
+Pague a primeira conta da partida.,Pay the first bill of the run.,Paga la primera cuenta de la partida.
+Chefe derrotado,Boss defeated,Jefe derrotado
+Pague uma conta com chefe.,Pay a bill with a boss.,Paga una cuenta con jefe.
+Pontue uma escadinha.,Score a staircase.,Puntúa una escalera.
+Investidor,Investor,Inversor
+Compre um investimento no Camelô.,Buy an investment at the street stall.,Compra una inversión en el puesto callejero.
+Contato na manga,Contact up your sleeve,Contacto en la manga
+Compre um contato na Banca.,Buy a contact at the Banca.,Compra un contacto en el puesto de periódicos.
+Golpista,Scammer,Estafador
+Compre um esquema no Camelô.,Buy a scheme at the street stall.,Compra un esquema en el puesto callejero.
+Seis meses,Six months,Seis meses
+Vença a partida de 6 meses.,Win the 6-month run.,Gana la partida de 6 meses.
+Além dos seis meses,Beyond six months,Más allá de los seis meses
+Continue a partida no modo infinito.,Keep playing in endless mode.,Sigue la partida en modo infinito.
+No vermelho,In the red,En números rojos
+Perca a partida por estourar o cheque especial.,Lose the run by overdrawing the overdraft.,Pierde la partida por pasarte del descubierto.
+%d de %d conquistadas,%d of %d achieved,%d de %d conseguidas
+CONQUISTA DESBLOQUEADA,ACHIEVEMENT UNLOCKED,LOGRO DESBLOQUEADO
+Já existe uma partida salva. Começar um novo jogo substitui ela.,There is a saved run. Starting a new game replaces it.,Ya hay una partida guardada. Empezar un juego nuevo la reemplaza.

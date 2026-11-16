@@ -77,8 +77,8 @@ const SEM_FUNDO_DEBT_STEP := 4
 # Aparecem uma vez por mês, na loja que vem depois do boleto, ao lado do SEGUIR.
 const CONTACT_ORDER: Array = ["gerente", "sem_fundo"]
 const CONTACTS := {
-	"gerente": {"name": "Gerente do Banco", "short": "Gerente", "price": 15, "text": "JUROS DO CHEQUE CAIEM PARA 2X", "desc": "Os juros do cheque especial caem de 3x para 2x."},
-	"sem_fundo": {"name": "Cheque Sem Fundo", "short": "Sem Fundo", "price": 30, "text": "CHEQUE SEM LIMITE", "desc": "Juros do cheque especial de 2x e sem limite: o limite vira ∞. Mas cada R$ 4 de dívida sobe a meta em 1%."},
+	"gerente": {"name": "Gerente do Banco", "short": "Gerente", "art": "res://art/contatos/contato_gerente_banco.png", "price": 15, "text": "JUROS DO CHEQUE CAIEM PARA 2X", "desc": "Os juros do cheque especial caem de 3x para 2x."},
+	"sem_fundo": {"name": "Cheque Sem Fundo", "short": "Sem Fundo", "art": "res://art/contatos/contato_cheque_sem_fundo.png", "price": 30, "text": "CHEQUE SEM LIMITE", "desc": "Juros do cheque especial de 2x e sem limite: o limite vira ∞. Mas cada R$ 4 de dívida sobe a meta em 1%."},
 }
 
 # Ordem das contas dentro de um mês e a recompensa de cada uma.

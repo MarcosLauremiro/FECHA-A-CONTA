@@ -786,7 +786,31 @@ func _test_schemes() -> void:
 	check(ct.buy_contact(first)["ok"] and ct.wallet == 100 - Balance.CONTACTS[first]["price"] and ct.contacts_owned == [first], "compra o contato pelo preço")
 	check(ct.contact_offer.is_empty(), "comprado o contato, a oferta some")
 	ct.leave_shop()
-	check(ct.contact_offer.is_empty(), "contatos não ficam para a loja seguinte")
+	check(ct.contact_offer.is_empty(), "comprado, o contato sai da Banca")
+
+	# O contato do mês fica à venda nas três Bancas (boleto, aluguel e fatura) e some depois da fatura.
+	var mes := RunState.new(rng)
+	mes.bill.goal = 1
+	mes.bill.toggle_select(mes.bill.hand[0])
+	mes.pay()
+	mes.next_bill()
+	var do_mes: Array = mes.contact_offer.duplicate()
+	check(do_mes.size() == 1, "boleto: contato à venda")
+	mes.leave_shop()
+	mes.month_boss = Boss.NONE
+	for key in ["aluguel", "fatura"]:
+		var pago := false
+		for c in mes.bill.hand:
+			if Boss.note_scores(mes.boss_id(), c):
+				mes.bill.toggle_select(c)
+				pago = true
+				break
+		mes.bill.goal = 1
+		mes.pay()
+		mes.next_bill()
+		check(mes.contact_offer == do_mes, "%s: o mesmo contato continua à venda" % key)
+		mes.leave_shop()
+	check(mes.contact_offer.is_empty() and mes.month_contact == "", "depois da fatura, o contato do mês some")
 
 	# Próximo mês: só o que falta é oferecido; com os dois comprados, nada.
 	var ct2 := RunState.new(rng)

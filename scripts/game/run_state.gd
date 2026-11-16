@@ -34,7 +34,8 @@ var bought_last_shop := false   # comprou algo no Camelô antes desta conta (Jul
 var boss_note := ""             # resultado do chefe desta conta (Urubu, matrícula), mostrado na tela
 var overdraft_left: int = Balance.OVERDRAFT_START  # R$ do cheque especial que ainda não foi usado (não renova)
 var contacts_owned: Array = []   # contatos comprados nesta partida (ids de Balance.CONTACTS)
-var contact_offer: Array = []    # contatos à venda agora (só na loja depois do boleto, uma vez por mês)
+var contact_offer: Array = []    # contatos à venda agora
+var month_contact := ""          # contato sorteado no mês (aparece em todas as passagens pela Banca do mês)
 var end_reason := ""             # por que a partida acabou: "cheque" quando o cheque especial zera
 var month_boss := ""             # chefe do mês atual (sorteado quando o mês começa)
 var bosses_done: Array = []      # chefes que já saíram nesta partida (não voltam)
@@ -103,6 +104,7 @@ func _draw_boss() -> void:
 	month_boss = pick
 	if pick != "":
 		bosses_done.append(pick)
+		Collection.unlock(Collection.KIND_BOSS, pick)
 
 
 ## Chefes que ainda não saíram, da faixa `tier` ("" = todas). `with_fixed` inclui os chefes com data.
@@ -148,6 +150,7 @@ func continue_endless() -> bool:
 		return false
 	endless = true
 	state = BILL_PAID
+	Achievements.unlock("alem_dos_seis")
 	return true
 
 
@@ -174,8 +177,16 @@ func pay() -> Dictionary:
 	if kind != "none":
 		kind_counts[kind] = int(kind_counts.get(kind, 0)) + 1
 
+	if kind == "escadinha":
+		Achievements.unlock("escadinha")
 	if result["state"] == BillRound.WON:
+		var paid_boss := boss_id()
 		_settle_paid_bill()
+		Achievements.unlock("primeira_conta")
+		if paid_boss != Boss.NONE:
+			Achievements.unlock("chefe_vencido")
+		if is_goal_bill():
+			Achievements.unlock("seis_meses")
 	elif result["state"] == BillRound.LOST:
 		state = LOST
 	return result
@@ -205,14 +216,16 @@ func next_bill() -> bool:
 	bought_last_shop = false
 	shop_offer = _random_ids(Balance.SCHEME_ORDER, Balance.SHOP_OFFERS, schemes) + _random_ids(Balance.INVESTMENT_ORDER, Balance.SHOP_INVESTMENT_OFFERS, [])
 	# Contatos: uma vez por mês, na loja que vem depois do boleto. Só um por vez, sorteado entre os que faltam.
-	contact_offer = []
+	# Contato: sorteado uma vez por mês, na Banca do boleto, e fica à venda nas três Bancas do mês.
 	if bill_key() == "boleto":
 		var left: Array = []
 		for id in Balance.CONTACT_ORDER:
 			if not contacts_owned.has(id):
 				left.append(id)
-		if not left.is_empty():
-			contact_offer = [left[_rand_int(left.size())]]
+		month_contact = left[_rand_int(left.size())] if not left.is_empty() else ""
+	contact_offer = []
+	if month_contact != "" and not contacts_owned.has(month_contact):
+		contact_offer = [month_contact]
 	return true
 
 
@@ -220,6 +233,9 @@ func next_bill() -> bool:
 func leave_shop() -> bool:
 	if state != SHOP:
 		return false
+	# A fatura é a última Banca do mês: o contato do mês vai embora com ela.
+	if bill_key() == "fatura":
+		month_contact = ""
 	bill_index += 1
 	if bill_index >= Balance.BILL_KEYS.size():
 		bill_index = 0
@@ -278,6 +294,7 @@ func _spend(amount: int) -> void:
 			overdraft_left = 0
 			end_reason = "cheque"
 			state = LOST
+			Achievements.unlock("no_vermelho")
 
 
 ## Compra um contato da loja (uso único: o efeito fica para o resto da partida).
@@ -292,6 +309,8 @@ func buy_contact(id: String) -> Dictionary:
 	_spend(price)
 	contacts_owned.append(id)
 	contact_offer.erase(id)
+	Collection.unlock(Collection.KIND_CONTACT, id)
+	Achievements.unlock("na_manga")
 	return {"ok": true, "reason": "", "id": id}
 
 
@@ -312,6 +331,8 @@ func buy(index: int) -> Dictionary:
 		var kind := Investments.transaction_of(id)
 		var drop := id == "cripto" and _rand_int(Balance.CRIPTO_DROP_ODDS) == 0
 		levels[kind] = Investments.level_after_purchase(id, int(levels.get(kind, 0)), drop)
+		Collection.unlock(Collection.KIND_INVESTMENT, id)
+		Achievements.unlock("investidor")
 		# A oferta comprada vira espaço vazio: as outras não mudam de lugar.
 		shop_offer[index] = ""
 		bought_last_shop = true
@@ -321,6 +342,8 @@ func buy(index: int) -> Dictionary:
 		return {"ok": false, "reason": "slots_full"}
 	_spend(price)
 	schemes.append(id)
+	Collection.unlock(Collection.KIND_SCHEME, id)
+	Achievements.unlock("golpista")
 	shop_offer[index] = ""
 	bought_last_shop = true
 	return {"ok": true, "reason": "", "id": id}
@@ -536,6 +559,7 @@ func to_dict() -> Dictionary:
 		"overdraft_left": overdraft_left,
 		"contacts_owned": contacts_owned,
 		"contact_offer": contact_offer,
+		"month_contact": month_contact,
 		"end_reason": end_reason,
 		"endless": endless,
 		"month_boss": month_boss,
@@ -567,6 +591,7 @@ static func from_dict(d: Dictionary) -> RunState:
 	r.overdraft_left = int(d["overdraft_left"])
 	r.contacts_owned = d["contacts_owned"]
 	r.contact_offer = d["contact_offer"]
+	r.month_contact = String(d.get("month_contact", ""))
 	r.end_reason = String(d["end_reason"])
 	r.endless = bool(d.get("endless", false))
 	r.month_boss = String(d["month_boss"])

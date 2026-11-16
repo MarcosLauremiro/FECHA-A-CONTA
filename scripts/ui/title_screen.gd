@@ -30,6 +30,7 @@ const PHRASE_TIME := 4.5
 
 # Botões na arte (canvas 1280×720). Coluna esquerda: 4 botões. Coluna direita: 3 usados (o 4º fica de fora).
 const BTN_SIZE := Vector2(366, 64)
+const ICON_SIZE := 38.0
 const LEFT_X := 234.0
 const RIGHT_X := 682.0
 const ROWS := [220.0, 310.0, 400.0, 490.0]
@@ -78,6 +79,7 @@ func _ready() -> void:
 	# Moldura por cima (a janela dela é vazada), depois o brilho de tela.
 	_add_art(TEX_MOLDURA, Rect2(0, 0, 1280, 720), self)
 	_add_glass()
+	_build_social()
 
 	_phrase_timer = Timer.new()
 	_phrase_timer.wait_time = PHRASE_TIME
@@ -186,14 +188,14 @@ func _build_menu() -> void:
 	_continue_btn = _menu_button(tr("CONTINUAR"), LEFT_X, ROWS[1], true, _on_continue)
 	_menu_button(tr("NOVO JOGO"), LEFT_X, ROWS[0], true, _on_new_game)
 	_menu_button(tr("COMO JOGAR"), LEFT_X, ROWS[2], true, _on_howto)
-	_menu_button(tr("CRÉDITOS"), LEFT_X, ROWS[3], true, _on_coming_soon.bind(tr("Créditos")))
+	_menu_button(tr("CRÉDITOS"), LEFT_X, ROWS[3], true, _on_credits)
 
 	# Coluna direita.
-	_menu_button(tr("COLEÇÃO"), RIGHT_X, ROWS[0], false, _on_coming_soon.bind(tr("Coleção")))
-	_menu_button(tr("CONQUISTAS"), RIGHT_X, ROWS[1], false, _on_coming_soon.bind(tr("Conquistas")))
-	_menu_button(tr("SAIR"), RIGHT_X, ROWS[2], false, _on_quit)
+	_menu_button(tr("COLEÇÃO"), RIGHT_X, ROWS[0], false, _on_collection)
+	_menu_button(tr("CONQUISTAS"), RIGHT_X, ROWS[1], false, _on_achievements)
+	_menu_button(tr("SAIR"), RIGHT_X, ROWS[3], false, _on_quit)
 	# 4º botão da coluna direita (era só enfeite na arte): agora abre as Opções.
-	_menu_button(tr("OPÇÕES"), RIGHT_X, ROWS[3], false, _on_options)
+	_menu_button(tr("OPÇÕES"), RIGHT_X, ROWS[2], false, _on_options)
 
 	set_has_save(_has_save)
 
@@ -249,8 +251,53 @@ func _button_art(x: float, y: float) -> TextureRect:
 	return img
 
 
+## Com partida salva, pede confirmação: começar um novo jogo apaga o save ao gravar.
 func _on_new_game() -> void:
-	new_game_pressed.emit()
+	if not _has_save:
+		new_game_pressed.emit()
+		return
+	_ask_overwrite()
+
+
+func _ask_overwrite() -> void:
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.6)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	add_child(dim)
+
+	var panel := Panel.new()
+	var style := StyleBoxFlat.new()
+	style.bg_color = CREAM
+	style.border_color = INK
+	style.set_border_width_all(4)
+	style.set_corner_radius_all(6)
+	panel.add_theme_stylebox_override("panel", style)
+	panel.position = Vector2(340, 250)
+	panel.size = Vector2(600, 220)
+	dim.add_child(panel)
+
+	var message := Label.new()
+	message.text = tr("Já existe uma partida salva. Começar um novo jogo substitui ela.")
+	message.position = Vector2(30, 28)
+	message.size = Vector2(540, 80)
+	message.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	message.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	message.add_theme_font_override("font", load(FONT_TERMINAL) as Font)
+	message.add_theme_font_size_override("font_size", 26)
+	message.add_theme_color_override("font_color", INK)
+	panel.add_child(message)
+
+	var cancel := SocialLinks.make_button(tr("CANCELAR"), "", Vector2(220, 52))
+	cancel.position = Vector2(50, 140)
+	cancel.pressed.connect(dim.queue_free)
+	panel.add_child(cancel)
+	var confirm := SocialLinks.make_button(tr("CONFIRMAR"), "", Vector2(220, 52))
+	confirm.position = Vector2(330, 140)
+	confirm.pressed.connect(func() -> void:
+		dim.queue_free()
+		new_game_pressed.emit())
+	panel.add_child(confirm)
 
 
 func _on_continue() -> void:
@@ -266,6 +313,28 @@ func _on_quit() -> void:
 	quit_pressed.emit()
 
 
+func _on_collection() -> void:
+	CollectionScreen.open(self)
+
+
+func _on_credits() -> void:
+	CreditsScreen.open(self)
+
+
+func _on_achievements() -> void:
+	AchievementsScreen.open(self)
+
+
+## Discord e Instagram na faixa de baixo da carcaça, fora da janela do caixa (visível na atração e no menu).
+func _build_social() -> void:
+	var discord := SocialIcon.new("discord", SocialLinks.DISCORD_URL, ICON_SIZE)
+	discord.position = Vector2(1140, 636)
+	add_child(discord)
+	var instagram := SocialIcon.new("instagram", SocialLinks.INSTAGRAM_URL, ICON_SIZE)
+	instagram.position = Vector2(1186, 636)
+	add_child(instagram)
+
+
 func _on_options() -> void:
 	OptionsScreen.open(self, _on_options_closed)
 
@@ -276,7 +345,7 @@ func _on_options_closed(language_changed: bool) -> void:
 		get_tree().reload_current_scene()
 
 
-## Coleção, Conquistas e Créditos ainda não existem: a frase do cabeçalho mostra "Em breve".
+## Nada pendente: as telas já existem. A frase do cabeçalho mostra "Em breve" só para o que ainda não existe.
 func _on_coming_soon(what: String) -> void:
 	_phrase.text = tr("%s: em breve.") % what
 	_phrase_timer.start()

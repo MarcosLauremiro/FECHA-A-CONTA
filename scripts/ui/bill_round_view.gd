@@ -28,6 +28,8 @@ const RAISE_TIME := 0.6       # subida das cartas jogadas (lenta, sem solavanco)
 const DROP_TIME := 0.45       # cartas jogadas descem para fora da tela depois da contagem
 const DROP_DISTANCE := 760.0
 const POINTS_RISE := 34.0     # pontuação de cada nota aparece logo acima da carta
+const VALUE_POP := Color("6BE675")  # número verde: o que soma em Valor
+const JUROS_POP := Color("FF6B5E")  # número vermelho: o que soma em Juros
 # Impacto de cada carta que pontua (estufa e pisca).
 const IMPACT_UP := 0.09
 const IMPACT_DOWN := 0.18
@@ -59,10 +61,10 @@ const FAN_ARC := 0.8                # px que as cartas das pontas descem a mais
 # Balanço leve e discreto da mão em repouso (só rotação, para não brigar com a animação de subir).
 const SWAY_ANGLE := 0.012           # radianos (~0,7°)
 const SWAY_PERIOD := 3.2            # segundos por balanço
-# Painel do baralho (segurar TAB, ou o botão BARALHO no canto inferior direito): cédulas por forma de pagamento.
+# Painel do baralho (segurar TAB, ou a tecla de baralho da calculadora): cédulas por forma de pagamento.
 const STATUS_POS := Vector2(290, 120)
 const STATUS_SIZE := Vector2(700, 480)
-const STATUS_BUTTON := Rect2(1096, 640, 156, 48)
+const PAY_BUTTON := Rect2(1079, 600, 156, 48)  # canto inferior direito: PAGAR (a tecla de baralho fica na calculadora)
 const STATUS_ROW_Y := 100.0
 const STATUS_ROW_H := 32.0
 const STATUS_CELL := Vector2(126, 28)
@@ -70,8 +72,8 @@ const STATUS_COL_X := 130.0
 const STATUS_COL_STEP := 140.0
 const STATUS_SUIT_COLORS := [Color("A8D5A2"), Color("7FD1C4"), Color("9CC4E8"), Color("C9A8E8")]  # Dinheiro, Pix, Débito, Crédito
 const STATUS_EMPTY := Color("E4DCC6")
-const CONTACT_BUTTON_SIZE := Vector2(160, 50)
-const CONTACT_BUTTON_POS := Vector2(95, 448)  # painel da esquerda, embaixo do investimento (só um contato por vez)
+const CONTACT_BUTTON_SIZE := Vector2(120, 120)  # arte do contato (120×120); o preço fica numa etiqueta embaixo
+const CONTACT_BUTTON_POS := Vector2(115, 436)  # painel da esquerda, embaixo do investimento (só um contato por vez)
 
 # Faixa de esquemas dentro da tela: 5 espaços já desenhados na arte (posição em coordenadas da tela).
 const STRIP_POS := Vector2(39, 92)
@@ -197,7 +199,6 @@ const OFFER_SPOTS := [
 ]
 # Painel da direita (caderneta): investimentos comprados, abertos pelo botão INVESTIMENTOS.
 const LEVELS_RECT := Rect2(1028, 262, 154, 326)
-const LEVELS_BUTTON := Rect2(1066, 658, 190, 50)
 const SCHEME_SIZE := Vector2(110, 150)  # cartaz de esquema na loja
 const ICON_SIZE := Vector2(120, 120)    # ícone de investimento na loja (não muda)
 const BUY_H := 32.0
@@ -211,11 +212,6 @@ const OFFER_ZOOM_TIME := 0.28           # duração da animação de zoom (s)
 const FONT_TERMINAL := "res://fonts/VT323/VT323-Regular.ttf"
 const FONT_TITLE := "res://fonts/Anton/Anton-Regular.ttf"
 
-const BOSS_ART := {
-	"banco_fora_do_ar": "res://art/chefes/chefe_banco_fora.png",
-	"taxa_manutencao": "res://art/chefes/chefe_taxa_manutencao.png",
-	"janeiro_impostos": "res://art/chefes/chefe_janeiro.png",
-}
 
 var run: RunState
 
@@ -255,10 +251,12 @@ var _shop_cheque: Label
 var _shop_message: Label
 var _shop_levels_row: VBoxContainer  # investimentos com nível: canto inferior direito, um sobre o outro
 var _shop_offers: Array = []   # [{"card", "icon", "buy"}] por oferta
-var _levels_button: Button
 var _sway_time := 0.0          # relógio do balanço da mão
 var _shop_boss: Label          # aviso do chefe do mês na Banca
-var _levels_open := false     # caderneta de investimentos aberta (botão INVESTIMENTOS)
+var _overdraft_popup: Control    # confirmação antes de gastar no cheque especial
+var _overdraft_body: Label
+var _pending_spend := Callable()  # o gasto que espera a confirmação
+var _spend_confirmed := false     # true só enquanto o gasto confirmado roda
 var _ze: Sprite2D
 var _ze_range: Array = ZE_IDLE
 var _ze_frame_time := 0.0
@@ -267,6 +265,7 @@ var _selected_offer := -1      # oferta escolhida no Camelô (-1 = nenhuma)
 var _shop_owned: Array = []    # [{"thumb", "sell"}] por esquema que você tem
 var _haggle_button: Button
 var _leave_button: Button
+var _contact_chips: Dictionary = {}  # id do contato -> etiqueta com o preço
 var _contact_buttons: Dictionary = {}  # id do contato -> Button (ao lado do SEGUIR; só aparece no mês)
 
 # Painel do baralho (TAB ou botão BARALHO).
@@ -289,7 +288,6 @@ var _menu_restart: Button
 var _menu_back: Button
 var _menu_status: Label
 var _restart_armed := false    # RECOMEÇAR pede confirmação com um segundo clique
-var _back_armed := false       # VOLTAR AO MENU também pede confirmação
 
 # Verdadeiro durante a animação de pontuação: entrada do jogador fica travada.
 var _busy := false
@@ -299,6 +297,8 @@ var _cards: Dictionary = {}
 
 
 func _ready() -> void:
+	# Aviso de conquista: fica por cima da partida (z alto), no topo.
+	add_child(AchievementToast.new())
 	_build_ui()
 
 
@@ -386,14 +386,14 @@ func _build_menu() -> void:
 	title.add_theme_color_override("font_color", INK)
 	_menu_root.add_child(title)
 
-	_menu_button(tr("CONTINUAR"), Rect2(490, 250, 300, 56), _close_menu)
-	_menu_save = _menu_button(tr("SALVAR PARTIDA"), Rect2(490, 306, 300, 56), _on_save_pressed)
-	_menu_button(tr("OPÇÕES"), Rect2(490, 362, 300, 56), _on_pause_options)
-	_menu_restart = _menu_button(tr("RECOMEÇAR"), Rect2(490, 418, 300, 56), _on_restart_pressed)
-	_menu_back = _menu_button(tr("VOLTAR AO MENU"), Rect2(490, 474, 300, 56), _on_back_pressed)
+	_menu_button(tr("CONTINUAR"), Rect2(490, 246, 300, 56), _close_menu)
+	_menu_save = _menu_button(tr("SALVAR PARTIDA"), Rect2(490, 316, 300, 56), _on_save_pressed)
+	_menu_button(tr("OPÇÕES"), Rect2(490, 386, 300, 56), _on_pause_options)
+	_menu_restart = _menu_button(tr("RECOMEÇAR"), Rect2(490, 456, 300, 56), _on_restart_pressed)
+	_menu_back = _menu_button(tr("VOLTAR AO MENU"), Rect2(490, 526, 300, 56), _on_back_pressed)
 
 	_menu_status = Label.new()
-	_menu_status.position = Vector2(440, 556)
+	_menu_status.position = Vector2(440, 598)
 	_menu_status.size = Vector2(400, 50)
 	_menu_status.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
 	_menu_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
@@ -486,8 +486,6 @@ func _build_status_panel(root: Control) -> void:
 	var close := _button(_status_panel, tr("FECHAR"), Rect2(STATUS_SIZE.x / 2.0 - 100, 436, 200, 36), _on_status_close)
 	close.visible = true
 
-	var open := _button(root, tr("BARALHO"), STATUS_BUTTON, _on_status_button)
-	open.visible = true
 
 
 ## Mostra ou esconde o painel conforme TAB e o botão BARALHO. Na loja, nunca aparece.
@@ -559,7 +557,12 @@ func _build_calculator(root: Control) -> void:
 	_sort_value_key = _calc_key(root, tr("VALOR"), tr("Organiza a mão por valor, do menor para o maior."), Rect2(1078, 326, 72, 62), _on_sort_value_pressed, false, "tecla_valor.png")
 	_sort_key = _calc_key(root, tr("FORMA"), tr("Agrupa a mão por forma de pagamento (selo)."), Rect2(1078, 410, 72, 62), _on_sort_suit_pressed, false, "tecla_forma.png")
 	_swap_key = _calc_key(root, tr("TROCAR"), tr("Troca as notas selecionadas por outras. Gasta uma troca."), Rect2(1162, 326, 72, 62), _on_swap_pressed, true, "tecla_subtracao.png")
-	_pay_key = _calc_key(root, tr("PAGAR"), tr("Paga a conta com as notas selecionadas."), Rect2(1162, 410, 72, 62), _on_pay_pressed, true, "tecla_soma.png")
+	# PAGAR: botão grande no canto inferior direito, com o mesmo estilo dos outros botões.
+	_pay_key = _button(root, tr("PAGAR"), PAY_BUTTON, _on_pay_pressed)
+	_pay_key.tooltip_text = tr("Paga a conta com as notas selecionadas.")
+	_pay_key.visible = true
+	# Tecla de baralho (no lugar do +): abre o painel das cédulas da conta.
+	_calc_key(root, tr("BARALHO"), tr("Mostra as cédulas da conta, por forma de pagamento e por valor."), Rect2(1162, 410, 72, 62), _on_status_button, true, "tecla_baralho.png")
 
 
 ## Dentro da janela da tela: cabeçalho (mês e tipo), saldo, mensagens, chefe e a linha de dias e trocas.
@@ -603,6 +606,7 @@ func _build_screen_content(root: Control) -> void:
 	_boss_stamp_text.add_theme_font_size_override("font_size", 14)
 	_boss_stamp_text.add_theme_color_override("font_color", STAMP_INK)
 	_boss_stamp_text.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	_boss_stamp_text.visible = false
 	_boss_art.add_child(_boss_stamp_text)
 
 	# Faixa de esquemas: 5 espaços (já desenhados na arte), cada um com tooltip (nome e efeito).
@@ -654,8 +658,9 @@ func _build_receipt(root: Control) -> void:
 
 	# Corpo: linhas de texto em colunas (nome à esquerda, valor à direita), separadas por tracejados.
 	_receipt_rows = VBoxContainer.new()
-	_receipt_rows.position = Vector2(36, 66)
-	_receipt_rows.size = Vector2(168, 466)
+	# Dentro do papel (28 a 212), com 4 px de folga de cada lado.
+	_receipt_rows.position = Vector2(32, 66)
+	_receipt_rows.size = Vector2(176, 466)
 	_receipt_rows.add_theme_constant_override("separation", 4)
 	_receipt_rows.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	_receipt.add_child(_receipt_rows)
@@ -699,11 +704,8 @@ func _build_shop(root: Control) -> void:
 	_shop_levels_row.size = LEVELS_RECT.size
 	_shop_levels_row.add_theme_constant_override("separation", 6)
 	_shop_levels_row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-	_shop_levels_row.visible = false
+	_shop_levels_row.visible = true
 	root.add_child(_shop_levels_row)
-	_levels_button = _button(root, tr("INVESTIMENTOS"), LEVELS_BUTTON, _on_levels_button)
-	_levels_button.add_theme_font_size_override("font_size", 18)
-	_levels_button.visible = true
 
 	# Ofertas: esquemas (cartaz) e investimentos (ícone), cada uma com preço e compra.
 	for i in range(Balance.SHOP_OFFERS + Balance.SHOP_INVESTMENT_OFFERS):
@@ -756,14 +758,24 @@ func _build_shop(root: Control) -> void:
 	_shop_boss.mouse_filter = Control.MOUSE_FILTER_STOP
 	root.add_child(_shop_boss)
 
+	_build_overdraft_popup(root)
+
 	# Contatos: no painel da esquerda, embaixo do investimento, só no mês (depois do boleto).
 	# Só um aparece por vez, então todos usam o mesmo lugar. Mostram o nome curto e o preço.
 	for i in range(Balance.CONTACT_ORDER.size()):
 		var id: String = Balance.CONTACT_ORDER[i]
 		var btn := _button(root, "", Rect2(CONTACT_BUTTON_POS, CONTACT_BUTTON_SIZE), _on_contact_pressed.bind(id))
-		btn.add_theme_font_size_override("font_size", 16)
+		btn.icon = _tex(Balance.CONTACTS[id]["art"])
+		btn.expand_icon = true
+		btn.icon_alignment = HORIZONTAL_ALIGNMENT_CENTER
 		btn.tooltip_text = _contact_tip(id)
 		btn.visible = false
+		# Etiqueta com o preço, embaixo da arte.
+		var chip := _chip(16, BUTTON_PAPER_DOWN)
+		chip.position = Vector2(0, 92)
+		chip.mouse_filter = Control.MOUSE_FILTER_IGNORE
+		btn.add_child(chip)
+		_contact_chips[id] = chip
 		_contact_buttons[id] = btn
 
 
@@ -801,7 +813,10 @@ func _refresh_contacts() -> void:
 		if not offered:
 			continue
 		var price := run.price_of(id)
-		btn.text = "%s\nR$ %d" % [tr(Balance.CONTACTS[id]["short"]).to_upper(), price]
+		var chip: Control = _contact_chips[id]
+		_chip_label(chip).text = "R$ %d" % price
+		# Centraliza a etiqueta embaixo da arte, qualquer que seja a largura do preço.
+		chip.position = Vector2((CONTACT_BUTTON_SIZE.x - chip.get_combined_minimum_size().x) / 2.0, 92)
 		btn.disabled = not run.can_spend(price)
 
 
@@ -814,6 +829,11 @@ func _contact_tip(id: String) -> String:
 func _on_contact_pressed(id: String) -> void:
 	if _busy:
 		return
+	var price := run.price_of(id)
+	_guard_spend(price, tr("Você está comprando %s por R$ %d.") % [_item_name(id), price], _do_contact.bind(id))
+
+
+func _do_contact(id: String) -> void:
 	var result := run.buy_contact(id)
 	_sfx.play("fita" if result["ok"] else "erro")
 	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
@@ -955,14 +975,7 @@ func _refresh_shop_levels() -> void:
 		none.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 		none.add_theme_color_override("font_color", INK)
 		_shop_levels_row.add_child(none)
-	_shop_levels_row.visible = _levels_open
-
-
-## Botão INVESTIMENTOS: abre e fecha a lista na caderneta da direita.
-func _on_levels_button() -> void:
-	_levels_open = not _levels_open
-	_sfx.play("bipe_tecla")
-	_shop_levels_row.visible = _levels_open
+	_shop_levels_row.visible = true
 
 
 ## Balanço leve da mão em repouso: só gira cada carta um pouco em torno da base do leque.
@@ -1056,6 +1069,99 @@ func _update_offer_visuals() -> void:
 		_fit_buy_button(o)
 
 
+## Nome do que está sendo comprado (contato, esquema ou investimento), para o popup do cheque.
+func _item_name(id: String) -> String:
+	if Balance.CONTACTS.has(id):
+		return tr(Balance.CONTACTS[id]["name"])
+	if Investments.is_investment(id):
+		return tr(Balance.INVESTMENTS[id]["name"])
+	return tr(Balance.SCHEMES[id]["name"])
+
+
+## Qualquer gasto que passe da carteira usa o cheque especial: antes de acontecer, pede confirmação.
+## `perform` é o gasto; ele só roda depois do CONFIRMAR (ou direto, se não usa o cheque).
+func _guard_spend(amount: int, action: String, perform: Callable) -> void:
+	var draw := run.overdraft_draw(amount)
+	if draw <= 0 or _spend_confirmed:
+		perform.call()
+		return
+	# Dívida depois da compra: a conta do cheque especial (juros sobre o que passa da carteira).
+	var debt := -(run.wallet - amount - (run.overdraft_juros() - 1) * draw)
+	var lines: Array = [
+		action,
+		tr("Seu dinheiro não é suficiente: faltam R$ %d para pagar isso.") % draw,
+		tr("Se confirmar, esse valor sai do cheque especial e a dívida fica em R$ %d, com juros de %dx sobre o que passa da carteira.") % [debt, run.overdraft_juros()],
+	]
+	if run.overdraft_unlimited():
+		lines.append(tr("Cheque especial: sem limite, com o contato Cheque Sem Fundo."))
+	else:
+		var left: int = run.overdraft_left - draw
+		lines.append(tr("Cheque especial: restam R$ %d depois disso.") % left)
+		if left <= 0:
+			lines.append(tr("Isso usa o cheque especial inteiro e a partida acaba."))
+	var text := ""
+	for line in lines:
+		text += str(line) + "\n"
+	_overdraft_body.text = text.strip_edges()
+	_pending_spend = perform
+	_overdraft_popup.visible = true
+	_sfx.play("bipe_tecla")
+
+
+func _on_spend_confirm() -> void:
+	_overdraft_popup.visible = false
+	var perform := _pending_spend
+	_pending_spend = Callable()
+	if perform.is_valid():
+		_spend_confirmed = true
+		perform.call()
+		_spend_confirmed = false
+
+
+func _on_spend_cancel() -> void:
+	_overdraft_popup.visible = false
+	_pending_spend = Callable()
+	_sfx.play("erro")
+
+
+## Popup de confirmação do cheque especial: escurece a tela e mostra o que vai acontecer.
+func _build_overdraft_popup(root: Control) -> void:
+	_overdraft_popup = Control.new()
+	_overdraft_popup.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_overdraft_popup.mouse_filter = Control.MOUSE_FILTER_STOP
+	_overdraft_popup.visible = false
+	root.add_child(_overdraft_popup)
+	var dim := ColorRect.new()
+	dim.color = Color(0, 0, 0, 0.55)
+	dim.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	dim.mouse_filter = Control.MOUSE_FILTER_STOP
+	_overdraft_popup.add_child(dim)
+	var paper := Panel.new()
+	paper.position = Vector2(340, 170)
+	paper.size = Vector2(600, 350)
+	var sheet := StyleBoxFlat.new()
+	sheet.bg_color = Color("F4EDD9")
+	sheet.border_color = INK
+	sheet.set_border_width_all(3)
+	sheet.set_corner_radius_all(6)
+	paper.add_theme_stylebox_override("panel", sheet)
+	_overdraft_popup.add_child(paper)
+	var title := _shop_label(Rect2(0, 20, 600, 40), 28, true)
+	title.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	title.text = tr("CHEQUE ESPECIAL")
+	title.add_theme_color_override("font_color", INK)
+	paper.add_child(title)
+	_overdraft_body = Label.new()
+	_overdraft_body.position = Vector2(36, 66)
+	_overdraft_body.size = Vector2(528, 200)
+	_overdraft_body.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	_overdraft_body.add_theme_color_override("font_color", INK)
+	_overdraft_body.add_theme_font_size_override("font_size", 18)
+	paper.add_child(_overdraft_body)
+	_button(paper, tr("CANCELAR"), Rect2(60, 280, 220, 52), _on_spend_cancel).visible = true
+	_button(paper, tr("CONFIRMAR"), Rect2(320, 280, 220, 52), _on_spend_confirm).visible = true
+
+
 ## Botão de compra com a arte da caixa do valor; a oferta escolhida usa a versão destacada (amarela).
 func _style_buy_button(btn: Button, selected: bool) -> void:
 	# Creme normal; a oferta escolhida fica amarela (arte botao_amarelo).
@@ -1094,6 +1200,15 @@ func _zoom(node: Control, target: Vector2) -> void:
 
 
 func _on_buy_pressed(index: int) -> void:
+	if index >= 0 and index < run.shop_offer.size() and str(run.shop_offer[index]) != "":
+		var id: String = run.shop_offer[index]
+		var price := run.price_of(id)
+		_guard_spend(price, tr("Você está comprando %s por R$ %d.") % [_item_name(id), price], _do_buy.bind(index))
+		return
+	_do_buy(index)
+
+
+func _do_buy(index: int) -> void:
 	var result := run.buy(index)
 	_sfx.play("fita" if result["ok"] else "erro")
 	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
@@ -1108,6 +1223,10 @@ func _on_sell_pressed(index: int) -> void:
 
 
 func _on_haggle_pressed() -> void:
+	_guard_spend(Balance.HAGGLE_COST, tr("Você está pechinchando por R$ %d.") % Balance.HAGGLE_COST, _do_haggle)
+
+
+func _do_haggle() -> void:
 	var result := run.haggle()
 	_sfx.play("papel" if result["ok"] else "erro")
 	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
@@ -1196,7 +1315,6 @@ func _close_menu() -> void:
 	_restart_armed = false
 	_menu_restart.text = tr("RECOMEÇAR")
 	_menu_back.text = tr("VOLTAR AO MENU")
-	_back_armed = false
 	_menu_status.text = ""
 
 
@@ -1222,12 +1340,12 @@ func _on_game_options_closed(language_changed: bool) -> void:
 	get_tree().reload_current_scene()
 
 
-## Volta à tela inicial. Pede confirmação, porque a partida não salva se perde.
+## Volta à tela inicial. Salva a partida em andamento antes (sem pedir confirmação).
+## Se não conseguir salvar, fica no menu para não perder o progresso.
 func _on_back_pressed() -> void:
-	if not _back_armed:
-		_back_armed = true
-		_menu_back.text = tr("TEM CERTEZA?")
-		_menu_status.text = tr("O progresso não salvo se perde.")
+	var playing := run != null and run.state != RunState.WON and run.state != RunState.LOST
+	if playing and not SaveGame.write(run):
+		_menu_status.text = tr("Não consegui salvar. Tente de novo.")
 		return
 	_close_menu()
 	_title_screen.set_has_save(SaveGame.exists())
@@ -1283,8 +1401,9 @@ func _update_status() -> void:
 	if boss_id != Boss.NONE:
 		_boss_text.text = _boss_line(boss_id)
 		# Chefe sem arte ainda: o selo fica só com o texto escrito por cima.
-		_boss_art.texture = _tex(BOSS_ART.get(boss_id, ""))
-		_boss_stamp_text.text = tr(BOSS_STAMP[boss_id]) if BOSS_STAMP.has(boss_id) else tr(Balance.BOSSES[boss_id]["name"]).to_upper()
+		_boss_art.texture = _tex("res://art/chefes/chefe_%s.png" % boss_id)
+		# Sem nome escrito por cima: o carimbo já traz o desenho do chefe.
+		_boss_stamp_text.visible = false
 
 	var levels_text := _levels_text()
 	_levels.text = tr("Níveis: ") + levels_text
@@ -1396,10 +1515,6 @@ func _rebuild_hand() -> void:
 		btn.set_meta("fan_phase", float(i) * 0.9)  # cada carta balança fora de tempo com as vizinhas
 		btn.rotation = rest
 		btn.position = _lifted_position(run.bill.selected.has(note), dy)
-		# A carta selecionada e a que o mouse está em cima ficam na frente das vizinhas.
-		wrap.z_index = 1 if run.bill.selected.has(note) else 0
-		btn.mouse_entered.connect(func() -> void: wrap.z_index = 1)
-		btn.mouse_exited.connect(func() -> void: wrap.z_index = 1 if run.bill.selected.has(note) else 0)
 
 
 ## Ordem de exibição da mão. Só muda a tela: a regra (quais notas estão na mão) não muda.
@@ -1462,7 +1577,7 @@ func _arrange_hand() -> void:
 		var old_rot := float(btn.get_meta("fan_rot", rest))
 		btn.set_meta("fan_dy", dy)
 		btn.set_meta("fan_phase", float(i) * 0.9)
-		wrap.z_index = 1 if selected else 0
+		_hand_box.move_child(wrap, i)  # a ordem de desenho segue a posição: cada carta fica por cima da anterior
 		tween.tween_property(wrap, "position:x", x0 + i * HAND_STEP, SORT_TIME) 			.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 		tween.tween_property(btn, "position:y", _lifted_position(selected, dy).y, SORT_TIME) 			.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
 		tween.tween_method(func(v: float) -> void: btn.set_meta("fan_rot", v), old_rot, rest, SORT_TIME) 			.set_delay(delay).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN_OUT)
@@ -1595,7 +1710,7 @@ func _receipt_lines() -> Array:
 	if int(r.get("agiota", 0)) > 0:
 		lines.append([tr("Agiota (10%)"), "−R$ %d" % int(r["agiota"]), "perda"])
 	if int(r.get("parcelas", 0)) > 0:
-		lines.append([tr("Parcelas dos esquemas"), "−R$ %d" % int(r["parcelas"]), "perda"])
+		lines.append([tr("Parcelas"), "−R$ %d" % int(r["parcelas"]), "perda"])
 	lines.append(["", "", "tracejado"])
 	lines.append([tr("CARTEIRA"), "R$ %d" % int(r["wallet"]), "total"])
 	return lines
@@ -1627,7 +1742,7 @@ func _fill_receipt(lines: Array) -> void:
 			continue
 		var row := HBoxContainer.new()
 		row.mouse_filter = Control.MOUSE_FILTER_IGNORE
-		var size := 30 if style == "total" else 20
+		var size := 26 if style == "total" else 17
 		var color := INK
 		if style == "ganho":
 			color = LCD_INK
@@ -1637,6 +1752,8 @@ func _fill_receipt(lines: Array) -> void:
 			color = DANGER_LCD if line[1].begins_with("R$ -") else LCD_INK
 		var left := _receipt_text_label(line[0], size, color, HORIZONTAL_ALIGNMENT_LEFT)
 		left.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+		left.clip_text = true  # se o nome for grande demais, corta em vez de empurrar o valor para fora do papel
+		left.custom_minimum_size.x = 0
 		row.add_child(left)
 		row.add_child(_receipt_text_label(line[1], size, color, HORIZONTAL_ALIGNMENT_RIGHT))
 		_receipt_rows.add_child(row)
@@ -1746,6 +1863,8 @@ func _play_score(score: Dictionary) -> void:
 			"invest":
 				value += ev["value"]
 				juros += ev["add"]
+				_pop_text(_signed(ev["value"]), VALUE_POP, _message, 0.0)
+				_pop_text(_signed(ev["add"]), JUROS_POP, _message, 60.0)
 			"boss":
 				value += ev["value"]  # Valor do Curso do Primo Rico
 			"scheme":
@@ -1753,6 +1872,9 @@ func _play_score(score: Dictionary) -> void:
 				juros += ev["add"]
 				mult *= ev["mult"]
 				_sway_scheme(ev["id"])
+				var slot := _strip_slot_card(ev["id"])
+				_pop_text(_signed(ev["value"]), VALUE_POP, slot, 0.0)
+				_pop_text(_signed(ev["add"]), JUROS_POP, slot, 50.0)
 			"juros":
 				juros = ev["value"]
 				_sfx.play("maquininha")
@@ -1831,12 +1953,44 @@ func _pop_points(points: int, note: Note) -> void:
 	var btn: BaseButton = _cards[note]
 	var label := _terminal_label(40)
 	label.text = "+%d" % points
-	label.add_theme_color_override("font_color", HIGHLIGHT)
+	label.add_theme_color_override("font_color", VALUE_POP)
 	label.add_theme_color_override("font_outline_color", INK)
 	label.add_theme_constant_override("outline_size", 6)
 	label.position = Vector2(CARD_SIZE.x / 2.0 - 30.0, -POINTS_RISE)
 	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
 	btn.add_child(label)
+	var tween := create_tween().set_parallel(true)
+	tween.tween_property(label, "position:y", -POINTS_RISE - 26.0, 0.6)
+	tween.tween_property(label, "modulate:a", 0.0, 0.6).set_delay(0.2)
+	tween.finished.connect(label.queue_free)
+
+
+## Número com sinal: +3, -1 (0 some, para não poluir a tela).
+func _signed(n: int) -> String:
+	return "+%d" % n if n > 0 else str(n)
+
+
+## Cartaz do esquema na faixa de cima (None se o esquema não está ativo).
+func _strip_slot_card(id: String) -> Control:
+	var i := run.schemes.find(id)
+	if i < 0 or i >= _strip_slots.size():
+		return null
+	return _strip_slots[i]["card"]
+
+
+## Número que sobe acima de um elemento (cor: verde = Valor, vermelho = Juros). Some sozinho.
+## Não mostra nada se o número é zero ou o elemento não existe.
+func _pop_text(text: String, color: Color, anchor: Control, dx: float) -> void:
+	if anchor == null or not is_instance_valid(anchor) or text == "0" or text == "+0":
+		return
+	var label := _terminal_label(30)
+	label.text = text
+	label.add_theme_color_override("font_color", color)
+	label.add_theme_color_override("font_outline_color", INK)
+	label.add_theme_constant_override("outline_size", 5)
+	label.position = Vector2(anchor.size.x / 2.0 - 20.0 + dx, -POINTS_RISE)
+	label.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	anchor.add_child(label)
 	var tween := create_tween().set_parallel(true)
 	tween.tween_property(label, "position:y", -POINTS_RISE - 26.0, 0.6)
 	tween.tween_property(label, "modulate:a", 0.0, 0.6).set_delay(0.2)
@@ -1906,6 +2060,11 @@ func _set_stat(key: String, value: String, color: Color) -> void:
 func _on_swap_pressed() -> void:
 	if _busy:
 		return
+	var cost := run.bill.swap_cost()
+	_guard_spend(cost, tr("Você está trocando as notas escolhidas por R$ %d.") % cost, _do_swap)
+
+
+func _do_swap() -> void:
 	var result := run.swap()
 	_sfx.play("papel" if result["ok"] else "erro")
 	_message.text = "" if result["ok"] else _refusal_text(result["reason"])
@@ -2216,7 +2375,8 @@ func _calc_key(root: Control, name: String, desc: String, rect: Rect2, handler: 
 
 func _set_key_enabled(key: Button, enabled: bool) -> void:
 	key.disabled = not enabled
-	if not enabled:
+	# Só as teclas da calculadora têm animação; o botão PAGAR não.
+	if not enabled and key.has_meta("anim"):
 		_key_rest(key.get_meta("anim"))
 
 
