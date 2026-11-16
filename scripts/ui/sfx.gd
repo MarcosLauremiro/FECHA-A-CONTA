@@ -5,6 +5,7 @@ extends Node
 ## Os arquivos e a ordem de prioridade estão em sfx/README.md e music/README.md.
 
 const PATHS := {
+	"jingle": "res://sfx/jingle_boletro.mp3",
 	"bipe_tecla": "res://sfx/caixa/s01_bipe_tecla.ogg",
 	"bipe_subindo": "res://sfx/pontuacao/s02_bipe_subindo.ogg",
 	"maquininha": "res://sfx/pontuacao/s03_maquininha.ogg",

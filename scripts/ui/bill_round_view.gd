@@ -277,6 +277,7 @@ var _panel_pinned := false   # aberto pelo botão MÃO: fica até o FECHAR
 
 var _title_screen: TitleScreen  # tela inicial (atração + menu do caixa)
 var _sfx: Sfx                  # sons e música (ver scripts/ui/sfx.gd)
+var _in_shop := false           # estava na Banca no último quadro (para tocar o jingle só na entrada)
 var _boss_stamp_key := ""      # última fatura com carimbo tocado
 var _end_stamp_played := false
 var _howto: Control              # tela tr("Como jogar"): tutorial em páginas
@@ -299,6 +300,8 @@ var _cards: Dictionary = {}
 func _ready() -> void:
 	# Aviso de conquista: fica por cima da partida (z alto), no topo.
 	add_child(AchievementToast.new())
+	# Abertura: logo BOLETRO por cima da tela inicial (some sozinha ou com clique).
+	add_child(IntroScreen.new())
 	_build_ui()
 
 
@@ -342,7 +345,7 @@ func _build_ui() -> void:
 
 	# Tela inicial: caixa eletrônico com a atração e o menu (ver scripts/ui/title_screen.gd).
 	_title_screen = TitleScreen.new(SaveGame.exists())
-	_title_screen.started.connect(_sfx.play_music)
+	_title_screen.started.connect(_on_title_started)
 	_title_screen.new_game_pressed.connect(_on_title_pressed)
 	_title_screen.continue_pressed.connect(_on_continue_pressed)
 	_title_screen.howto_pressed.connect(_on_howto_pressed)
@@ -1363,10 +1366,20 @@ func _on_restart_pressed() -> void:
 	_start_run()
 
 
+## Primeiro clique na atração: liga a música de fundo e toca o jingle.
+func _on_title_started() -> void:
+	_sfx.play_music()
+	_sfx.play("jingle")
+
+
 func _refresh() -> void:
 	if run == null:
 		return
 	var shopping := run.state == RunState.SHOP
+	# Entrar na Banca toca o jingle (uma vez por visita).
+	if shopping and not _in_shop:
+		_sfx.play("jingle")
+	_in_shop = shopping
 	_game_root.visible = not shopping
 	_shop_root.visible = shopping
 	if shopping:
