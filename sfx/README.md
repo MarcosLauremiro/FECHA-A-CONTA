@@ -11,7 +11,7 @@ Status: `[ ]` pendente · `[x]` pronto e colocado na pasta.
 - [x] `caixa/s06_papel_embaralhando.ogg`: trocar ou comprar cartas. **P1**
 - [x] `caixa/s11_erro_caixa.ogg`: ação inválida, cheque especial. Bipe grave duplo. **P2**
 - [x] `caixa/s15_distribuir_notas.ogg`: notas novas entrando na mão (swish).
-- [x] `caixa/s16_passar_mouse_nota.ogg`: mouse em cima de uma carta. Bem baixo e curto (0,2 s).
+- [x] `caixa/s16_passar_mouse_nota.ogg`: mouse em cima de uma carta. Bem baixo (pico -21 dB) e curto (0,2 s).
 
 ## pontuacao/ (durante a pontuação)
 
