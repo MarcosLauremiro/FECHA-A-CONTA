@@ -20,6 +20,14 @@ const PATHS := {
 	"rasgar": "res://sfx/loja/s12_papel_rasgando.ogg",
 	"feirante": "res://sfx/loja/s13_grito_feirante.ogg",
 	"plateia": "res://sfx/pontuacao/s14_plateia_uooh.ogg",
+	# Efeitos da imersão (distribuir, mouse, meta, chefe, fim de partida e compra).
+	"distribuir": "res://sfx/caixa/s15_distribuir_notas.ogg",
+	"passar": "res://sfx/caixa/s16_passar_mouse_nota.ogg",
+	"brilho": "res://sfx/pontuacao/s17_brilho_meta.ogg",
+	"chefe": "res://sfx/eventos/s18_chefe_chegando.ogg",
+	"vitoria": "res://sfx/eventos/s19_vitoria.ogg",
+	"derrota": "res://sfx/eventos/s20_derrota.ogg",
+	"compra": "res://sfx/loja/s21_compra_moedas.ogg",
 }
 const MUSIC_PATH := "res://music/background_music.ogg"
 const POOL_SIZE := 6
@@ -40,6 +48,9 @@ func _ready() -> void:
 	_music.bus = Settings.BUS_MUSIC
 	_music.volume_db = MUSIC_VOLUME_DB
 	add_child(_music)
+	# Carrega os efeitos agora, para o primeiro som de cada um não travar a pontuação.
+	for id in PATHS:
+		_stream(PATHS[id])
 
 
 ## Toca um efeito. `pitch` muda a altura (1.0 = normal); usado para o bipe que sobe na pontuação.

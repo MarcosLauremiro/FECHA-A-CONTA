@@ -35,6 +35,12 @@ const IMPACT_UP := 0.09
 const IMPACT_DOWN := 0.18
 const IMPACT_FLASH := Color(1.5, 1.4, 1.0)
 const IMPACT_SHAKE := 2.0
+const DEAL_DISTANCE := 260.0       # notas novas sobem de baixo da mesa
+const DEAL_TIME := 0.32
+const DEAL_STAGGER := 0.06
+const HOVER_SCALE := 1.06          # carta cresce um pouco com o mouse em cima
+const SLAM_TIME := 0.18            # carimbo (chefe e fim da partida) batendo na tela
+const SLAM_SHAKE := 6.0
 
 # Como cada número aparece na arte: o texto é o valor preenchido em %s.
 const STAT_FORMAT := {
@@ -272,6 +278,7 @@ var _contact_buttons: Dictionary = {}  # id do contato -> Button (ao lado do SEG
 var _status_panel: Control
 var _status_title: Label
 var _status_cells: Array = []  # {"cell", "used"} por (cédula, forma): índice = linha * 4 + forma
+var _status_boxes := {}       # cor -> StyleBoxFlat das células do baralho (cache)
 var _tab_held := false       # TAB apertado: o painel aparece enquanto segura
 var _panel_pinned := false   # aberto pelo botão MÃO: fica até o FECHAR
 
@@ -281,6 +288,9 @@ var _demo_banner: Label        # aviso de fim da demo (só na versão demo)
 var _in_shop := false           # estava na Banca no último quadro (para tocar o jingle só na entrada)
 var _boss_stamp_key := ""      # última fatura com carimbo tocado
 var _end_stamp_played := false
+var _fx_layer: Control         # partículas e clarões, por cima da mesa e da Banca (ver scripts/ui/fx.gd)
+var _dealt := {}               # Note -> true: notas que já entraram na mão (as novas chegam deslizando)
+var _dealt_key := ""           # fatura da mão atual ("mês-conta"); fatura nova distribui a mão inteira
 var _howto: Control              # tela tr("Como jogar"): tutorial em páginas
 var _tut_index := 0              # página atual do tutorial
 var _tut_body: Control           # conteúdo da página atual (refeito a cada troca)
@@ -358,6 +368,12 @@ func _build_ui() -> void:
 
 	_build_game(_game_root)
 	_build_shop(_shop_root)
+
+	# Efeitos por cima da mesa e da Banca, mas embaixo da tela inicial e dos menus.
+	_fx_layer = Control.new()
+	_fx_layer.set_anchors_and_offsets_preset(Control.PRESET_FULL_RECT)
+	_fx_layer.mouse_filter = Control.MOUSE_FILTER_IGNORE
+	add_child(_fx_layer)
 
 	# Tela inicial: caixa eletrônico com a atração e o menu (ver scripts/ui/title_screen.gd).
 	_title_screen = TitleScreen.new(SaveGame.exists())
@@ -548,7 +564,11 @@ func _count_by_cell(notes: Array) -> Dictionary:
 
 ## Fundo colorido de uma célula do baralho (cor da forma de pagamento; vazio = papel claro).
 func _status_cell_box(color: Color) -> StyleBoxFlat:
+	# Uma caixa por cor, reaproveitada: o painel tem dezenas de células e é refeito a cada jogada.
+	if _status_boxes.has(color):
+		return _status_boxes[color]
 	var box := StyleBoxFlat.new()
+	_status_boxes[color] = box
 	box.bg_color = color
 	box.border_color = INK
 	box.set_border_width_all(1)
@@ -1231,15 +1251,33 @@ func _on_buy_pressed(index: int) -> void:
 
 
 func _do_buy(index: int) -> void:
+	var from := _offer_center(index)
 	var result := run.buy(index)
 	_sfx.play("fita" if result["ok"] else "erro")
 	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
+	if result["ok"]:
+		_sfx.play("compra")
+		Fx.coins(_fx_layer, from, 12)
+		Fx.punch(_shop_wallet, 1.25)
+	elif index >= 0 and index < _shop_offers.size():
+		Fx.nope(_shop_offers[index]["buy"])
 	_refresh()
+
+
+## Centro da oferta na tela (cartaz ou ícone), para os efeitos da compra saírem dela.
+func _offer_center(index: int) -> Vector2:
+	if index < 0 or index >= _shop_offers.size() or index >= run.shop_offer.size():
+		return Vector2(640, 400)
+	var o: Dictionary = _shop_offers[index]
+	var node: Control = o["icon"] if Investments.is_investment(str(run.shop_offer[index])) else o["card"]
+	return node.get_global_rect().get_center()
 
 
 func _on_sell_pressed(index: int) -> void:
 	var result := run.sell(index)
 	_sfx.play("rasgar" if result["ok"] else "erro")
+	if result["ok"]:
+		Fx.punch(_shop_wallet, 1.25)
 	_shop_message.text = "" if result["ok"] else _shop_refusal(result["reason"])
 	_refresh()
 
@@ -1456,9 +1494,16 @@ func _update_status() -> void:
 	if show_boss and _boss_stamp_key != stamp_key:
 		_boss_stamp_key = stamp_key
 		_sfx.play("carimbo")
+		_sfx.play("chefe")
+		_slam(_boss_art, 2.4)
 	if over and not _end_stamp_played:
 		_end_stamp_played = true
 		_sfx.play("carimbo")
+		_slam(_end_stamp, 2.0)
+		if run.state == RunState.LOST:
+			_sfx.play("derrota")
+			Fx.flash(_fx_layer, Color(0.75, 0.05, 0.05, 0.5), 0.9)
+			_shake(SHAKE_MAX)
 	if over:
 		SaveGame.delete()  # partida terminada não tem o que continuar
 		_end_stamp.texture = _tex(TEX_END_OK if run.state == RunState.WON else TEX_END_BAD)
@@ -1518,6 +1563,12 @@ func _rebuild_hand() -> void:
 
 	var playing := run.state == RunState.PLAYING
 	var notes := _hand_order()
+	# Notas que acabaram de entrar na mão chegam deslizando de baixo, uma depois da outra.
+	var key := "%d-%d" % [run.month_index, run.bill_index]
+	if key != _dealt_key:
+		_dealt_key = key
+		_dealt.clear()
+	var dealing := 0
 	var x0 := (HAND_AREA.x - notes.size() * HAND_STEP) / 2.0
 	for i in range(notes.size()):
 		var note: Note = notes[i]
@@ -1541,6 +1592,15 @@ func _rebuild_hand() -> void:
 		btn.set_meta("fan_phase", float(i) * 0.9)  # cada carta balança fora de tempo com as vizinhas
 		btn.rotation = rest
 		btn.position = _lifted_position(run.bill.selected.has(note), dy)
+		if playing and not _dealt.has(note):
+			_deal_in(wrap, dealing)
+			dealing += 1
+	if playing:
+		_dealt.clear()
+		for note in notes:
+			_dealt[note] = true
+	if dealing > 0:
+		_sfx.play("distribuir")
 
 
 ## Ordem de exibição da mão. Só muda a tela: a regra (quais notas estão na mão) não muda.
@@ -1644,8 +1704,12 @@ func _card_button(note: Note) -> BaseButton:
 		card.add_child(frame)
 		card.set_meta("frame", frame)
 		# Só a moldura de hover; a carta selecionada fica apenas levantada (sem moldura amarela).
-		card.mouse_entered.connect(func() -> void: _set_card_frame(card, 1))
-		card.mouse_exited.connect(func() -> void: _set_card_frame(card, 0))
+		card.mouse_entered.connect(func() -> void:
+			_set_card_frame(card, 1)
+			_hover_card(card, true))
+		card.mouse_exited.connect(func() -> void:
+			_set_card_frame(card, 0)
+			_hover_card(card, false))
 		return card
 
 	var btn := Button.new()
@@ -1690,6 +1754,57 @@ func _set_card_frame(btn: BaseButton, mode: int) -> void:
 		frame.add_theme_stylebox_override("panel", _nine("ui_selecao", 22, 24, 22, 24))
 	elif mode == 1:
 		frame.add_theme_stylebox_override("panel", _nine("ui_selecao_hover", 22, 24, 22, 24))
+
+
+## Carta nova entrando na mão: sobe de baixo da mesa, com atraso pela ordem de chegada.
+## Mexe no wrapper (não no botão), para não brigar com a seleção nem com o leque.
+func _deal_in(wrap: Control, order: int) -> void:
+	var y := wrap.position.y
+	wrap.position.y = y + DEAL_DISTANCE
+	wrap.modulate.a = 0.0
+	var tween := wrap.create_tween().set_parallel(true)
+	tween.tween_property(wrap, "position:y", y, DEAL_TIME).set_delay(order * DEAL_STAGGER) \
+		.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
+	tween.tween_property(wrap, "modulate:a", 1.0, DEAL_TIME * 0.5).set_delay(order * DEAL_STAGGER)
+
+
+## Mouse em cima da carta: ela cresce um pouco (só quando dá para jogar).
+func _hover_card(card: BaseButton, on: bool) -> void:
+	if not is_instance_valid(card) or (on and (_busy or card.disabled)):
+		return
+	if card.has_meta("hover_tween"):
+		var old: Tween = card.get_meta("hover_tween")
+		if old != null and old.is_valid():
+			old.kill()
+	var tween := card.create_tween()
+	card.set_meta("hover_tween", tween)
+	tween.tween_property(card, "scale", Vector2.ONE * (HOVER_SCALE if on else 1.0), 0.1) \
+		.set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_OUT)
+	if on:
+		_sfx.play("passar")
+
+
+## Carimbo batendo: o elemento chega grande e cai no lugar, com tremor e fagulhas.
+func _slam(node: Control, from_scale: float) -> void:
+	if node == null or not node.visible:
+		return
+	node.pivot_offset = node.size / 2.0
+	node.scale = Vector2.ONE * from_scale
+	node.modulate.a = 0.0
+	var tween := node.create_tween().set_parallel(true)
+	tween.tween_property(node, "scale", Vector2.ONE, SLAM_TIME).set_trans(Tween.TRANS_QUAD).set_ease(Tween.EASE_IN)
+	tween.tween_property(node, "modulate:a", 1.0, SLAM_TIME * 0.6)
+	tween.chain().tween_callback(func() -> void:
+		_shake(SLAM_SHAKE)
+		Fx.sparks(_fx_layer, node.get_global_rect().get_center(), 12))
+
+
+## Vitória da partida: chuva longa de notas e moedas.
+func _celebrate() -> void:
+	_sfx.play("vitoria")
+	Fx.flash(_fx_layer, Color(1, 1, 0.9, 0.5), 0.5)
+	Fx.rain(_fx_layer, "nota", 70, 4.5)
+	Fx.rain(_fx_layer, "moeda", 40, 4.0)
 
 
 ## Sobe ou desce uma carta com animação curta.
@@ -1843,6 +1958,7 @@ func _on_pay_pressed() -> void:
 	if not result["ok"]:
 		_sfx.play("erro")
 		_message.text = _refusal_text(result["reason"])
+		Fx.nope(_message)
 		return
 	var score: Dictionary = result["score"]
 	if score["kind"] == "none":
@@ -1863,6 +1979,7 @@ func _on_pay_pressed() -> void:
 		_print_receipt(run.bill.saldo > run.bill.goal * BIG_RECEIPT_RATIO)
 	elif run.state == RunState.WON:
 		_print_receipt(false)  # comprovante final: CONTAS EM DIA
+		_celebrate()
 
 
 ## Percorre a lista de eventos do Scorer: notas pulam, cartaz balança, Juros aparece, total cai no saldo.
@@ -1904,6 +2021,7 @@ func _play_score(score: Dictionary) -> void:
 			"juros":
 				juros = ev["value"]
 				_sfx.play("maquininha")
+				Fx.punch(_message, 1.12)
 			"total":
 				pass  # o total é mostrado depois do laço
 		if ev["type"] != "total":
@@ -1916,6 +2034,12 @@ func _play_score(score: Dictionary) -> void:
 	_shake(clampf(float(total) / maxf(1.0, run.bill.goal) * 4.0, 0.0, SHAKE_MAX))
 	if total > run.bill.goal * BIG_RECEIPT_RATIO:
 		_sfx.play("plateia")
+	# Moedas pulam do saldo: quanto maior a jogada perto da meta, mais moedas.
+	var saldo_label: Control = _stat_values["saldo"]
+	var ratio := clampf(float(total) / maxf(1.0, run.bill.goal), 0.0, 1.5)
+	Fx.coins(_fx_layer, saldo_label.get_global_rect().get_center(), int(6 + ratio * 14))
+	if total >= run.bill.goal:
+		_sfx.play("brilho")
 	await _count_saldo(run.bill.saldo - (total - tax), run.bill.saldo)
 
 
@@ -1970,6 +2094,7 @@ func _impact_card(note: Note) -> void:
 	flash.tween_property(btn, "modulate", IMPACT_FLASH, IMPACT_UP)
 	flash.tween_property(btn, "modulate", Color.WHITE, IMPACT_DOWN)
 	_shake(IMPACT_SHAKE)
+	Fx.sparks(_fx_layer, btn.get_global_transform() * Vector2(btn.size.x / 2.0, btn.size.y * 0.3))
 
 
 ## Pontuação de uma nota: aparece logo acima da própria carta (e sobe um pouco, enquanto some).
@@ -2042,6 +2167,7 @@ func _count_saldo(from: int, to: int) -> void:
 	_sfx.play("registradora")
 	tween.tween_method(func(v: float) -> void: _set_stat("saldo", "R$ %d" % int(v), INK), float(from), float(to), 0.5)
 	await tween.finished
+	Fx.punch(_stat_values["saldo"], 1.2)
 
 
 ## Tremor da tela: `strength` é o deslocamento máximo em px.
@@ -2061,6 +2187,9 @@ func _print_receipt(big: bool) -> void:
 	_sfx.play("impressora")
 	if int(run.receipt.get("reward", 0)) > 0:
 		get_tree().create_timer(PRINT_TIME * 0.5).timeout.connect(_sfx.play.bind("moedas"))
+		# Moedas da recompensa pulam da boca da impressora, junto com o som.
+		get_tree().create_timer(PRINT_TIME * 0.5).timeout.connect(
+			Fx.coins.bind(_fx_layer, RECEIPT_POS + Vector2(120, 10), 18))
 	if int(run.receipt.get("troco", 0)) > 0:
 		get_tree().create_timer(PRINT_TIME * 0.9).timeout.connect(_sfx.play.bind("relampago"))
 	# Papel sai da impressora: a janela cresce de cima para baixo, no ritmo do som.
@@ -2074,6 +2203,11 @@ func _print_receipt(big: bool) -> void:
 		tween.tween_property(_receipt_clip, "scale", Vector2.ONE, PRINT_TIME) \
 			.set_trans(Tween.TRANS_BACK).set_ease(Tween.EASE_OUT)
 		tween.finished.connect(_shake.bind(SHAKE_MAX))
+		# Comprovante gigante: clarão e chuva de notas e moedas.
+		tween.finished.connect(func() -> void:
+			Fx.flash(_fx_layer, Color(1, 1, 0.9, 0.55), 0.4)
+			Fx.rain(_fx_layer, "nota", 36, 2.5)
+			Fx.rain(_fx_layer, "moeda", 20, 2.0))
 	else:
 		_receipt_clip.scale = Vector2.ONE
 
