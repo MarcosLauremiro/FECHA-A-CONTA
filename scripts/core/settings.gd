@@ -8,7 +8,7 @@ const BUS_MUSIC := "Musica"
 const BUS_SFX := "Efeitos"
 const FPS_CHOICES := [30, 60, 120, 0]   # 0 = sem limite (índice nas opções)
 
-var language := "pt"
+var language := "pt"        # padrão ao abrir o jogo, sempre
 var music_volume := 80      # 0 a 100
 var sfx_volume := 100       # 0 a 100
 var fullscreen := true
@@ -69,7 +69,7 @@ func _load() -> void:
 	var cfg := ConfigFile.new()
 	if cfg.load(PATH) != OK:
 		return
-	language = str(cfg.get_value("opcoes", "idioma", language))
+	# O jogo sempre abre em português (a tradução ainda tem falhas): o idioma salvo não é lido.
 	music_volume = clampi(int(cfg.get_value("opcoes", "musica", music_volume)), 0, 100)
 	sfx_volume = clampi(int(cfg.get_value("opcoes", "efeitos", sfx_volume)), 0, 100)
 	fullscreen = bool(cfg.get_value("opcoes", "tela_cheia", fullscreen))
