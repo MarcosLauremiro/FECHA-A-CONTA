@@ -19,6 +19,7 @@ const PAPER_DOWN := Color("D9CCAE")
 const FONT_TITLE := "res://fonts/Anton/Anton-Regular.ttf"
 const FONT_TERMINAL := "res://fonts/VT323/VT323-Regular.ttf"
 
+var with_language := true
 var _start_language := ""
 var _language_pick: OptionButton
 var _music: HSlider
@@ -32,8 +33,10 @@ var _shake: CheckButton
 
 
 ## Abre as opções por cima de `parent`. `on_closed` recebe true se o idioma mudou.
-static func open(parent: Node, on_closed: Callable) -> OptionsScreen:
+## `with_language` false esconde o idioma (dentro da partida ele só pode ser trocado na tela inicial).
+static func open(parent: Node, on_closed: Callable, with_language := true) -> OptionsScreen:
 	var screen := OptionsScreen.new()
+	screen.with_language = with_language
 	screen.closed.connect(on_closed)
 	parent.add_child(screen)
 	return screen
@@ -71,7 +74,8 @@ func _build() -> void:
 	for code in Loc.LANGUAGES:
 		_language_pick.add_item(Loc.LANGUAGE_NAMES[code])
 	_language_pick.item_selected.connect(_on_language_picked)
-	_row(0, tr("Idioma"), _language_pick)
+	if with_language:
+		_row(0, tr("Idioma"), _language_pick)
 
 	_music = _slider(Settings.music_volume)
 	_music_value = _value_label()
@@ -120,7 +124,8 @@ func _build() -> void:
 		Settings.save())
 	_row(6, tr("Tremor da tela"), _shake)
 
-	_text(Rect2(PANEL.position.x + 20, 514, PANEL.size.x - 40, 32), tr("O idioma muda ao fechar as opções."), _font(FONT_TERMINAL), 22, HORIZONTAL_ALIGNMENT_CENTER)
+	if with_language:
+		_text(Rect2(PANEL.position.x + 20, 514, PANEL.size.x - 40, 32), tr("O idioma muda ao fechar as opções."), _font(FONT_TERMINAL), 22, HORIZONTAL_ALIGNMENT_CENTER)
 
 	_button(Rect2(PANEL.position.x + 60, 562, 200, 46), tr("PADRÕES"), _on_defaults)
 	_button(Rect2(PANEL.position.x + 340, 562, 200, 46), tr("VOLTAR"), _close)
@@ -162,7 +167,8 @@ func _unhandled_input(event: InputEvent) -> void:
 # --- Montagem ----------------------------------------------------------------
 
 func _row(index: int, label_text: String, control: Control, extra: Control = null) -> void:
-	var y := ROW_Y + index * ROW_H
+	# Sem a linha do idioma, as outras sobem uma posição.
+	var y := ROW_Y + (index if with_language else index - 1) * ROW_H
 	_text(Rect2(LABEL_X, y, 300, 40), label_text, _font(FONT_TERMINAL), 26, HORIZONTAL_ALIGNMENT_LEFT)
 	control.position = Vector2(CONTROL_X, y + 4)
 	control.size = Vector2(CONTROL_W, 40)

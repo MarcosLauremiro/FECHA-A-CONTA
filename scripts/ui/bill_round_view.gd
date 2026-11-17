@@ -301,9 +301,6 @@ var _cards: Dictionary = {}
 func _ready() -> void:
 	# Aviso de conquista: fica por cima da partida (z alto), no topo.
 	add_child(AchievementToast.new())
-	if Settings.after_reload == "game":
-		Settings.after_reload = ""
-		call_deferred("_on_continue_pressed")
 	# Abertura: logo BOLETRO por cima da tela inicial (some sozinha ou com clique).
 	add_child(IntroScreen.new())
 	_build_ui()
@@ -1350,21 +1347,9 @@ func _on_save_pressed() -> void:
 		_menu_status.text = tr("Não consegui salvar. Tente de novo.")
 
 
-## Opções dentro da partida. Se o idioma mudou, salva a partida e recarrega a cena (os textos mudam).
+## Opções dentro da partida, sem o idioma: ele só pode ser trocado na tela inicial.
 func _on_pause_options() -> void:
-	OptionsScreen.open(self, _on_game_options_closed)
-
-
-func _on_game_options_closed(language_changed: bool) -> void:
-	if not language_changed:
-		return
-	var playing := run != null and run.state != RunState.WON and run.state != RunState.LOST
-	if playing and not SaveGame.write(run):
-		_menu_status.text = tr("Não consegui salvar. Tente de novo.")
-		return
-	# A cena recarrega com os textos novos e continua a partida salva, sem voltar ao título.
-	Settings.after_reload = "game" if playing else ""
-	get_tree().reload_current_scene()
+	OptionsScreen.open(self, func(_changed: bool) -> void: pass, false)
 
 
 ## Volta à tela inicial. Salva a partida em andamento antes (sem pedir confirmação).

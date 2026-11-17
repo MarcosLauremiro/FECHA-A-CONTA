@@ -15,7 +15,7 @@ var fullscreen := true
 var vsync := true
 var fps_index := 1          # índice em FPS_CHOICES (60 por padrão)
 var screen_shake := true
-# Depois da troca de idioma a cena recarrega: diz à cena nova onde estava ("menu" ou "game").
+# Depois da troca de idioma (só na tela inicial) a cena recarrega: "menu" faz a cena nova voltar direto ao menu.
 var after_reload := ""
 
 
